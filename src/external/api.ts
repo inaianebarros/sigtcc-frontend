@@ -22,4 +22,9 @@ export const backendService = {
         localStorage.setItem('access_token', access_token);
         return access_token;
     },
+
+    logout() {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+    }
 };
