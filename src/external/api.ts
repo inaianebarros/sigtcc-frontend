@@ -13,4 +13,13 @@ export const backendService = {
 
         return response.data;
     },
+
+    async refreshToken() {
+        const refresh_token = localStorage.getItem('refresh_token');
+        const response = await api.post(`${baseUserAPI}/refresh`, { refresh_token });
+        const { access_token } = response.data;
+
+        localStorage.setItem('access_token', access_token);
+        return access_token;
+    },
 };
