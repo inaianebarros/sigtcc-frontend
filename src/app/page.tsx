@@ -97,7 +97,7 @@ export default function Home() {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           slotProps={{ inputLabel: textFieldStyle.fontSize }}
-          sx={{ mb: 7, ...textFieldStyle.style }}
+          sx={{ mb: 7, ...textFieldStyle.textFieldFilledStyle }}
         />
 
         <TextField
@@ -110,7 +110,7 @@ export default function Home() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           slotProps={{ inputLabel: textFieldStyle.fontSize }}
-          sx={{ mb: 8, ...textFieldStyle.style }}
+          sx={{ mb: 8, ...textFieldStyle.textFieldFilledStyle }}
         />
 
         <Typography
