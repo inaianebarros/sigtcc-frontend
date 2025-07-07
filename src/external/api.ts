@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { baseAPI, baseUserAPI, baseExpertiseAreasAPI, baseInstitutesAPI, baseProfessorsAPI } from './constants';
 
+import { Professor } from '@/utils/interfaces';
+
 const api = axios.create({ baseURL: baseAPI });
 
 export const backendService = {
@@ -17,6 +19,11 @@ export const backendService = {
         const response = await api.get(
             baseProfessorsAPI, { params: { expertise_areas_uuids: expertiseAreasUUIDs, institute_uuids: institutesUUID, first_name: professorName } }
         );
+        return response.data;
+    },
+
+    async getProfessor(professorUUID: string): Promise<Professor> {
+        const response = await api.get(`${baseProfessorsAPI}/${professorUUID}`);
         return response.data;
     },
 
