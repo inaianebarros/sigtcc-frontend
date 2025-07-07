@@ -1,5 +1,4 @@
-// export const baseAPI = 'http://localhost:8000/api/v1'
-export const baseAPI = 'http://192.168.3.77:8000/api/v1'
+export const baseAPI = 'http://localhost:8000/api/v1'
 export const baseExpertiseAreasAPI = '/expertise-areas'
 export const baseInstitutesAPI = '/institutes'
 export const baseProfessorsAPI = '/professors'
