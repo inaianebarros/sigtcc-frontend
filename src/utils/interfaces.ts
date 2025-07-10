@@ -9,6 +9,7 @@ export type Institute = {
 };
 
 export interface Professor {
+    biography: string,
     institute: Institute;
     expertise_areas: ExpertiseAreas[];
     user: {
@@ -17,6 +18,7 @@ export interface Professor {
         uuid: string;
     };
     uuid: string;
+    lattes_url: string
 }
 
 export interface ProfessorUUID {
