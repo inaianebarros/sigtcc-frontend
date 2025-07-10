@@ -106,7 +106,7 @@ export default function SearchProfessor() {
             alignItems: 'center',
             p: 5.25
         }}>
-            <Box sx={{ p: 4, width: "100%", height: "100%", backgroundColor: 'secondary.main', borderRadius: 8, }}>
+            <Box sx={{ p: 4, width: "100%", height: "100%", backgroundColor: 'secondary.main', borderRadius: 8 }}>
 
                 <Typography variant="h4" sx={{ mb: 4, paddingLeft: 3 }} fontWeight='bold' fontSize={46}>Buscar Orientador</Typography>
                 <Box sx={{ display: 'flex', mb: 4, px: 3, gap: 4, '& > *': { minWidth: '45%' } }}>
