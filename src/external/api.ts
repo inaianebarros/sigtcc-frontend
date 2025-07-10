@@ -1,5 +1,12 @@
 import axios from 'axios';
-import { baseAPI, baseUserAPI, baseExpertiseAreasAPI, baseInstitutesAPI, baseProfessorsAPI } from './constants';
+import {
+    baseAPI,
+    baseExpertiseAreasAPI,
+    baseInstitutesAPI,
+    baseProfessorsAPI,
+    baseSupervisionRequestAPI,
+    baseUserAPI,
+} from './constants';
 
 import { Professor } from '@/utils/interfaces';
 
@@ -10,14 +17,25 @@ export const backendService = {
         const response = await api.get(baseExpertiseAreasAPI);
         return response.data;
     },
+
     async getInstitutes() {
         const response = await api.get(baseInstitutesAPI);
         return response.data;
     },
 
-    async getFilteredProfessors(expertiseAreasUUIDs: string[], institutesUUID: string, professorName: string) {
+    async getFilteredProfessors(
+        expertiseAreasUUIDs: string[],
+        institutesUUID: string,
+        professorName: string
+    ) {
         const response = await api.get(
-            baseProfessorsAPI, { params: { expertise_areas_uuids: expertiseAreasUUIDs, institute_uuids: institutesUUID, first_name: professorName } }
+            baseProfessorsAPI, {
+            params: {
+                expertise_areas_uuids: expertiseAreasUUIDs,
+                institute_uuids: institutesUUID,
+                first_name: professorName
+            }
+        }
         );
         return response.data;
     },
@@ -44,6 +62,16 @@ export const backendService = {
 
         localStorage.setItem('access_token', access_token);
         return access_token;
+    },
+
+    async requestSupervision(message: string, professorUUID: string) {
+        const access_token = localStorage.getItem('access_token');
+        const response = await api.post(
+            `${baseSupervisionRequestAPI}/student`,
+            { message, professorUUID },
+            { headers: { 'Authorization': `Bearer ${access_token}` } }
+        );
+        return response.data;
     },
 
     logout() {
