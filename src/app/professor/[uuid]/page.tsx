@@ -2,7 +2,7 @@
 
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import Divider from '@mui/material/Divider';
-import { Box, Container, Chip, Paper, Typography, TextField, Button } from '@mui/material';
+import { Box, Container, Chip, Paper, Typography, TextField, Button, Alert, Snackbar } from '@mui/material';
 import { CircularProgress } from '@mui/material';
 import { Professor } from '@/utils/interfaces';
 import { ProfessorUUID } from '@/utils/interfaces';
@@ -25,6 +25,9 @@ export default function ProfessorDetailPage({ params }: ProfessorUUID) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [professorData, setProfessorData] = useState<Professor | null>(null);
+    const [sendingMessage, setSendingMessage] = useState(false);
+    const [messageSent, setMessageSent] = useState(false);
+    const [messageError, setMessageError] = useState('');
 
     useEffect(() => {
         async function loadProfessor() {
@@ -44,12 +47,20 @@ export default function ProfessorDetailPage({ params }: ProfessorUUID) {
     }, [params]);
 
     const handleSendMessage = async () => {
-        if (!loading) {
+        if (!loading && message.trim() !== '') {
+            setSendingMessage(true);
+            setMessageError('');
+            setMessageSent(false);
+
             try {
                 const { uuid } = await params;
                 await backendService.requestSupervision(message, uuid);
+                setMessageSent(true);
             } catch (err) {
                 console.error(err);
+                setMessageError(err.response.data.detail);
+            } finally {
+                setSendingMessage(false);
             }
         }
     }
@@ -180,9 +191,11 @@ export default function ProfessorDetailPage({ params }: ProfessorUUID) {
                                 Mensagem de Solicitação
                             </Typography>
                             <TextField
+                                value={message}
                                 onChange={(e) => setMessage(e.target.value)}
                                 placeholder="Digite sua mensagem"
                                 multiline
+                                disabled={sendingMessage}
                                 sx={{
                                     width: '100%',
                                     height: '100px',
@@ -193,11 +206,17 @@ export default function ProfessorDetailPage({ params }: ProfessorUUID) {
                                 }}
                             />
                         </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                            {messageError && (
+                                <Alert severity="error" sx={{ width: '100%', maxWidth: 500 }}>
+                                    {messageError}
+                                </Alert>
+                            )}
                             <Button
                                 onClick={handleSendMessage}
                                 variant="contained"
                                 startIcon={<SendSharp />}
+                                disabled={sendingMessage || message.trim() === ''}
                                 sx={{
                                     backgroundColor: 'primary.main',
                                     '&:hover': { bgcolor: '#1F3A2D' },
@@ -207,9 +226,25 @@ export default function ProfessorDetailPage({ params }: ProfessorUUID) {
                                     px: 4
                                 }}
                             >
-                                Enviar
+                                {sendingMessage ? 'Enviando...' : 'Enviar'}
                             </Button>
                         </Box>
+
+                        <Snackbar
+                            open={messageSent}
+                            autoHideDuration={6000}
+                            onClose={() => setMessageSent(false)}
+                            anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                        >
+                            <Alert
+                                onClose={() => setMessageSent(false)}
+                                severity="success"
+                                variant="filled"
+                                sx={{ width: '100%' }}
+                            >
+                                Mensagem enviada com sucesso!
+                            </Alert>
+                        </Snackbar>
                     </Box>
                 </Box>
             </Paper>
