@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import {
     baseAPI,
     baseExpertiseAreasAPI,
@@ -11,6 +11,111 @@ import {
 import { Professor } from '@/utils/interfaces';
 
 const api = axios.create({ baseURL: baseAPI });
+
+/**
+ * Sistema de renovação automática de tokens
+ *
+ * Este sistema implementa um mecanismo de interceptação de requisições Axios que:
+ * 1. Adiciona automaticamente o token de acesso a todas as requisições
+ * 2. Intercepta erros 401 (Unauthorized) e tenta renovar o token
+ * 3. Coloca requisições que falharam em uma fila para reenvio após renovação
+ * 4. Redireciona para a página de login se a renovação falhar
+ */
+
+// Armazena requisições que falharam por token expirado
+let isRefreshing = false;
+let failedQueue: {
+    resolve: (value: unknown) => void;
+    reject: (reason?: any) => void;
+    config: AxiosRequestConfig;
+}[] = [];
+
+// Processa a fila de requisições após renovação do token
+const processQueue = (error: any = null, token: string | null = null) => {
+    failedQueue.forEach(request => {
+        if (error) {
+            request.reject(error);
+        } else if (token) {
+            // Atualiza o token na requisição original
+            if (request.config.headers) {
+                request.config.headers['Authorization'] = `Bearer ${token}`;
+            }
+            request.resolve(api(request.config));
+        }
+    });
+
+    failedQueue = [];
+};
+
+// Interceptor de requisição para adicionar token de acesso
+api.interceptors.request.use(
+    (config: InternalAxiosRequestConfig) => {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Interceptor de resposta para lidar com token expirado
+api.interceptors.response.use(
+    (response: AxiosResponse) => response,
+    async (error: AxiosError) => {
+        const originalRequest = error.config as AxiosRequestConfig;
+
+        // Verifica se é erro de autenticação (401) e se não é uma requisição de refresh
+        if (error.response?.status === 401 &&
+            originalRequest &&
+            originalRequest.url !== `${baseUserAPI}/refresh`) {
+
+            // Se já estiver renovando o token, adiciona à fila
+            if (isRefreshing) {
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject, config: originalRequest });
+                });
+            }
+
+            isRefreshing = true;
+
+            try {
+                // Tenta renovar o token
+                const newToken = await backendService.refreshToken();
+
+                // Atualiza o token na requisição original
+                if (originalRequest.headers) {
+                    originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+                }
+
+                // Processa a fila de requisições pendentes
+                processQueue(null, newToken);
+
+                // Reenviar a requisição original com o novo token
+                return api(originalRequest);
+            } catch (refreshError) {
+                // Se falhar ao renovar o token, rejeita todas as requisições na fila
+                processQueue(refreshError, null);
+
+                // Redireciona para login ou limpa os tokens
+                backendService.logout();
+
+                // Se estiver em ambiente de navegador, redireciona para login
+                if (typeof window !== 'undefined') {
+                    window.location.href = '/';
+                }
+
+                return Promise.reject(refreshError);
+            } finally {
+                isRefreshing = false;
+            }
+        }
+
+        return Promise.reject(error);
+    }
+);
 
 export const backendService = {
     async getExpertiseAreas() {
@@ -47,10 +152,10 @@ export const backendService = {
 
     async login(username: string, password: string) {
         const response = await api.post(`${baseUserAPI}/pair`, { username, password });
-        const { access_token, refresh_token } = response.data;
+        const { access, refresh } = response.data;
 
-        localStorage.setItem('access_token', access_token);
-        localStorage.setItem('refresh_token', refresh_token);
+        localStorage.setItem('access_token', access);
+        localStorage.setItem('refresh_token', refresh);
 
         return response.data;
     },
@@ -58,18 +163,16 @@ export const backendService = {
     async refreshToken() {
         const refresh_token = localStorage.getItem('refresh_token');
         const response = await api.post(`${baseUserAPI}/refresh`, { refresh_token });
-        const { access_token } = response.data;
+        const { access } = response.data;
 
-        localStorage.setItem('access_token', access_token);
-        return access_token;
+        localStorage.setItem('access_token', access);
+        return access;
     },
 
     async requestSupervision(message: string, professorUUID: string) {
-        const access_token = localStorage.getItem('access_token');
         const response = await api.post(
             `${baseSupervisionRequestAPI}/student`,
-            { message, professorUUID },
-            { headers: { 'Authorization': `Bearer ${access_token}` } }
+            { student_message: message, professor_uuid: professorUUID }
         );
         return response.data;
     },
