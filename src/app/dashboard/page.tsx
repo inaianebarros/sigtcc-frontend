@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Button, Box, Container } from '@mui/material';
+import { Button, Box, Container, Typography } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from '../theme';
 
@@ -24,7 +24,9 @@ export default function Dashboard() {
                         py: 4
                     }}
                 >
-                    <h1>Dashboard</h1>
+                    <Typography variant="h4" sx={{ mb: 4 }}>
+                        Dashboard do Aluno
+                    </Typography>
                     <Button
                         onClick={handleSearchProfessor}
                         variant="outlined"

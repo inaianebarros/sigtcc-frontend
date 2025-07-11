@@ -21,6 +21,9 @@ export const textFieldStyle = {
             '&.Mui-focused fieldset': {
                 borderColor: 'transparent',
             },
+            '&.Mui-disabled fieldset': {
+                borderColor: 'transparent',
+            },
         }
     },
 

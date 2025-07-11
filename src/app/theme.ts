@@ -8,6 +8,9 @@ const theme = createTheme({
         secondary: {
             main: '#D9D9D9',
         },
+        background: {
+            default: '#efefef'
+        }
     },
     typography: {
         fontFamily: 'inherit, Raleway',

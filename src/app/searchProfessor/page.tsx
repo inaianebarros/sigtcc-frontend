@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
     Autocomplete,
@@ -23,31 +24,15 @@ import {
     Typography,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import { Assignment as AssignmentIcon } from "@mui/icons-material"
 import { textFieldStyle } from '../styles';
 import { getColorForUuid } from '@/utils/functions'
 
 import { backendService } from '@/external/api';
-
-type ExpertiseAreas = {
-    name: string;
-    uuid: string;
-}
-
-type Institute = {
-    name: string;
-    uuid: string;
-};
-
-interface Professor {
-    institute: Institute;
-    expertise_areas: ExpertiseAreas[];
-    user: {
-        first_name: string;
-        uuid: string;
-    };
-}
+import { ExpertiseAreas, Institute, Professor } from '@/utils/interfaces';
 
 export default function SearchProfessor() {
+    const router = useRouter();
     const [mounted, setMounted] = useState(false);
     useEffect(() => { setMounted(true); }, []);
     const [expertiseAreas, setExpertiseAreas] = useState<ExpertiseAreas[]>([]);
@@ -106,6 +91,10 @@ export default function SearchProfessor() {
         setPage(0);
     };
 
+    const handleRequestGuidance = (professor: Professor) => {
+        router.push(`/professor/${professor.uuid}`);
+    };
+
     if (!mounted) return null;
     return (
         <Box sx={{
@@ -117,10 +106,10 @@ export default function SearchProfessor() {
             alignItems: 'center',
             p: 5.25
         }}>
-            <Box sx={{ p: 4, width: "100%", height: "100%", backgroundColor: 'secondary.main', borderRadius: 8, }}>
+            <Box sx={{ p: 4, width: "100%", height: "100%", backgroundColor: 'secondary.main', borderRadius: 8 }}>
 
                 <Typography variant="h4" sx={{ mb: 4, paddingLeft: 3 }} fontWeight='bold' fontSize={46}>Buscar Orientador</Typography>
-                <Box sx={{ display: 'flex', mb: 4, px: 3, justifyContent: 'space-between' }}>
+                <Box sx={{ display: 'flex', mb: 4, px: 3, gap: 4, '& > *': { minWidth: '45%' } }}>
                     <Box sx={{ display: 'flex', flexDirection: 'column', width: 700 }}>
                         <Box>
                             <Typography sx={{ mb: 1 }} fontWeight='bold' fontSize={20} color='primary.main'>Nome</Typography>
@@ -240,13 +229,41 @@ export default function SearchProfessor() {
                 </Box>
 
                 <Box sx={{ px: 3 }}>
-                    <TableContainer component={Paper} sx={{ mb: 2, borderRadius: 8, backgroundColor: '#efefef' }}>
-                        <Table stickyHeader>
+                    <TableContainer
+                        component={Paper}
+                        sx={{
+                            mb: 2,
+                            borderRadius: 2,
+                            overflow: "hidden",
+                            "& .MuiTable-root": { "auto": 650 },
+                        }}>
+                        <Table stickyHeader={true}>
                             <TableHead>
                                 <TableRow>
-                                    <TableCell sx={{ backgroundColor: '#efefef' }}>Nome</TableCell>
-                                    <TableCell sx={{ backgroundColor: '#efefef' }}>Instituto</TableCell>
-                                    <TableCell sx={{ backgroundColor: '#efefef' }}>Áreas de Interesse</TableCell>
+                                    <TableCell
+                                        sx={{ backgroundColor: 'background.default' }}
+                                        align='center'
+                                    >
+                                        Nome
+                                    </TableCell>
+                                    <TableCell
+                                        sx={{ backgroundColor: 'background.default' }}
+                                        align='center'
+                                    >
+                                        Instituto
+                                    </TableCell>
+                                    <TableCell
+                                        sx={{ backgroundColor: 'background.default' }}
+                                        align='center'
+                                    >
+                                        Áreas de Interesse
+                                    </TableCell>
+                                    <TableCell
+                                        sx={{ backgroundColor: 'background.default' }}
+                                        align='center'
+                                    >
+                                        Ação
+                                    </TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -254,9 +271,42 @@ export default function SearchProfessor() {
                                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                                     .map((professor, index) => (
                                         <TableRow key={index}>
-                                            <TableCell>{professor.user.first_name}</TableCell>
-                                            <TableCell>{professor.institute.name}</TableCell>
-                                            <TableCell>{professor.expertise_areas.map((expertiseArea) => expertiseArea.name).join(', ')}</TableCell>
+                                            <TableCell align="center">{professor.user.first_name}</TableCell>
+                                            <TableCell align="center">{professor.institute.name}</TableCell>
+                                            <TableCell align="center">
+                                                {
+                                                    professor.expertise_areas.map(
+                                                        (expertiseArea) => <Chip
+                                                            key={expertiseArea.uuid}
+                                                            label={expertiseArea.name}
+                                                            sx={{
+                                                                bgcolor: getColorForUuid(
+                                                                    expertiseArea.uuid
+                                                                ),
+                                                                color: 'black',
+                                                                mr: 1,
+                                                            }}
+                                                        />
+                                                    )
+                                                }
+                                            </TableCell>
+                                            <TableCell align="center">
+                                                <Button
+                                                    variant="contained"
+                                                    size="small"
+                                                    startIcon={<AssignmentIcon />}
+                                                    onClick={() => handleRequestGuidance(professor)}
+                                                    sx={{
+                                                        textTransform: "none",
+                                                        borderRadius: 2,
+                                                        fontWeight: 500,
+                                                        px: 2,
+                                                        "&:hover": { transform: "translateY(-1px)" },
+                                                    }}
+                                                >
+                                                    Solicitar Orientação
+                                                </Button>
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                             </TableBody>
