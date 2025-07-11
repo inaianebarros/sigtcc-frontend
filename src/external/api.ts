@@ -4,11 +4,12 @@ import {
     baseExpertiseAreasAPI,
     baseInstitutesAPI,
     baseProfessorsAPI,
+    baseStudentsAPI,
     baseSupervisionRequestAPI,
     baseUserAPI,
 } from './constants';
 
-import { Professor } from '@/utils/interfaces';
+import { Professor, Student } from '@/utils/interfaces';
 
 const api = axios.create({ baseURL: baseAPI });
 
@@ -150,14 +151,19 @@ export const backendService = {
         return response.data;
     },
 
-    async login(username: string, password: string) {
+    async getStudent(studentUUID: string): Promise<Student> {
+        const response = await api.get(`${baseStudentsAPI}/${studentUUID}`);
+        return response.data;
+    },
+
+    async login(username: string, password: string): Promise<string> {
         const response = await api.post(`${baseUserAPI}/pair`, { username, password });
-        const { access, refresh } = response.data;
+        const { access, refresh, role } = response.data;
 
         localStorage.setItem('access_token', access);
         localStorage.setItem('refresh_token', refresh);
 
-        return response.data;
+        return role;
     },
 
     async refreshToken() {
@@ -169,11 +175,24 @@ export const backendService = {
         return access;
     },
 
+    async answerSupervision(answer: string, message: string, supervisionRequestUUID: string) {
+        const response = await api.post(
+            `${baseSupervisionRequestAPI}/professor`,
+            { answer: answer, professor_message: message, uuid: supervisionRequestUUID }
+        );
+        return response.data;
+    },
+
     async requestSupervision(message: string, professorUUID: string) {
         const response = await api.post(
             `${baseSupervisionRequestAPI}/student`,
             { student_message: message, professor_uuid: professorUUID }
         );
+        return response.data;
+    },
+
+    async listRequestedSupervisions() {
+        const response = await api.get(`${baseSupervisionRequestAPI}/professor`)
         return response.data;
     },
 

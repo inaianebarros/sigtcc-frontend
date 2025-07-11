@@ -15,8 +15,12 @@ export default function Home() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await backendService.login(username, password);
-      router.push('/dashboard');
+      const role = await backendService.login(username, password);
+      if (role === 'STUDENT') {
+        router.push('/dashboard');
+      } else {
+        router.push('/professorDashboard');
+      }
     } catch (err) {
       console.log('Usuário ou senha inválido.');
     }

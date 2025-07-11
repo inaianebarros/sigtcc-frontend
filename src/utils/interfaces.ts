@@ -1,3 +1,7 @@
+export interface Course {
+    name: string;
+}
+
 export type ExpertiseAreas = {
     name: string;
     uuid: string;
@@ -9,18 +13,34 @@ export type Institute = {
 };
 
 export interface Professor {
-    biography: string,
+    biography: string;
     institute: Institute;
     expertise_areas: ExpertiseAreas[];
-    user: {
-        email: string;
-        first_name: string;
-        uuid: string;
-    };
+    user: User;
     uuid: string;
-    lattes_url: string
+    lattes_url: string;
 }
 
 export interface ProfessorUUID {
     params: Promise<{ uuid: string }>
+}
+
+export interface User {
+    email: string;
+    first_name: string;
+    uuid: string;
+}
+
+export interface UserLogin {
+    access: string;
+    refresh: string;
+    username: string;
+    role: string;
+}
+
+export interface Student {
+    course: Course;
+    user: User;
+    enrollment: string;
+    uuid: string;
 }
