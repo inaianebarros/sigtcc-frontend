@@ -4,7 +4,7 @@ RN01 - Unicidade de E-mail: O e-mail utilizado no cadastro deve ser único no si
 
 RN02 - Confirmação de Senha na Alteração: Para alterar a senha, o usuário deve confirmar sua senha atual antes de definir a nova.
 
-RN03 - Validade do Link de Recuperação: O link de redefinição de senha enviado por e-mail deve ter validade de tempo limitada, expirando após o prazo definido.
+RN03 - **Validade do Link de Recuperação:** O link de redefinição de senha enviado por e-mail deve ter validade de tempo limitada, expirando após o prazo definido.
 
 RN04 - Unicidade de Orientador: Um aluno pode ter no máximo um orientador ativo por vez.
 
@@ -41,3 +41,7 @@ RN19 - Exclusão de Usuário: A exclusão de um usuário deve encerrar todos os 
 RN20 - Prazo de Resposta de Solicitação de Orientação: O professor tem 7 dias corridos para responder uma solicitação de orientação. Após esse prazo sem resposta, o sistema marca automaticamente a solicitação como "Não respondida", notifica o aluno e o libera para enviar uma nova solicitação.
 
 RN21 - Revisão de Atividade: Somente o orientador ativo do aluno pode revisar uma atividade. A revisão só é possível quando a atividade estiver com status em revisão.
+
+**RN-22 — Áreas de Interesse Obrigatórias para Pareamento:** O cálculo de compatibilidade entre aluno e orientadores depende das áreas de interesse cadastradas no perfil de ambos. Perfis sem áreas de interesse cadastradas não participam do pareamento.
+
+**RN-23 — Cálculo de Compatibilidade:** A compatibilidade entre aluno e orientador é calculada com base no número de áreas de interesse em comum entre os perfis, utilizadas para ordenar a lista de orientadores apresentada ao aluno.

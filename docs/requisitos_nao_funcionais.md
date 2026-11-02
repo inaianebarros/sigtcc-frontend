@@ -1,11 +1,5 @@
 # Requisitos Não Funcionais
 
-## Usabilidade
-
-RNF01 - **Interface Responsivas:** O sistema deve ser acessível e funcional em dispositivos móveis e desktops, adaptando seu loyout ao tamanho da tela.
-
-RNF02 - **Feedback de Ações:** O sistema deve fornecer feedback visual ao usuário após a execução de ações, como confirmações, erros e carregamentos.
-
 ## Desempenho
 
 RNF03 - **Tempo de Resposta:** O sistema deve responder às requisições do usuário em até 3 segundos em condições normais de uso.
@@ -14,11 +8,11 @@ RNF04 - **Entrega de Notificações:** O sistema deve entregar notificações ao
 
 ## Segurança
 
-RNF05 - **Criptografia de Senha:** As senhas dos usuários devem ser armazenadas de forma criptografada, não sendo possivel recuperar o valor original.
+RNF05 - **Criptografia de Senha:** As senhas dos usuários devem ser armazenadas de forma criptografada, não sendo possível recuperar o valor original.
 
 RNF06 - **Controle de Acesso:** O sistema deve garantir que cada usuário acesse apenas as funcionalidades e dados correspondentes do perfil.
 
-RNF07 - **Expiração de Sessão:** A sessão do usuário deve experir automaticamente após um periodo de inatividade.
+RNF07 - **Expiração de Sessão:** A sessão do usuário deve experar automaticamente após um periodo de inatividade.
 
 RNF08 - **Validade do Link de Recuperação:** O link de recuperação de senha deve expirar em até 1 hora após seu envio.
 
@@ -26,11 +20,11 @@ RNF08 - **Validade do Link de Recuperação:** O link de recuperação de senha 
 
 RNF09 - **Disponibilidade:** O sistema deve estar disponível pelo menos 95% do tempo em horário comercial.
 
-RNF10 - **Integridade dos Dados**: O sistema deve garantir que nenhuma ação do usuário resulte em perda ou corrução de dados, utilizando transações no banco de dados onde necessário.
+RNF10 - **Integridade dos Dados**: O sistema deve garantir que nenhuma ação do usuário resulte em perda ou corrupção de dados, utilizando transações no banco de dados onde necessário.
 
 ## Manutenibilidade
 
-RNF11 - **Registro de Erros:** O sistema deve registrar erros e execuções em logs para facilitar a indentificação e correção de problemas.
+RNF11 - **Registro de Erros:** O sistema deve registrar erros e execuções em logs para facilitar a identificação e correção de problemas.
 
 ## Implementação
 

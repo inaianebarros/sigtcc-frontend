@@ -6,7 +6,7 @@ RF02- **Cadastrar Professor**: O sistema deve permitir que o professor faça cad
 
 RF03 - **Realizar Login:** O sistema deve permitir que usuários cadastrados realizem o login utilizando e-mail e senha, concedendo acesso às funcionalidades de acordo com seu perfil.
 
-RF04 - **Edital Perfil do Aluno:** O sistema deve permitir que o aluno edite suas informações de perfil, como nome, áreas de interesse e artigos publicados
+RF04 - **Editar Perfil do Aluno:** O sistema deve permitir que o aluno edite suas informações de perfil, como nome, áreas de interesse e artigos publicados.
 
 RF05 - **Editar** **Perfil do Professor**: O sistema deve permitir que o professor edite suas informações de perfil, como nome, cursos (um ou mais), áreas de interesse e artigos publicados.
 
@@ -16,13 +16,13 @@ RF07 - **Recuperar Senha:** O sistema deve permitir que usuários recuperem o ac
 
 RF08 - **Realizar Log Out:** O sistema deve permitir que o usuário encerre sua sessão com segurança.
 
-RF09 - **Buscar Orientador:** O sistema deve permitir que o aluno busque orientadores com base nos critérios como: nome e áreas de interesse.
+**RF-09 — Pesquisar e Visualizar Orientadores Compatíveis:** O sistema deve apresentar ao aluno uma lista de orientadores ordenada pela compatibilidade entre as áreas de interesse cadastradas pelo aluno e as áreas de interesse cadastradas por cada orientador, permitindo, adicionalmente, a filtragem por nome
 
 RF10 - **Visualizar Perfil do Professor:** O sistema deve permitir que o aluno visualize as informações sobre o professor como: nome, cursos, áreas de interesse e artigos publicados.
 
 RF11 - **Visualizar Perfil do Aluno**: O sistema deve permitir que o professor visualize as informações do aluno, como nome, curso e áreas de interesse.
 
-RF12 - **Solicitar Orientador:** O sistema deve permitir que o aluno que não possua orientador e não tenha nenhuma solicitação em andamento, envie pedido de orientação para um professor cadastrado.
+**RF-12 — Solicitar Orientador:** O sistema deve permitir que o aluno que não possua orientador e não tenha nenhuma solicitação em andamento envie pedido de orientação para um professor cadastrado, selecionado a partir da lista de orientadores apresentada no sistema.
 
 RF13 - **Listar Solicitações de Alunos:** O sistema deve permitir que o professor visualize todas as solicitações de orientação recebidas, incluindo as com status não respondida.
 
@@ -44,11 +44,11 @@ RF21 - **Editar Reunião:** O sistema deve permitir que reuniões sejam editadas
 
 RF22 - **Cancelar Reunião:** O sistema deve permitir que o autor da solicitação cancele uma reunião ainda não realizada.
 
-RF23 - **Cadastrar tema do TCC:** O sistema deve permitir que o professor cadastre o tema do TCC após a aceitação do orientação.
+**RF-23 — Cadastrar Tema do TCC:** O sistema deve permitir que o **aluno** cadastre o tema do TCC após a aceitação da solicitação de orientação.
 
 RF24 - **Alterar Tema do TCC:** O sistema deve permitir que o professor altere o tema do TCC.
 
-RF25 - **Criar Atividade:** O sistema deve permitir que o professor crie atividades relacionadas ao TCC para seus orientados.
+RF25 - **Criar Atividade:**  O sistema deve permitir que o professor crie atividades relacionadas ao TCC para seus orientados.
 
 RF26 - **Editar Atividade:** O sistema deve permitir que o professor edite atividades previamente cadastradas.
 
@@ -62,7 +62,7 @@ RF30 - **Visualizar Detalhes da Atividade:** O sistema deve permitir que o usuá
 
 RF31 - **Entregar Atividade:** O sistema deve permitir que o aluno submeta a entrega de uma atividade, sendo possível anexar arquivos.
 
-RF32 - **Comentar Atividade:** O sistema deve permitir que aluno e professor adicionem comentários nas atividades para acompanhamento e feedback.
+RF32 - **Comentar Atividade:**  O sistema deve permitir que aluno e professor adicionem comentários nas atividades para acompanhamento e feedback.
 
 RF33 - **Listar Orientados:** O sistema deve permitir que o professor visualize a lista de alunos sob sua orientação.
 
@@ -86,15 +86,15 @@ RF42 - **Notificar Professor sobre Entrega de Atividade**: O sistema deve notifi
 
 RF43 - **Notificar Professor sobre Comentário em Atividade**: O sistema deve notificar o professor quando um aluno registrar um comentário em uma atividade.
 
-_RF44 - Expirar Solicitação de Orientação: O sistema deve monitorar o prazo de resposta das solicitações de orientação e marcá-las automaticamente como "Não respondida" após 7 dias sem resposta do professor._
+<u>*RF44 - Expirar Solicitação de Orientação: O sistema deve monitorar o prazo de resposta das solicitações de orientação e marcá-las automaticamente como "Não respondida" após 7 dias sem resposta do professor.*</u>
 
-_RF45 - Notificar Aluno sobre Solicitação Não Respondida: O sistema deve notificar o aluno quando sua solicitação de orientação for marcada como "Não respondida" por ausência de resposta do professor dentro do prazo._
+<u>*RF45 - Notificar Aluno sobre Solicitação Não Respondida: O sistema deve notificar o aluno quando sua solicitação de orientação for marcada como "Não respondida" por ausência de resposta do professor dentro do prazo.*</u>
 
-_RF46 - Revisar Atividade: O sistema deve permitir que o professor aceite ou recuse uma atividade com status em revisão. Em caso de aceitação o status é alterado para concluída. Em caso de recusa o status retorna para pendente e o controle volta ao aluno._
+<u>*RF46 - Revisar Atividade: O sistema deve permitir que o professor aceite ou recuse uma atividade com status em revisão. Em caso de aceitação o status é alterado para concluída. Em caso de recusa o status retorna para pendente e o controle volta ao aluno.*</u>
 
-_RF47 - Notificar Professor sobre Atividade Aguardando Revisão: O sistema deve notificar o professor quando uma atividade for submetida pelo aluno para revisão._
+<u>*RF47 - Notificar Professor sobre Atividade Aguardando Revisão: O sistema deve notificar o professor quando uma atividade for submetida pelo aluno para revisão.*</u>
 
-_RF48 - Notificar Aluno sobre Resultado da Revisão de Atividade: O sistema deve notificar o aluno quando o professor aceitar ou recusar uma atividade em revisão._
+<u>*RF48 - Notificar Aluno sobre Resultado da Revisão de Atividade: O sistema deve notificar o aluno quando o professor aceitar ou recusar uma atividade em revisão.*</u>
 
 RFADM01 - **Cadastrar Curso**: O sistema deve permitir que o admin cadastre um novo curso ao sistema.
 
