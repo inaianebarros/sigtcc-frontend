@@ -1,14 +1,14 @@
 # Requisitos Funcionais
 
-RF01 - **Cadastrar Aluno**: O sistema deve permitir que o aluno faça cadastro informando, na ordem: Matrícula, Nome Completo, Email, Senha, Confirmação de Senha, Tipo de Conta, Instituto e Curso.
+RF01 - **Cadastrar Aluno**: O sistema deve permitir que o aluno faça cadastro informando, na ordem: Matrícula, Nome Completo, Email, Senha, Confirmação de Senha, Tipo de Conta, Instituto, Curso e Áreas de Interesse (ao menos uma).
 
-RF02- **Cadastrar Professor**: O sistema deve permitir que o professor faça cadastro informando , na ordem: Matrícula, Nome Completo, Email, Senha, Confirmação de Senha, Tipo de Conta, Instituto e Curso(s).
+RF02- **Cadastrar Professor**: O sistema deve permitir que o professor faça cadastro informando , na ordem: Matrícula, Nome Completo, Email, Senha, Confirmação de Senha, Tipo de Conta, Instituto, Curso(s) e Áreas de Interesse (ao menos uma).
 
 RF03 - **Realizar Login:** O sistema deve permitir que usuários cadastrados realizem o login utilizando e-mail e senha, concedendo acesso às funcionalidades de acordo com seu perfil.
 
-RF04 - **Editar Perfil do Aluno:** O sistema deve permitir que o aluno edite suas informações de perfil, como nome, áreas de interesse e artigos publicados.
+RF04 - **Editar Perfil do Aluno:** O sistema deve permitir que o aluno edite suas informações de perfil, como nome, áreas de interesse (ao menos uma deve permanecer cadastrada) e artigos publicados.
 
-RF05 - **Editar** **Perfil do Professor**: O sistema deve permitir que o professor edite suas informações de perfil, como nome, cursos (um ou mais), áreas de interesse e artigos publicados.
+RF05 - **Editar** **Perfil do Professor**: O sistema deve permitir que o professor edite suas informações de perfil, como nome, cursos (um ou mais), áreas de interesse (ao menos uma deve permanecer cadastrada) e artigos publicados.
 
 RF06 - **Alterar Senha:** O sistema deve permitir que o usuário altere sua senha mediante confirmação da senha atual.
 
