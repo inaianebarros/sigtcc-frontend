@@ -49,3 +49,5 @@ RN21 - Revisão de Atividade: Somente o orientador ativo do aluno pode revisar u
 **RN-24 — Atividade Atrasada:** Uma atividade cujo prazo venceu sem que esteja concluída é exibida como "Atrasada". Atrasada não é um status persistido: é uma indicação calculada a partir do prazo e do status, e pode ser feita no frontend. O professor que criou a atividade pode editar o prazo (RN14).
 
 **RN-25 — Unicidade de Matrícula:** A matrícula deve ser única entre os alunos e única entre os professores.
+
+**RN-26 — Disponibilidade do Professor:** O professor indica em seu perfil se está disponível para orientar. Ele pode ter nenhum ou vários orientandos, conforme sua capacidade e disponibilidade, e é o próprio professor quem controla essa indicação. Um professor indisponível não recebe novas solicitações de orientação; solicitações já pendentes e orientações ativas não são afetadas.

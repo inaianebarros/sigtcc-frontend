@@ -8,7 +8,7 @@ RF03 - **Realizar Login:** O sistema deve permitir que usuários cadastrados rea
 
 RF04 - **Editar Perfil do Aluno:** O sistema deve permitir que o aluno edite suas informações de perfil, como nome, áreas de interesse (ao menos uma deve permanecer cadastrada) e artigos publicados.
 
-RF05 - **Editar** **Perfil do Professor**: O sistema deve permitir que o professor edite suas informações de perfil, como nome, cursos (um ou mais), áreas de interesse (ao menos uma deve permanecer cadastrada) e artigos publicados.
+RF05 - **Editar** **Perfil do Professor**: O sistema deve permitir que o professor edite suas informações de perfil, como nome, cursos (um ou mais), áreas de interesse (ao menos uma deve permanecer cadastrada) e artigos publicados. O professor também informa se está disponível para orientar.
 
 RF06 - **Alterar Senha:** O sistema deve permitir que o usuário altere sua senha mediante confirmação da senha atual.
 
@@ -16,13 +16,13 @@ RF07 - **Recuperar Senha:** O sistema deve permitir que usuários recuperem o ac
 
 RF08 - **Realizar Log Out:** O sistema deve permitir que o usuário encerre sua sessão com segurança.
 
-**RF-09 — Pesquisar e Visualizar Orientadores Compatíveis:** O sistema deve apresentar ao aluno uma lista de orientadores ordenada pela compatibilidade entre as áreas de interesse cadastradas pelo aluno e as áreas de interesse cadastradas por cada orientador, permitindo, adicionalmente, a filtragem por nome
+**RF-09 — Pesquisar e Visualizar Orientadores Compatíveis:** O sistema deve apresentar ao aluno uma lista de orientadores ordenada pela compatibilidade entre as áreas de interesse cadastradas pelo aluno e as áreas de interesse cadastradas por cada orientador, permitindo, adicionalmente, a filtragem por nome Cada professor é exibido com sua disponibilidade para orientar.
 
-RF10 - **Visualizar Perfil do Professor:** O sistema deve permitir que o aluno visualize as informações sobre o professor como: nome, cursos, áreas de interesse e artigos publicados.
+RF10 - **Visualizar Perfil do Professor:** O sistema deve permitir que o aluno visualize as informações sobre o professor como: nome, cursos, áreas de interesse e artigos publicados. A disponibilidade para orientar também é exibida.
 
 RF11 - **Visualizar Perfil do Aluno**: O sistema deve permitir que o professor visualize as informações do aluno, como nome, curso e áreas de interesse.
 
-**RF-12 — Solicitar Orientador:** O sistema deve permitir que o aluno que não possua orientador e não tenha nenhuma solicitação em andamento envie pedido de orientação para um professor cadastrado, selecionado a partir da lista de orientadores apresentada no sistema.
+**RF-12 — Solicitar Orientador:** O sistema deve permitir que o aluno que não possua orientador e não tenha nenhuma solicitação em andamento envie pedido de orientação para um professor cadastrado, selecionado a partir da lista de orientadores apresentada no sistema. Não é possível solicitar a um professor indisponível.
 
 RF13 - **Listar Solicitações de Alunos:** O sistema deve permitir que o professor visualize todas as solicitações de orientação recebidas, incluindo as com status não respondida.
 
