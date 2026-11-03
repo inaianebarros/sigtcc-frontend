@@ -44,21 +44,21 @@ RF21 - **Editar Reunião:** O sistema deve permitir que reuniões sejam editadas
 
 RF22 - **Cancelar Reunião:** O sistema deve permitir que o autor da solicitação cancele uma reunião ainda não realizada.
 
-**RF-23 — Cadastrar Tema do TCC:** O sistema deve permitir que o **aluno** cadastre o tema do TCC após a aceitação da solicitação de orientação.
+**RF-23 — Cadastrar Tema do TCC:** O sistema deve permitir que o **aluno** ou o **professor** cadastre o tema do TCC após a aceitação da solicitação de orientação.
 
-RF24 - **Alterar Tema do TCC:** O sistema deve permitir que o professor altere o tema do TCC.
+RF24 - **Alterar Tema do TCC:** O sistema deve permitir que o aluno e o professor alterem o tema do TCC.
 
-RF25 - **Criar Atividade:**  O sistema deve permitir que o professor crie atividades relacionadas ao TCC para seus orientados.
+RF25 - **Criar Atividade:**  O sistema deve permitir que o professor crie atividades relacionadas ao TCC para seus orientados, informando título, descrição e prazo.
 
-RF26 - **Editar Atividade:** O sistema deve permitir que o professor edite atividades previamente cadastradas.
+RF26 - **Editar Atividade:** O sistema deve permitir que o professor edite atividades previamente cadastradas, incluindo o prazo.
 
 RF27 - **Deletar Atividade:** O sistema deve permitir que o professor exclua atividades cadastradas.
 
 RF28 - Alterar Status da Atividade: O sistema deve permitir que o aluno altere o status da atividade entre pendente e em andamento, e submeta a atividade para revisão do orientador, desde que haja ao menos uma entrega anexada.
 
-RF29 - **Listar Atividades:** O sistema deve permitir que aluno e professor visualize a lista de atividades vinculadas ao TCC.
+RF29 - **Listar Atividades:** O sistema deve permitir que aluno e professor visualize a lista de atividades vinculadas ao TCC, exibindo como "Atrasada" a atividade cujo prazo venceu sem estar concluída.
 
-RF30 - **Visualizar Detalhes da Atividade:** O sistema deve permitir que o usuário visualize os detalhes de uma atividade especifica.
+RF30 - **Visualizar Detalhes da Atividade:** O sistema deve permitir que o usuário visualize os detalhes de uma atividade especifica, incluindo o prazo e a indicação "Atrasada" quando aplicável.
 
 RF31 - **Entregar Atividade:** O sistema deve permitir que o aluno submeta a entrega de uma atividade, sendo possível anexar arquivos.
 

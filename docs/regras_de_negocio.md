@@ -22,7 +22,7 @@ RN10 - Cancelamento de Reunião: Uma reunião só pode ser cancelada pelo seu au
 
 RN11 - Justificativa de Recusa de Reunião: A recusa de uma solicitação de reunião deve ser obrigatoriamente acompanhada de uma justificativa.
 
-RN12 - Pré-requisito para Cadastro de Tema: O aluno somente pode cadastrar o tema do TCC após ter um orientador ativo.
+RN12 - Pré-requisito para Cadastro de Tema: O tema do TCC somente pode ser cadastrado após o aluno ter um orientador ativo, e pode ser cadastrado e alterado tanto pelo aluno quanto pelo seu orientador.
 
 RN13 - Vínculo de Atividade ao Orientado: O professor só pode criar atividades para alunos sob sua orientação ativa.
 
@@ -45,3 +45,5 @@ RN21 - Revisão de Atividade: Somente o orientador ativo do aluno pode revisar u
 **RN-22 — Áreas de Interesse Obrigatórias:** Todo aluno e todo professor deve ter ao menos uma área de interesse cadastrada, informada no cadastro e mantida ao editar o perfil (não é possível remover a última). O cálculo de compatibilidade depende das áreas cadastradas no perfil de ambos.
 
 **RN-23 — Cálculo de Compatibilidade:** A compatibilidade entre aluno e orientador é calculada com base no número de áreas de interesse em comum entre os perfis, utilizadas para ordenar a lista de orientadores apresentada ao aluno.
+
+**RN-24 — Atividade Atrasada:** Uma atividade cujo prazo venceu sem que esteja concluída é exibida como "Atrasada". Atrasada não é um status persistido: é uma indicação calculada a partir do prazo e do status, e pode ser feita no frontend. O professor que criou a atividade pode editar o prazo (RN14).
