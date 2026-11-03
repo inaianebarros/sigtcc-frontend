@@ -47,3 +47,5 @@ RN21 - Revisão de Atividade: Somente o orientador ativo do aluno pode revisar u
 **RN-23 — Cálculo de Compatibilidade:** A compatibilidade entre aluno e orientador é calculada com base no número de áreas de interesse em comum entre os perfis, utilizadas para ordenar a lista de orientadores apresentada ao aluno.
 
 **RN-24 — Atividade Atrasada:** Uma atividade cujo prazo venceu sem que esteja concluída é exibida como "Atrasada". Atrasada não é um status persistido: é uma indicação calculada a partir do prazo e do status, e pode ser feita no frontend. O professor que criou a atividade pode editar o prazo (RN14).
+
+**RN-25 — Unicidade de Matrícula:** A matrícula deve ser única entre os alunos e única entre os professores.

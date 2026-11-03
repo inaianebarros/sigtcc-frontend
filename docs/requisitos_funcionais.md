@@ -52,7 +52,7 @@ RF25 - **Criar Atividade:**  O sistema deve permitir que o professor crie ativid
 
 RF26 - **Editar Atividade:** O sistema deve permitir que o professor edite atividades previamente cadastradas, incluindo o prazo.
 
-RF27 - **Deletar Atividade:** O sistema deve permitir que o professor exclua atividades cadastradas.
+RF27 - **Deletar Atividade:** O sistema deve permitir que o professor exclua atividades cadastradas. A exclusão é lógica: a atividade deixa de ser exibida, preservando suas entregas, comentários e revisões.
 
 RF28 - Alterar Status da Atividade: O sistema deve permitir que o aluno altere o status da atividade entre pendente e em andamento, e submeta a atividade para revisão do orientador, desde que haja ao menos uma entrega anexada.
 
