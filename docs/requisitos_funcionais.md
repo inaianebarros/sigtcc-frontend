@@ -48,7 +48,7 @@ RF22 - **Cancelar Reunião:** O sistema deve permitir que o autor da solicitaç�
 
 RF24 - **Alterar Tema do TCC:** O sistema deve permitir que o aluno e o professor alterem o tema do TCC.
 
-RF25 - **Criar Atividade:**  O sistema deve permitir que o professor crie atividades relacionadas ao TCC para seus orientados, informando título, descrição e prazo.
+RF25 - **Criar Atividade:** O sistema deve permitir que o professor crie atividades relacionadas ao TCC para seus orientados, informando título, descrição e prazo.
 
 RF26 - **Editar Atividade:** O sistema deve permitir que o professor edite atividades previamente cadastradas, incluindo o prazo.
 
@@ -62,7 +62,7 @@ RF30 - **Visualizar Detalhes da Atividade:** O sistema deve permitir que o usuá
 
 RF31 - **Entregar Atividade:** O sistema deve permitir que o aluno submeta a entrega de uma atividade, sendo possível anexar arquivos.
 
-RF32 - **Comentar Atividade:**  O sistema deve permitir que aluno e professor adicionem comentários nas atividades para acompanhamento e feedback.
+RF32 - **Comentar Atividade:** O sistema deve permitir que aluno e professor adicionem comentários nas atividades para acompanhamento e feedback.
 
 RF33 - **Listar Orientados:** O sistema deve permitir que o professor visualize a lista de alunos sob sua orientação.
 
@@ -86,15 +86,15 @@ RF42 - **Notificar Professor sobre Entrega de Atividade**: O sistema deve notifi
 
 RF43 - **Notificar Professor sobre Comentário em Atividade**: O sistema deve notificar o professor quando um aluno registrar um comentário em uma atividade.
 
-<u>*RF44 - Expirar Solicitação de Orientação: O sistema deve monitorar o prazo de resposta das solicitações de orientação e marcá-las automaticamente como "Não respondida" após 7 dias sem resposta do professor.*</u>
+RF44 - Expirar Solicitação de Orientação: O sistema deve monitorar o prazo de resposta das solicitações de orientação e marcá-las automaticamente como "Não respondida" após 7 dias sem resposta do professor.
 
-<u>*RF45 - Notificar Aluno sobre Solicitação Não Respondida: O sistema deve notificar o aluno quando sua solicitação de orientação for marcada como "Não respondida" por ausência de resposta do professor dentro do prazo.*</u>
+RF45 - Notificar Aluno sobre Solicitação Não Respondida: O sistema deve notificar o aluno quando sua solicitação de orientação for marcada como "Não respondida" por ausência de resposta do professor dentro do prazo.
 
-<u>*RF46 - Revisar Atividade: O sistema deve permitir que o professor aceite ou recuse uma atividade com status em revisão. Em caso de aceitação o status é alterado para concluída. Em caso de recusa o status retorna para pendente e o controle volta ao aluno.*</u>
+RF46 - Revisar Atividade: O sistema deve permitir que o professor aceite ou recuse uma atividade com status em revisão. Em caso de aceitação o status é alterado para concluída. Em caso de recusa o status retorna para pendente e o controle volta ao aluno.
 
-<u>*RF47 - Notificar Professor sobre Atividade Aguardando Revisão: O sistema deve notificar o professor quando uma atividade for submetida pelo aluno para revisão.*</u>
+RF47 - Notificar Professor sobre Atividade Aguardando Revisão: O sistema deve notificar o professor quando uma atividade for submetida pelo aluno para revisão.
 
-<u>*RF48 - Notificar Aluno sobre Resultado da Revisão de Atividade: O sistema deve notificar o aluno quando o professor aceitar ou recusar uma atividade em revisão.*</u>
+RF48 - Notificar Aluno sobre Resultado da Revisão de Atividade: O sistema deve notificar o aluno quando o professor aceitar ou recusar uma atividade em revisão.
 
 RFADM01 - **Cadastrar Curso**: O sistema deve permitir que o admin cadastre um novo curso ao sistema.
 
