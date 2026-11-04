@@ -1,10 +1,14 @@
 import { createContext } from 'react';
+import type { SessionUser } from '../types/session';
+
+export type SessionStatus = 'loading' | 'authenticated' | 'anonymous';
 
 export interface SessionContextValue {
-  isAuthenticated: boolean;
+  status: SessionStatus;
+  user: SessionUser | null;
   expiredMessage: string | null;
-  startSession: (accessToken: string) => void;
-  endSession: () => void;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 export const SessionContext = createContext<SessionContextValue | null>(null);

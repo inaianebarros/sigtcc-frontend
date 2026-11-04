@@ -7,6 +7,20 @@ import { tokenStore } from './tokenStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 const REFRESH_PATH = '/auth/refresh';
+const PATHS_WITHOUT_SESSION_RENEWAL = [
+  '/auth/login',
+  REFRESH_PATH,
+  '/auth/logout',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+];
+
+function canRenewSessionAfter401(path: string): boolean {
+  return (
+    !PATHS_WITHOUT_SESSION_RENEWAL.includes(path) &&
+    !path.startsWith('/auth/register')
+  );
+}
 
 type SessionExpiredHandler = (message: string) => void;
 
@@ -37,7 +51,7 @@ async function refreshAccessToken(): Promise<boolean> {
   }
 }
 
-function refreshOnce(): Promise<boolean> {
+export function renewAccessToken(): Promise<boolean> {
   refreshInFlight ??= refreshAccessToken().finally(() => {
     refreshInFlight = null;
   });
@@ -82,8 +96,8 @@ export async function request<T>(
 ): Promise<T> {
   let response = await send(path, init);
 
-  if (response.status === 401 && path !== REFRESH_PATH) {
-    if (await refreshOnce()) {
+  if (response.status === 401 && canRenewSessionAfter401(path)) {
+    if (await renewAccessToken()) {
       response = await send(path, init);
     } else {
       tokenStore.clear();
