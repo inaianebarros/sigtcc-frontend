@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
+import { areas } from './navigation/areas';
 import { paths } from './navigation/paths';
 import { AreaPage } from './pages/AreaPage';
 import { HomePage } from './pages/HomePage';
@@ -13,24 +14,11 @@ export function AppRoutes() {
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path={paths.login} element={<LoginPage />} />
-        <Route element={<RequireAuth userType="student" />}>
-          <Route
-            path={paths.student}
-            element={<AreaPage title="Área do Aluno" />}
-          />
-        </Route>
-        <Route element={<RequireAuth userType="teacher" />}>
-          <Route
-            path={paths.teacher}
-            element={<AreaPage title="Área do Professor" />}
-          />
-        </Route>
-        <Route element={<RequireAuth userType="admin" />}>
-          <Route
-            path={paths.admin}
-            element={<AreaPage title="Área do Administrador" />}
-          />
-        </Route>
+        {areas.map(({ userType, path, title }) => (
+          <Route key={userType} element={<RequireAuth userType={userType} />}>
+            <Route path={path} element={<AreaPage title={title} />} />
+          </Route>
+        ))}
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

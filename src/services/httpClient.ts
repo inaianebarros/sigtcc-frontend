@@ -11,15 +11,10 @@ const PATHS_WITHOUT_SESSION_RENEWAL = [
   '/auth/login',
   REFRESH_PATH,
   '/auth/logout',
-  '/auth/forgot-password',
-  '/auth/reset-password',
 ];
 
-function canRenewSessionAfter401(path: string): boolean {
-  return (
-    !PATHS_WITHOUT_SESSION_RENEWAL.includes(path) &&
-    !path.startsWith('/auth/register')
-  );
+export interface RequestOptions {
+  renewSessionOn401?: boolean;
 }
 
 type SessionExpiredHandler = (message: string) => void;
@@ -27,14 +22,16 @@ type SessionExpiredHandler = (message: string) => void;
 let onSessionExpired: SessionExpiredHandler = () => {};
 let refreshInFlight: Promise<boolean> | null = null;
 
-export function setSessionExpiredHandler(handler: SessionExpiredHandler): void {
+export function setSessionExpiredHandler(
+  handler: SessionExpiredHandler,
+): () => void {
   onSessionExpired = handler;
+  return () => {
+    onSessionExpired = () => {};
+  };
 }
 
-/**
- * Único ponto de renovação do token. A estratégia real (ADR frontend 0001:
- * cookie httpOnly de refresh) é concluída na issue #11.
- */
+/** Único ponto de renovação do token (ADR frontend 0001: cookie httpOnly de refresh). */
 async function refreshAccessToken(): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE_URL}${REFRESH_PATH}`, {
@@ -93,10 +90,13 @@ async function parseError(response: Response): Promise<ApiError> {
 export async function request<T>(
   path: string,
   init: RequestInit = {},
+  {
+    renewSessionOn401 = !PATHS_WITHOUT_SESSION_RENEWAL.includes(path),
+  }: RequestOptions = {},
 ): Promise<T> {
   let response = await send(path, init);
 
-  if (response.status === 401 && canRenewSessionAfter401(path)) {
+  if (response.status === 401 && renewSessionOn401) {
     if (await renewAccessToken()) {
       response = await send(path, init);
     } else {
@@ -112,7 +112,8 @@ export async function request<T>(
 }
 
 export const httpClient = {
-  get: <T>(path: string) => request<T>(path, { method: 'GET' }),
+  get: <T>(path: string, options?: RequestOptions) =>
+    request<T>(path, { method: 'GET' }, options),
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, {
       method: 'POST',

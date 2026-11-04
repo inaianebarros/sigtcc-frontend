@@ -23,7 +23,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    setSessionExpiredHandler((message) => {
+    const removeExpiredHandler = setSessionExpiredHandler((message) => {
       clearSession();
       setExpiredMessage(message);
     });
@@ -35,6 +35,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
     return () => {
       active = false;
+      removeExpiredHandler();
     };
   }, [startSession, clearSession]);
 
@@ -48,6 +49,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     try {
       await logout();
+    } catch {
+      // the local session ends even when the server could not be reached
     } finally {
       clearSession();
     }

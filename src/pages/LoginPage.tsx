@@ -1,9 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
-  Box,
   Button,
-  CircularProgress,
   Link,
   Paper,
   Stack,
@@ -14,6 +12,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link as RouterLink, Navigate } from 'react-router-dom';
 import { z } from 'zod';
+import { LoadingIndicator } from '../components/LoadingIndicator';
 import { useSession } from '../hooks/useSession';
 import { homePathFor, paths } from '../navigation/paths';
 import { ApiError, messageForStatus } from '../services/apiError';
@@ -53,11 +52,7 @@ export function LoginPage() {
   });
 
   if (status === 'loading') {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-        <CircularProgress aria-label="Carregando" />
-      </Box>
-    );
+    return <LoadingIndicator />;
   }
   if (status === 'authenticated' && user) {
     return <Navigate to={homePathFor(user.type)} replace />;

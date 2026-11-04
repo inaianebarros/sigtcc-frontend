@@ -38,7 +38,9 @@ export async function login(
 export async function restoreSession(): Promise<SessionUser | null> {
   if (!(await renewAccessToken())) return null;
   try {
-    return toSessionUser(await httpClient.get<ApiUser>('/auth/me'));
+    return toSessionUser(
+      await httpClient.get<ApiUser>('/auth/me', { renewSessionOn401: false }),
+    );
   } catch {
     tokenStore.clear();
     return null;

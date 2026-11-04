@@ -1,4 +1,5 @@
 import type { UserType } from '../types/session';
+import { areas } from './areas';
 
 export const paths = {
   home: '/',
@@ -6,17 +7,9 @@ export const paths = {
   forgotPassword: '/recuperar-senha',
   registerStudent: '/cadastro/aluno',
   registerTeacher: '/cadastro/professor',
-  student: '/aluno',
-  teacher: '/professor',
-  admin: '/admin',
 } as const;
 
-const homeByUserType: Record<UserType, string> = {
-  student: paths.student,
-  teacher: paths.teacher,
-  admin: paths.admin,
-};
-
 export function homePathFor(userType: UserType): string {
-  return homeByUserType[userType];
+  const area = areas.find((candidate) => candidate.userType === userType);
+  return area?.path ?? paths.home;
 }

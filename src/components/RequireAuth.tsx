@@ -1,5 +1,5 @@
-import { Box, CircularProgress } from '@mui/material';
 import { Navigate, Outlet } from 'react-router-dom';
+import { LoadingIndicator } from './LoadingIndicator';
 import { useSession } from '../hooks/useSession';
 import { homePathFor, paths } from '../navigation/paths';
 import type { UserType } from '../types/session';
@@ -8,11 +8,7 @@ export function RequireAuth({ userType }: { userType: UserType }) {
   const { status, user } = useSession();
 
   if (status === 'loading') {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-        <CircularProgress aria-label="Carregando" />
-      </Box>
-    );
+    return <LoadingIndicator />;
   }
   if (status === 'anonymous' || !user) {
     return <Navigate to={paths.login} replace />;

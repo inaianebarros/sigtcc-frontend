@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { tokenStore } from '../services/tokenStore';
 import { mockApi, requestsTo } from '../test/mockApi';
+import type { MockResponse } from '../test/mockApi';
 import { renderApp } from '../test/renderApp';
 
 const NOT_SIGNED_IN = { 'POST /api/auth/refresh': { status: 401, body: {} } };
@@ -45,6 +46,7 @@ describe('LoginPage', () => {
 
     expect(await screen.findByText('Informe o e-mail.')).toBeInTheDocument();
     expect(screen.getByText('Informe a senha.')).toBeInTheDocument();
+    expect(screen.getByLabelText('E-mail')).toHaveFocus();
     expect(requestsTo(fetchMock, 'POST /api/auth/login')).toHaveLength(0);
 
     await user.type(screen.getByLabelText('E-mail'), 'isto-nao-e-um-email');
@@ -122,10 +124,7 @@ describe('LoginPage', () => {
   });
 
   it('desabilita o botão e mostra o carregamento enquanto o login está em andamento', async () => {
-    let finishLogin: (value: {
-      status: number;
-      body: unknown;
-    }) => void = () => {};
+    let finishLogin: (value: MockResponse) => void = () => {};
     mockApi({
       ...NOT_SIGNED_IN,
       'POST /api/auth/login': () =>
@@ -151,12 +150,11 @@ describe('LoginPage', () => {
   });
 
   it('avisa quando não consegue falar com o servidor', async () => {
-    mockApi(NOT_SIGNED_IN);
-    vi.mocked(fetch).mockImplementation(async (input) => {
-      if (String(input).endsWith('/auth/refresh')) {
-        return new Response('{}', { status: 401 });
-      }
-      throw new TypeError('network down');
+    mockApi({
+      ...NOT_SIGNED_IN,
+      'POST /api/auth/login': () => {
+        throw new TypeError('network down');
+      },
     });
     const user = userEvent.setup();
     renderApp('/login');
