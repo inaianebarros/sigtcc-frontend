@@ -12,7 +12,7 @@ RNF05 - **Criptografia de Senha:** As senhas dos usuários devem ser armazenadas
 
 RNF06 - **Controle de Acesso:** O sistema deve garantir que cada usuário acesse apenas as funcionalidades e dados correspondentes do perfil.
 
-RNF07 - **Expiração de Sessão:** A sessão do usuário deve experar automaticamente após um periodo de inatividade.
+RNF07 - **Expiração de Sessão:** A sessão do usuário deve expirar automaticamente após 30 minutos de inatividade.
 
 RNF08 - **Validade do Link de Recuperação:** O link de recuperação de senha deve expirar em até 1 hora após seu envio.
 

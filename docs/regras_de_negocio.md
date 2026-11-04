@@ -36,7 +36,7 @@ RN17 - Exclusão de Curso em Uso: Um curso não pode ser excluído enquanto houv
 
 RN18 - Exclusão de Área de Interesse em Uso: Uma área de interesse não pode ser excluída enquanto houver usuários vinculados a ela.
 
-RN19 - Exclusão de Usuário: A exclusão de um usuário é lógica (desativação da conta, preservando o histórico) e deve encerrar todos os vínculos ativos relacionados a ele, como orientações e atividades em andamento.
+RN19 - Exclusão de Usuário: A exclusão de um usuário é lógica (desativação da conta, preservando o histórico) e deve encerrar todos os vínculos ativos relacionados a ele, como orientações, atividades em andamento e sessões ativas (RN27).
 
 RN20 - Prazo de Resposta de Solicitação de Orientação: O professor tem 7 dias corridos para responder uma solicitação de orientação. Após esse prazo sem resposta, o sistema marca automaticamente a solicitação como "Não respondida", notifica o aluno e o libera para enviar uma nova solicitação.
 
@@ -51,3 +51,5 @@ RN21 - Revisão de Atividade: Somente o orientador ativo do aluno pode revisar u
 **RN-25 — Unicidade de Matrícula:** A matrícula deve ser única entre os alunos e única entre os professores.
 
 **RN-26 — Disponibilidade do Professor:** O professor indica em seu perfil se está disponível para orientar. Ele pode ter nenhum ou vários orientandos, conforme sua capacidade e disponibilidade, e é o próprio professor quem controla essa indicação. Um professor indisponível não recebe novas solicitações de orientação; solicitações já pendentes e orientações ativas não são afetadas.
+
+**RN-27 — Encerramento de Sessões:** Ao redefinir ou alterar a senha de um usuário, e ao desativar a sua conta, todas as sessões ativas desse usuário são encerradas.
