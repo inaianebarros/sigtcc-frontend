@@ -11,14 +11,15 @@ ENV NODE_ENV=development \
 
 WORKDIR /app
 
+RUN chown node:node /app
+USER node
+
 COPY --chown=node:node package.json package-lock.json ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci --no-audit --no-fund \
-    && chown -R node:node /app
+RUN --mount=type=cache,target=/home/node/.npm,uid=1000,gid=1000 \
+    npm ci --no-audit --no-fund
 
 COPY --chown=node:node . .
 
-USER node
 EXPOSE 3000
 
 # Em desenvolvimento o código-fonte é montado em /app pelo Compose (recarga automática).
