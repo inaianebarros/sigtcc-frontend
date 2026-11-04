@@ -12,7 +12,7 @@ RN05 - Restrição de Solicitação de Orientação: Um aluno só pode enviar um
 
 RN06 - Imutabilidade de Solicitação Respondida: Uma solicitação de orientação não pode ser alterada após ser aceita ou recusada pelo professor.
 
-RN07 - Arquivamento de Atividades ao Encerrar Orientação: Ao encerrar o vínculo de orientação, todas as atividades pendentes e em andamento do aluno são arquivadas automaticamente pelo sistema.
+RN07 - Arquivamento de Atividades ao Encerrar Orientação: Ao encerrar o vínculo de orientação, todas as atividades pendentes, em andamento e em revisão do aluno são arquivadas automaticamente pelo sistema.
 
 RN08 - Restrição de Solicitação de Reunião pelo Aluno: O aluno só pode solicitar reunião com seu orientador ativo.
 
@@ -22,7 +22,7 @@ RN10 - Cancelamento de Reunião: Uma reunião só pode ser cancelada pelo seu au
 
 RN11 - Justificativa de Recusa de Reunião: A recusa de uma solicitação de reunião deve ser obrigatoriamente acompanhada de uma justificativa.
 
-RN12 - Pré-requisito para Cadastro de Tema: O aluno somente pode cadastrar o tema do TCC após ter um orientador ativo.
+RN12 - Pré-requisito para Cadastro de Tema: O tema do TCC somente pode ser cadastrado após o aluno ter um orientador ativo, e pode ser cadastrado e alterado tanto pelo aluno quanto pelo seu orientador.
 
 RN13 - Vínculo de Atividade ao Orientado: O professor só pode criar atividades para alunos sob sua orientação ativa.
 
@@ -34,14 +34,20 @@ RN16 - Entrega de Atividade: O aluno só pode submeter a entrega de uma atividad
 
 RN17 - Exclusão de Curso em Uso: Um curso não pode ser excluído enquanto houver usuários vinculados a ele.
 
-RN18 - Exclusão de Área de Interesse em Uso: Uma área de interesse não pode ser excluída enquanto houver usuários ou atividades vinculadas a ela.
+RN18 - Exclusão de Área de Interesse em Uso: Uma área de interesse não pode ser excluída enquanto houver usuários vinculados a ela.
 
-RN19 - Exclusão de Usuário: A exclusão de um usuário deve encerrar todos os vínculos ativos relacionados a ele, como orientações e atividades em andamento.
+RN19 - Exclusão de Usuário: A exclusão de um usuário é lógica (desativação da conta, preservando o histórico) e deve encerrar todos os vínculos ativos relacionados a ele, como orientações e atividades em andamento.
 
 RN20 - Prazo de Resposta de Solicitação de Orientação: O professor tem 7 dias corridos para responder uma solicitação de orientação. Após esse prazo sem resposta, o sistema marca automaticamente a solicitação como "Não respondida", notifica o aluno e o libera para enviar uma nova solicitação.
 
 RN21 - Revisão de Atividade: Somente o orientador ativo do aluno pode revisar uma atividade. A revisão só é possível quando a atividade estiver com status em revisão.
 
-**RN-22 — Áreas de Interesse Obrigatórias para Pareamento:** O cálculo de compatibilidade entre aluno e orientadores depende das áreas de interesse cadastradas no perfil de ambos. Perfis sem áreas de interesse cadastradas não participam do pareamento.
+**RN-22 — Áreas de Interesse Obrigatórias:** Todo aluno e todo professor deve ter ao menos uma área de interesse cadastrada, informada no cadastro e mantida ao editar o perfil (não é possível remover a última). O cálculo de compatibilidade depende das áreas cadastradas no perfil de ambos.
 
 **RN-23 — Cálculo de Compatibilidade:** A compatibilidade entre aluno e orientador é calculada com base no número de áreas de interesse em comum entre os perfis, utilizadas para ordenar a lista de orientadores apresentada ao aluno.
+
+**RN-24 — Atividade Atrasada:** Uma atividade cujo prazo venceu sem que esteja concluída é exibida como "Atrasada". Atrasada não é um status persistido: é uma indicação calculada a partir do prazo e do status, e pode ser feita no frontend. O professor que criou a atividade pode editar o prazo (RN14).
+
+**RN-25 — Unicidade de Matrícula:** A matrícula deve ser única entre os alunos e única entre os professores.
+
+**RN-26 — Disponibilidade do Professor:** O professor indica em seu perfil se está disponível para orientar. Ele pode ter nenhum ou vários orientandos, conforme sua capacidade e disponibilidade, e é o próprio professor quem controla essa indicação. Um professor indisponível não recebe novas solicitações de orientação; solicitações já pendentes e orientações ativas não são afetadas.

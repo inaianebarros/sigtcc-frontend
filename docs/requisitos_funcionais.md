@@ -1,14 +1,14 @@
 # Requisitos Funcionais
 
-RF01 - **Cadastrar Aluno**: O sistema deve permitir que o aluno faça cadastro informando, na ordem: Matrícula, Nome Completo, Email, Senha, Confirmação de Senha, Tipo de Conta, Instituto e Curso.
+RF01 - **Cadastrar Aluno**: O sistema deve permitir que o aluno faça cadastro informando, na ordem: Matrícula, Nome Completo, Email, Senha, Confirmação de Senha, Tipo de Conta, Instituto, Curso e Áreas de Interesse (ao menos uma).
 
-RF02- **Cadastrar Professor**: O sistema deve permitir que o professor faça cadastro informando , na ordem: Matrícula, Nome Completo, Email, Senha, Confirmação de Senha, Tipo de Conta, Instituto e Curso(s).
+RF02- **Cadastrar Professor**: O sistema deve permitir que o professor faça cadastro informando , na ordem: Matrícula, Nome Completo, Email, Senha, Confirmação de Senha, Tipo de Conta, Instituto, Curso(s) e Áreas de Interesse (ao menos uma).
 
 RF03 - **Realizar Login:** O sistema deve permitir que usuários cadastrados realizem o login utilizando e-mail e senha, concedendo acesso às funcionalidades de acordo com seu perfil.
 
-RF04 - **Editar Perfil do Aluno:** O sistema deve permitir que o aluno edite suas informações de perfil, como nome, áreas de interesse e artigos publicados.
+RF04 - **Editar Perfil do Aluno:** O sistema deve permitir que o aluno edite suas informações de perfil, como nome, áreas de interesse (ao menos uma deve permanecer cadastrada) e artigos publicados.
 
-RF05 - **Editar** **Perfil do Professor**: O sistema deve permitir que o professor edite suas informações de perfil, como nome, cursos (um ou mais), áreas de interesse e artigos publicados.
+RF05 - **Editar** **Perfil do Professor**: O sistema deve permitir que o professor edite suas informações de perfil, como nome, cursos (um ou mais), áreas de interesse (ao menos uma deve permanecer cadastrada) e artigos publicados. O professor também informa se está disponível para orientar.
 
 RF06 - **Alterar Senha:** O sistema deve permitir que o usuário altere sua senha mediante confirmação da senha atual.
 
@@ -16,13 +16,13 @@ RF07 - **Recuperar Senha:** O sistema deve permitir que usuários recuperem o ac
 
 RF08 - **Realizar Log Out:** O sistema deve permitir que o usuário encerre sua sessão com segurança.
 
-**RF-09 — Pesquisar e Visualizar Orientadores Compatíveis:** O sistema deve apresentar ao aluno uma lista de orientadores ordenada pela compatibilidade entre as áreas de interesse cadastradas pelo aluno e as áreas de interesse cadastradas por cada orientador, permitindo, adicionalmente, a filtragem por nome
+**RF-09 — Pesquisar e Visualizar Orientadores Compatíveis:** O sistema deve apresentar ao aluno uma lista de orientadores ordenada pela compatibilidade entre as áreas de interesse cadastradas pelo aluno e as áreas de interesse cadastradas por cada orientador, permitindo, adicionalmente, a filtragem por nome Cada professor é exibido com sua disponibilidade para orientar.
 
-RF10 - **Visualizar Perfil do Professor:** O sistema deve permitir que o aluno visualize as informações sobre o professor como: nome, cursos, áreas de interesse e artigos publicados.
+RF10 - **Visualizar Perfil do Professor:** O sistema deve permitir que o aluno visualize as informações sobre o professor como: nome, cursos, áreas de interesse e artigos publicados. A disponibilidade para orientar também é exibida.
 
 RF11 - **Visualizar Perfil do Aluno**: O sistema deve permitir que o professor visualize as informações do aluno, como nome, curso e áreas de interesse.
 
-**RF-12 — Solicitar Orientador:** O sistema deve permitir que o aluno que não possua orientador e não tenha nenhuma solicitação em andamento envie pedido de orientação para um professor cadastrado, selecionado a partir da lista de orientadores apresentada no sistema.
+**RF-12 — Solicitar Orientador:** O sistema deve permitir que o aluno que não possua orientador e não tenha nenhuma solicitação em andamento envie pedido de orientação para um professor cadastrado, selecionado a partir da lista de orientadores apresentada no sistema. Não é possível solicitar a um professor indisponível.
 
 RF13 - **Listar Solicitações de Alunos:** O sistema deve permitir que o professor visualize todas as solicitações de orientação recebidas, incluindo as com status não respondida.
 
@@ -44,21 +44,21 @@ RF21 - **Editar Reunião:** O sistema deve permitir que reuniões sejam editadas
 
 RF22 - **Cancelar Reunião:** O sistema deve permitir que o autor da solicitação cancele uma reunião ainda não realizada.
 
-**RF-23 — Cadastrar Tema do TCC:** O sistema deve permitir que o **aluno** cadastre o tema do TCC após a aceitação da solicitação de orientação.
+**RF-23 — Cadastrar Tema do TCC:** O sistema deve permitir que o **aluno** ou o **professor** cadastre o tema do TCC após a aceitação da solicitação de orientação.
 
-RF24 - **Alterar Tema do TCC:** O sistema deve permitir que o professor altere o tema do TCC.
+RF24 - **Alterar Tema do TCC:** O sistema deve permitir que o aluno e o professor alterem o tema do TCC.
 
-RF25 - **Criar Atividade:**  O sistema deve permitir que o professor crie atividades relacionadas ao TCC para seus orientados.
+RF25 - **Criar Atividade:**  O sistema deve permitir que o professor crie atividades relacionadas ao TCC para seus orientados, informando título, descrição e prazo.
 
-RF26 - **Editar Atividade:** O sistema deve permitir que o professor edite atividades previamente cadastradas.
+RF26 - **Editar Atividade:** O sistema deve permitir que o professor edite atividades previamente cadastradas, incluindo o prazo.
 
-RF27 - **Deletar Atividade:** O sistema deve permitir que o professor exclua atividades cadastradas.
+RF27 - **Deletar Atividade:** O sistema deve permitir que o professor exclua atividades cadastradas. A exclusão é lógica: a atividade deixa de ser exibida, preservando suas entregas, comentários e revisões.
 
 RF28 - Alterar Status da Atividade: O sistema deve permitir que o aluno altere o status da atividade entre pendente e em andamento, e submeta a atividade para revisão do orientador, desde que haja ao menos uma entrega anexada.
 
-RF29 - **Listar Atividades:** O sistema deve permitir que aluno e professor visualize a lista de atividades vinculadas ao TCC.
+RF29 - **Listar Atividades:** O sistema deve permitir que aluno e professor visualize a lista de atividades vinculadas ao TCC, exibindo como "Atrasada" a atividade cujo prazo venceu sem estar concluída.
 
-RF30 - **Visualizar Detalhes da Atividade:** O sistema deve permitir que o usuário visualize os detalhes de uma atividade especifica.
+RF30 - **Visualizar Detalhes da Atividade:** O sistema deve permitir que o usuário visualize os detalhes de uma atividade especifica, incluindo o prazo e a indicação "Atrasada" quando aplicável.
 
 RF31 - **Entregar Atividade:** O sistema deve permitir que o aluno submeta a entrega de uma atividade, sendo possível anexar arquivos.
 
