@@ -24,11 +24,10 @@ import {
   accountDefaults,
   accountFieldByApiField,
   accountShape,
-  passwordsMatch,
-  passwordsMismatch,
   toAccountPayload,
 } from '../registration/accountForm';
-import { reportRegistrationError } from '../registration/reportRegistrationError';
+import { passwordsMatch, passwordsMismatch } from '../forms/passwordRules';
+import { applyApiFieldErrors } from '../forms/applyApiFieldErrors';
 import {
   CATALOG_ERROR_MESSAGE,
   courseListHint,
@@ -93,9 +92,7 @@ export function TeacherRegistrationPage() {
         state: { notice: REGISTERED_NOTICE },
       });
     } catch (error) {
-      setFormError(
-        reportRegistrationError(error, formFieldByApiField, setError),
-      );
+      setFormError(applyApiFieldErrors(error, formFieldByApiField, setError));
     }
   });
 

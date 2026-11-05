@@ -4,8 +4,10 @@ import { RequireAuth } from './components/RequireAuth';
 import { areas } from './navigation/areas';
 import { paths } from './navigation/paths';
 import { AreaPage } from './pages/AreaPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { StudentRegistrationPage } from './pages/StudentRegistrationPage';
 import { TeacherRegistrationPage } from './pages/TeacherRegistrationPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -16,6 +18,8 @@ export function AppRoutes() {
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path={paths.login} element={<LoginPage />} />
+        <Route path={paths.forgotPassword} element={<ForgotPasswordPage />} />
+        <Route path={paths.resetPassword} element={<ResetPasswordPage />} />
         <Route
           path={paths.registerStudent}
           element={<StudentRegistrationPage />}

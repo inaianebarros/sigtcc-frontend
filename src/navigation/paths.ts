@@ -5,6 +5,7 @@ export const paths = {
   home: '/',
   login: '/login',
   forgotPassword: '/recuperar-senha',
+  resetPassword: '/redefinir-senha',
   registerStudent: '/cadastro/aluno',
   registerTeacher: '/cadastro/professor',
 } as const;

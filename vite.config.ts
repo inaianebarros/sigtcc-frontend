@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       strictPort: true,
+      headers: { 'Referrer-Policy': 'no-referrer' },
       proxy: {
         '/api': { target: proxyTarget, changeOrigin: true },
       },
