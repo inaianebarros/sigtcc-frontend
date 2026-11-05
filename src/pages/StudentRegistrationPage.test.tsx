@@ -252,4 +252,128 @@ describe('StudentRegistrationPage', () => {
       within(screen.getByRole('alert')).getByText(/institutos/i),
     ).toBeInTheDocument();
   });
+
+  it('informa quando o instituto escolhido não tem cursos', async () => {
+    mockApi({ ...catalog, 'GET /api/cursos': { body: [] } });
+    const user = userEvent.setup();
+    await openForm();
+
+    await chooseOption(
+      user,
+      'Instituto',
+      'Instituto de Engenharia e Geociências',
+    );
+
+    expect(
+      await screen.findByText('Este instituto não tem cursos cadastrados.'),
+    ).toBeInTheDocument();
+  });
+
+  it('informa quando os cursos do instituto não carregam', async () => {
+    mockApi({ ...catalog, 'GET /api/cursos': { status: 500, body: {} } });
+    const user = userEvent.setup();
+    await openForm();
+
+    await chooseOption(
+      user,
+      'Instituto',
+      'Instituto de Engenharia e Geociências',
+    );
+
+    expect(
+      await screen.findByText('Não foi possível carregar os cursos.'),
+    ).toBeInTheDocument();
+  });
+
+  it('informa quando não há institutos nem áreas cadastrados', async () => {
+    mockApi({
+      ...catalog,
+      'GET /api/institutos': { body: [] },
+      'GET /api/areas-de-interesse': { body: [] },
+    });
+
+    await openForm();
+
+    expect(
+      await screen.findByText('Nenhum instituto cadastrado.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Nenhuma área de interesse cadastrada.'),
+    ).toBeInTheDocument();
+  });
+
+  it('limpa o curso escolhido quando o instituto é trocado', async () => {
+    mockApi(catalog);
+    const user = userEvent.setup();
+    await openForm();
+    await chooseOption(
+      user,
+      'Instituto',
+      'Instituto de Engenharia e Geociências',
+    );
+    await chooseOption(user, 'Curso', 'Ciência da Computação');
+    expect(screen.getByLabelText('Curso')).toHaveTextContent(
+      'Ciência da Computação',
+    );
+
+    await chooseOption(user, 'Instituto', 'Instituto de Ciências da Educação');
+
+    expect(screen.getByLabelText('Curso')).not.toHaveTextContent(
+      'Ciência da Computação',
+    );
+  });
+
+  it('avisa quando o cadastro não chega ao servidor e mantém o que foi digitado', async () => {
+    mockApi({
+      ...catalog,
+      [REGISTER_ROUTE]: () => {
+        throw new TypeError('network down');
+      },
+    });
+    const user = userEvent.setup();
+    await openForm();
+    await fillValidForm(user);
+
+    await user.click(screen.getByRole('button', { name: 'Cadastrar' }));
+
+    expect(
+      await screen.findByText(/Não foi possível conectar ao servidor/),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('E-mail')).toHaveValue(
+      'ana.souza@example.com',
+    );
+  });
+
+  it('mostra num alerta do formulário um erro do servidor que não pertence a nenhum campo', async () => {
+    mockApi({
+      ...catalog,
+      [REGISTER_ROUTE]: {
+        status: 422,
+        body: {
+          detail: [
+            {
+              loc: ['body', 'payload', 'institute_id'],
+              msg: 'Instituto não encontrado.',
+            },
+            {
+              loc: ['body', 'payload', 'campo_novo'],
+              msg: 'Erro de um campo desconhecido.',
+            },
+          ],
+        },
+      },
+    });
+    const user = userEvent.setup();
+    await openForm();
+    await fillValidForm(user);
+
+    await user.click(screen.getByRole('button', { name: 'Cadastrar' }));
+
+    expect(
+      await screen.findByText('Instituto não encontrado.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Erro de um campo desconhecido.'),
+    ).toBeInTheDocument();
+  });
 });

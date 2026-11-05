@@ -18,7 +18,8 @@ export function fieldErrorsFrom(detail: unknown[]): FieldErrors {
   const errors: FieldErrors = {};
   for (const item of detail) {
     if (typeof item !== 'object' || item === null) continue;
-    const { loc, msg } = item as { loc?: unknown; msg?: unknown };
+    if (!('loc' in item) || !('msg' in item)) continue;
+    const { loc, msg } = item;
     if (!Array.isArray(loc) || typeof msg !== 'string') continue;
     const field = String(loc.at(-1));
     errors[field] ??= msg;

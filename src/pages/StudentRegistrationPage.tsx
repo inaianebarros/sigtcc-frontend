@@ -116,6 +116,22 @@ export function StudentRegistrationPage() {
   const instituteOptions = institutes.status === 'ready' ? institutes.data : [];
   const courseOptions = courses.status === 'ready' ? courses.data : [];
   const areaOptions = areas.status === 'ready' ? areas.data : [];
+  const instituteHint =
+    institutes.status === 'ready' && instituteOptions.length === 0
+      ? 'Nenhum instituto cadastrado.'
+      : undefined;
+  const courseHint =
+    courses.status === 'error'
+      ? 'Não foi possível carregar os cursos.'
+      : courses.status === 'loading'
+        ? 'Carregando cursos…'
+        : courses.status === 'ready' && courseOptions.length === 0
+          ? 'Este instituto não tem cursos cadastrados.'
+          : undefined;
+  const areaHint =
+    areas.status === 'ready' && areaOptions.length === 0
+      ? 'Nenhuma área de interesse cadastrada.'
+      : undefined;
 
   const onSubmit = handleSubmit(async (form) => {
     setFormError(null);
@@ -142,7 +158,7 @@ export function StudentRegistrationPage() {
       const unmapped: string[] = [];
       for (const [apiField, message] of Object.entries(error.fieldErrors)) {
         const field = formFieldByApiField[apiField];
-        if (field) setError(field, { message });
+        if (field) setError(field, { message }, { shouldFocus: true });
         else unmapped.push(message);
       }
       if (Object.keys(error.fieldErrors).length === 0 || unmapped.length > 0) {
@@ -228,7 +244,7 @@ export function StudentRegistrationPage() {
               inputRef={field.ref}
               disabled={institutes.status !== 'ready'}
               error={Boolean(errors.instituteId)}
-              helperText={errors.instituteId?.message}
+              helperText={errors.instituteId?.message ?? instituteHint}
             >
               {instituteOptions.map((institute) => (
                 <MenuItem key={institute.id} value={String(institute.id)}>
@@ -248,7 +264,7 @@ export function StudentRegistrationPage() {
               {...field}
               disabled={courses.status !== 'ready'}
               error={Boolean(errors.courseId)}
-              helperText={errors.courseId?.message}
+              helperText={errors.courseId?.message ?? courseHint}
             >
               {courseOptions.map((course) => (
                 <MenuItem key={course.id} value={String(course.id)}>
@@ -282,7 +298,7 @@ export function StudentRegistrationPage() {
                   label="Áreas de interesse"
                   inputRef={field.ref}
                   error={Boolean(errors.areaIds)}
-                  helperText={errors.areaIds?.message}
+                  helperText={errors.areaIds?.message ?? areaHint}
                 />
               )}
             />

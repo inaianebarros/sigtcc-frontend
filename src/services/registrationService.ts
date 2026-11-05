@@ -13,6 +13,6 @@ export interface StudentRegistration {
 
 export function registerStudent(
   registration: StudentRegistration,
-): Promise<unknown> {
-  return httpClient.post('/auth/register/aluno', registration);
+): Promise<void> {
+  return httpClient.post<void>('/auth/register/aluno', registration);
 }
