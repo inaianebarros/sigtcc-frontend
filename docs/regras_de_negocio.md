@@ -57,3 +57,5 @@ RN27 - **Encerramento de Sessões:** Ao redefinir ou alterar a senha de um usuá
 RN28 - **Orientadores do Curso do Aluno:** O aluno só visualiza, na lista de orientadores, e só pode solicitar orientação a professores vinculados ao seu curso. O curso da lista é sempre o do aluno e não pode ser alterado por ele.
 
 RN29 - **Funcionalidades Condicionadas à Orientação Ativa:** As funcionalidades que dependem de uma orientação ativa (para o aluno: tema do TCC, atividades e reuniões; para o professor: atividades e reuniões com orientandos) permanecem visíveis, porém desabilitadas, enquanto o aluno não tiver orientador ativo ou o professor não tiver orientandos ativos, com a explicação do motivo.
+
+RN30 - **Encerramento de Orientação:** Somente o professor orientador pode encerrar uma orientação ativa; o aluno não pode. O encerramento é irreversível e exige confirmação explícita, com mensagem que deixe claro que a ação não pode ser desfeita e que as atividades em aberto serão arquivadas (RN07, RNF21).

@@ -28,7 +28,7 @@ RF13 - **Listar Solicitações de Alunos:** O sistema deve permitir que o profes
 
 RF14 - **Responder Solicitação de Aluno:** O sistema deve permitir que o professor aceite ou recuse solicitações de orientação enviadas por aluno. A recusa não exige justificativa.
 
-RF15 - **Encerrar Orientação:** O sistema deve permitir que o professor encerre o vínculo de orientação com um aluno.
+RF15 - **Encerrar Orientação:** O sistema deve permitir que o professor encerre o vínculo de orientação com um aluno. Somente o professor orientador pode encerrá-la (RN30).
 
 RF16 - **Visualizar Status da Solicitação:** O sistema deve permitir que o aluno visualize o status (pendente, aceita, recusada ou não respondida) de sua solicitação de orientação.
 
