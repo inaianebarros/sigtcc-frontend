@@ -3,7 +3,7 @@ import { useFormContext } from 'react-hook-form';
 import type { AccountForm } from './accountForm';
 
 interface AccountFieldsProps {
-  accountType: string;
+  accountType: 'Aluno' | 'Professor';
 }
 
 export function AccountFields({ accountType }: AccountFieldsProps) {

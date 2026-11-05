@@ -90,6 +90,26 @@ describe('TeacherRegistrationPage', () => {
     ]) {
       expect(screen.getByLabelText(label)).toBeInTheDocument();
     }
+    const inRf02Order = [
+      'Matrícula',
+      'Nome completo',
+      'E-mail',
+      'Senha',
+      'Confirmação de senha',
+      'Tipo de conta',
+      'Instituto',
+      'Cursos',
+      'Áreas de interesse',
+    ];
+    const byPosition = [...inRf02Order].sort((a, b) =>
+      screen
+        .getByLabelText(a)
+        .compareDocumentPosition(screen.getByLabelText(b)) &
+      Node.DOCUMENT_POSITION_FOLLOWING
+        ? -1
+        : 1,
+    );
+    expect(byPosition).toEqual(inRf02Order);
     expect(screen.getByLabelText('Tipo de conta')).toHaveValue('Professor');
     expect(screen.getByLabelText('Tipo de conta')).toHaveAttribute('readonly');
   });
@@ -231,9 +251,12 @@ describe('TeacherRegistrationPage', () => {
     expect(
       await screen.findByText('Já existe uma conta com este e-mail.'),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText('Algum curso não pertence ao instituto.'),
-    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Cursos')).toHaveAccessibleDescription(
+      'Algum curso não pertence ao instituto.',
+    );
+    expect(screen.getByLabelText('E-mail')).toHaveAccessibleDescription(
+      'Já existe uma conta com este e-mail.',
+    );
     expect(
       screen.getByText('Erro de um campo desconhecido.'),
     ).toBeInTheDocument();

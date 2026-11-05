@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { AccountRegistration } from '../services/registrationService';
 
 export const accountShape = {
   registrationNumber: z
@@ -57,3 +58,15 @@ export const accountFieldByApiField = {
 
 export const REGISTERED_NOTICE =
   'Cadastro realizado com sucesso. Entre com seu e-mail e senha.';
+
+export function toAccountPayload(form: AccountForm): AccountRegistration {
+  return {
+    registration_number: form.registrationNumber,
+    full_name: form.fullName,
+    email: form.email,
+    password: form.password,
+    password_confirmation: form.passwordConfirmation,
+    institute_id: Number(form.instituteId),
+    area_ids: form.areaIds,
+  };
+}

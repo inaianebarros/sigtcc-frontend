@@ -26,6 +26,7 @@ import {
   accountShape,
   passwordsMatch,
   passwordsMismatch,
+  toAccountPayload,
 } from '../registration/accountForm';
 import { reportRegistrationError } from '../registration/reportRegistrationError';
 import {
@@ -63,6 +64,7 @@ export function StudentRegistrationPage() {
     control,
     handleSubmit,
     setError,
+    clearErrors,
     setValue,
     formState: { errors, isSubmitting },
   } = form;
@@ -83,14 +85,8 @@ export function StudentRegistrationPage() {
     setFormError(null);
     try {
       await registerStudent({
-        registration_number: values.registrationNumber,
-        full_name: values.fullName,
-        email: values.email,
-        password: values.password,
-        password_confirmation: values.passwordConfirmation,
-        institute_id: Number(values.instituteId),
+        ...toAccountPayload(values),
         course_id: Number(values.courseId),
-        area_ids: values.areaIds,
       });
       navigate(paths.login, {
         replace: true,
@@ -122,7 +118,10 @@ export function StudentRegistrationPage() {
           <AccountFields accountType="Aluno" />
           <InstituteField
             institutes={catalog.institutes}
-            onChange={() => setValue('courseId', '')}
+            onChange={() => {
+              setValue('courseId', '');
+              clearErrors('courseId');
+            }}
           />
           <Controller
             name="courseId"

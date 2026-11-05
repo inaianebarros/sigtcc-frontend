@@ -26,6 +26,7 @@ import {
   accountShape,
   passwordsMatch,
   passwordsMismatch,
+  toAccountPayload,
 } from '../registration/accountForm';
 import { reportRegistrationError } from '../registration/reportRegistrationError';
 import {
@@ -63,6 +64,7 @@ export function TeacherRegistrationPage() {
     control,
     handleSubmit,
     setError,
+    clearErrors,
     setValue,
     formState: { errors, isSubmitting },
   } = form;
@@ -83,14 +85,8 @@ export function TeacherRegistrationPage() {
     setFormError(null);
     try {
       await registerTeacher({
-        registration_number: values.registrationNumber,
-        full_name: values.fullName,
-        email: values.email,
-        password: values.password,
-        password_confirmation: values.passwordConfirmation,
-        institute_id: Number(values.instituteId),
+        ...toAccountPayload(values),
         course_ids: values.courseIds,
-        area_ids: values.areaIds,
       });
       navigate(paths.login, {
         replace: true,
@@ -122,7 +118,10 @@ export function TeacherRegistrationPage() {
           <AccountFields accountType="Professor" />
           <InstituteField
             institutes={catalog.institutes}
-            onChange={() => setValue('courseIds', [])}
+            onChange={() => {
+              setValue('courseIds', []);
+              clearErrors('courseIds');
+            }}
           />
           <Controller
             name="courseIds"
