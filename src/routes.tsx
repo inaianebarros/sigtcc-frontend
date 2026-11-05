@@ -6,6 +6,7 @@ import { paths } from './navigation/paths';
 import { AreaPage } from './pages/AreaPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { StudentRegistrationPage } from './pages/StudentRegistrationPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 export function AppRoutes() {
@@ -14,6 +15,10 @@ export function AppRoutes() {
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path={paths.login} element={<LoginPage />} />
+        <Route
+          path={paths.registerStudent}
+          element={<StudentRegistrationPage />}
+        />
         {areas.map(({ userType, path, title }) => (
           <Route key={userType} element={<RequireAuth userType={userType} />}>
             <Route path={path} element={<AreaPage title={title} />} />

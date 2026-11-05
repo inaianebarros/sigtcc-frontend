@@ -1,8 +1,11 @@
 import {
   ApiError,
+  INVALID_FORM_MESSAGE,
   SESSION_EXPIRED_MESSAGE,
+  fieldErrorsFrom,
   messageForStatus,
 } from './apiError';
+import type { FieldErrors } from './apiError';
 import { tokenStore } from './tokenStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
@@ -75,16 +78,19 @@ async function send(path: string, init: RequestInit): Promise<Response> {
 
 async function parseError(response: Response): Promise<ApiError> {
   let detail: string | undefined;
+  let fieldErrors: FieldErrors = {};
   try {
     const body = (await response.json()) as { detail?: unknown };
     if (typeof body.detail === 'string') detail = body.detail;
+    if (Array.isArray(body.detail)) fieldErrors = fieldErrorsFrom(body.detail);
   } catch {
     // corpo sem JSON: usa a mensagem padrão do status
   }
-  return new ApiError(
-    response.status,
-    detail ?? messageForStatus(response.status),
-  );
+  const fallback =
+    Object.keys(fieldErrors).length > 0
+      ? INVALID_FORM_MESSAGE
+      : messageForStatus(response.status);
+  return new ApiError(response.status, detail ?? fallback, fieldErrors);
 }
 
 export async function request<T>(
