@@ -16,3 +16,20 @@ export function registerStudent(
 ): Promise<void> {
   return httpClient.post<void>('/auth/register/aluno', registration);
 }
+
+export interface TeacherRegistration {
+  registration_number: string;
+  full_name: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+  institute_id: number;
+  course_ids: number[];
+  area_ids: number[];
+}
+
+export function registerTeacher(
+  registration: TeacherRegistration,
+): Promise<void> {
+  return httpClient.post<void>('/auth/register/professor', registration);
+}

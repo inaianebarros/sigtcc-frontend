@@ -7,6 +7,7 @@ import { AreaPage } from './pages/AreaPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { StudentRegistrationPage } from './pages/StudentRegistrationPage';
+import { TeacherRegistrationPage } from './pages/TeacherRegistrationPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 export function AppRoutes() {
@@ -18,6 +19,10 @@ export function AppRoutes() {
         <Route
           path={paths.registerStudent}
           element={<StudentRegistrationPage />}
+        />
+        <Route
+          path={paths.registerTeacher}
+          element={<TeacherRegistrationPage />}
         />
         {areas.map(({ userType, path, title }) => (
           <Route key={userType} element={<RequireAuth userType={userType} />}>
