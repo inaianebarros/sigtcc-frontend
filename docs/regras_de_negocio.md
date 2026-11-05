@@ -8,7 +8,7 @@ RN03 - **Validade do Link de Recuperação:** O link de redefinição de senha e
 
 RN04 - **Unicidade de Orientador:** Um aluno pode ter no máximo um orientador ativo por vez.
 
-RN05 - **Restrição de Solicitação de Orientação:** Um aluno só pode enviar uma solicitação de orientação se não possuir orientador ativo e não tiver nenhuma solicitação com status pendente.
+RN05 - **Restrição de Solicitação de Orientação:** Um aluno só pode enviar uma solicitação de orientação se não possuir orientador ativo e não tiver nenhuma solicitação com status pendente. Depois de uma solicitação recusada ou não respondida, o aluno pode solicitar novamente, inclusive ao mesmo professor. O aluno não pode cancelar uma solicitação pendente.
 
 RN06 - **Imutabilidade de Solicitação Respondida:** Uma solicitação de orientação não pode ser alterada após ser aceita ou recusada pelo professor.
 
@@ -38,7 +38,7 @@ RN18 - **Exclusão de Área de Interesse em Uso:** Uma área de interesse não p
 
 RN19 - **Exclusão de Usuário:** A exclusão de um usuário é lógica (desativação da conta, preservando o histórico) e deve encerrar todos os vínculos ativos relacionados a ele, como orientações, atividades em andamento e sessões ativas (RN27).
 
-RN20 - **Prazo de Resposta de Solicitação de Orientação:** O professor tem 7 dias corridos para responder uma solicitação de orientação. Após esse prazo sem resposta, o sistema marca automaticamente a solicitação como "Não respondida", notifica o aluno e o libera para enviar uma nova solicitação.
+RN20 - **Prazo de Resposta de Solicitação de Orientação:** O professor tem 7 dias corridos para responder uma solicitação de orientação. Após esse prazo sem resposta, o sistema marca automaticamente a solicitação como "Não respondida", notifica o aluno e o libera para enviar uma nova solicitação. Enquanto essa marcação não for gravada, o sistema já trata como "Não respondida" a solicitação pendente com mais de 7 dias, em todas as consultas e validações.
 
 RN21 - **Revisão de Atividade:** Somente o orientador ativo do aluno pode revisar uma atividade. A revisão só é possível quando a atividade estiver com status em revisão.
 
@@ -53,3 +53,7 @@ RN25 - **Unicidade de Matrícula:** A matrícula deve ser única entre os alunos
 RN26 - **Disponibilidade do Professor:** O professor indica em seu perfil se está disponível para orientar. Ele pode ter nenhum ou vários orientandos, conforme sua capacidade e disponibilidade, e é o próprio professor quem controla essa indicação. Um professor indisponível não recebe novas solicitações de orientação; solicitações já pendentes e orientações ativas não são afetadas.
 
 RN27 - **Encerramento de Sessões:** Ao redefinir ou alterar a senha de um usuário, e ao desativar a sua conta, todas as sessões ativas desse usuário são encerradas.
+
+RN28 - **Orientadores do Curso do Aluno:** O aluno só visualiza, na lista de orientadores, e só pode solicitar orientação a professores vinculados ao seu curso. O curso da lista é sempre o do aluno e não pode ser alterado por ele.
+
+RN29 - **Funcionalidades Condicionadas à Orientação Ativa:** As funcionalidades que dependem de uma orientação ativa (para o aluno: tema do TCC, atividades e reuniões; para o professor: atividades e reuniões com orientandos) permanecem visíveis, porém desabilitadas, enquanto o aluno não tiver orientador ativo ou o professor não tiver orientandos ativos, com a explicação do motivo.

@@ -6,6 +6,8 @@ RNF03 - **Tempo de Resposta:** O sistema deve responder às requisições do usu
 
 RNF04 - **Entrega de Notificações:** O sistema deve entregar notificações ao usuário em até 1 minuto após o evento que a originou.
 
+RNF26 - **Filtros e Paginação:** Toda listagem com campo aberto de filtragem (texto livre) deve executar o filtro no servidor, com busca parcial que ignora maiúsculas e acentos, e devolver os resultados paginados. O desempenho e o comportamento das listagens não podem depender do volume de dados iniciais (seed).
+
 ## Segurança
 
 RNF05 - **Proteção de Senha:** As senhas dos usuários devem ser armazenadas como hash, não sendo possível recuperar o valor original.
@@ -57,3 +59,5 @@ RNF22 - **Estados Vazios:** O sistema deve apresentar mensagens informativas qua
 RNF23 - **Contraste de Interface:** Os elementos visuais da interface devem seguir uma razão mínima de contraste de 4.5:1 entre texto e fundo, conforme diretrizes WCAG 2.1 nível AA.
 
 RNF24 - **Responsividade:** A interface do sistema deve ser responsiva, adaptando seu layout para diferentes tamanhos de tela com base nos breakpoints do Material UI.
+
+RNF27 - **Navegação Lateral:** A navegação principal deve ser um menu lateral à esquerda, com os itens do perfil do usuário, recolhível em telas pequenas. Os itens indisponíveis por regra de negócio (RN29) permanecem visíveis, desabilitados e com o motivo explicado.
