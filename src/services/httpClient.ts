@@ -7,20 +7,31 @@ import { tokenStore } from './tokenStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 const REFRESH_PATH = '/auth/refresh';
+const PATHS_WITHOUT_SESSION_RENEWAL = [
+  '/auth/login',
+  REFRESH_PATH,
+  '/auth/logout',
+];
+
+export interface RequestOptions {
+  renewSessionOn401?: boolean;
+}
 
 type SessionExpiredHandler = (message: string) => void;
 
 let onSessionExpired: SessionExpiredHandler = () => {};
 let refreshInFlight: Promise<boolean> | null = null;
 
-export function setSessionExpiredHandler(handler: SessionExpiredHandler): void {
+export function setSessionExpiredHandler(
+  handler: SessionExpiredHandler,
+): () => void {
   onSessionExpired = handler;
+  return () => {
+    onSessionExpired = () => {};
+  };
 }
 
-/**
- * Único ponto de renovação do token. A estratégia real (ADR frontend 0001:
- * cookie httpOnly de refresh) é concluída na issue #11.
- */
+/** Único ponto de renovação do token (ADR frontend 0001: cookie httpOnly de refresh). */
 async function refreshAccessToken(): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE_URL}${REFRESH_PATH}`, {
@@ -37,7 +48,7 @@ async function refreshAccessToken(): Promise<boolean> {
   }
 }
 
-function refreshOnce(): Promise<boolean> {
+export function renewAccessToken(): Promise<boolean> {
   refreshInFlight ??= refreshAccessToken().finally(() => {
     refreshInFlight = null;
   });
@@ -79,11 +90,14 @@ async function parseError(response: Response): Promise<ApiError> {
 export async function request<T>(
   path: string,
   init: RequestInit = {},
+  {
+    renewSessionOn401 = !PATHS_WITHOUT_SESSION_RENEWAL.includes(path),
+  }: RequestOptions = {},
 ): Promise<T> {
   let response = await send(path, init);
 
-  if (response.status === 401 && path !== REFRESH_PATH) {
-    if (await refreshOnce()) {
+  if (response.status === 401 && renewSessionOn401) {
+    if (await renewAccessToken()) {
       response = await send(path, init);
     } else {
       tokenStore.clear();
@@ -98,7 +112,8 @@ export async function request<T>(
 }
 
 export const httpClient = {
-  get: <T>(path: string) => request<T>(path, { method: 'GET' }),
+  get: <T>(path: string, options?: RequestOptions) =>
+    request<T>(path, { method: 'GET' }, options),
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, {
       method: 'POST',

@@ -1,36 +1,64 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { login, logout, restoreSession } from '../services/authService';
 import { setSessionExpiredHandler } from '../services/httpClient';
-import { tokenStore } from '../services/tokenStore';
+import type { SessionUser } from '../types/session';
 import { SessionContext } from './sessionContext';
+import type { SessionStatus } from './sessionContext';
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setAuthenticated] = useState(
-    () => tokenStore.get() !== null,
-  );
+  const [status, setStatus] = useState<SessionStatus>('loading');
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [expiredMessage, setExpiredMessage] = useState<string | null>(null);
 
-  const startSession = useCallback((accessToken: string) => {
-    tokenStore.set(accessToken);
+  const startSession = useCallback((sessionUser: SessionUser) => {
+    setUser(sessionUser);
     setExpiredMessage(null);
-    setAuthenticated(true);
+    setStatus('authenticated');
   }, []);
 
-  const endSession = useCallback(() => {
-    tokenStore.clear();
-    setAuthenticated(false);
+  const clearSession = useCallback(() => {
+    setUser(null);
+    setStatus('anonymous');
   }, []);
 
   useEffect(() => {
-    setSessionExpiredHandler((message) => {
-      setAuthenticated(false);
+    const removeExpiredHandler = setSessionExpiredHandler((message) => {
+      clearSession();
       setExpiredMessage(message);
     });
-  }, []);
+    let active = true;
+    void restoreSession().then((restored) => {
+      if (!active) return;
+      if (restored) startSession(restored);
+      else clearSession();
+    });
+    return () => {
+      active = false;
+      removeExpiredHandler();
+    };
+  }, [startSession, clearSession]);
+
+  const signIn = useCallback(
+    async (email: string, password: string) => {
+      startSession(await login(email, password));
+    },
+    [startSession],
+  );
+
+  const signOut = useCallback(async () => {
+    try {
+      await logout();
+    } catch {
+      // the local session ends even when the server could not be reached
+    } finally {
+      clearSession();
+    }
+  }, [clearSession]);
 
   const value = useMemo(
-    () => ({ isAuthenticated, expiredMessage, startSession, endSession }),
-    [isAuthenticated, expiredMessage, startSession, endSession],
+    () => ({ status, user, expiredMessage, signIn, signOut }),
+    [status, user, expiredMessage, signIn, signOut],
   );
 
   return (

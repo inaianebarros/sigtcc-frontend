@@ -1,30 +1,29 @@
-import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
-import { AppRoutes } from './routes';
+import { screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { tokenStore } from './services/tokenStore';
+import { mockApi } from './test/mockApi';
+import { renderApp } from './test/renderApp';
 
 describe('AppRoutes', () => {
-  it('renderiza a página inicial na rota raiz', () => {
-    render(
-      <MemoryRouter initialEntries={['/']}>
-        <AppRoutes />
-      </MemoryRouter>,
-    );
+  beforeEach(() => {
+    tokenStore.clear();
+    vi.unstubAllGlobals();
+    mockApi({ 'POST /api/auth/refresh': { status: 401, body: {} } });
+  });
+
+  it('renderiza a página inicial na rota raiz', async () => {
+    renderApp('/');
 
     expect(
-      screen.getByRole('heading', { level: 1, name: 'SIGTCC' }),
+      await screen.findByRole('heading', { level: 1, name: 'SIGTCC' }),
     ).toBeInTheDocument();
   });
 
-  it('renderiza a página 404 em rota desconhecida', () => {
-    render(
-      <MemoryRouter initialEntries={['/nada']}>
-        <AppRoutes />
-      </MemoryRouter>,
-    );
+  it('renderiza a página 404 em rota desconhecida', async () => {
+    renderApp('/nada');
 
     expect(
-      screen.getByRole('heading', { name: 'Página não encontrada' }),
+      await screen.findByRole('heading', { name: 'Página não encontrada' }),
     ).toBeInTheDocument();
   });
 });
