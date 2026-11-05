@@ -10,7 +10,7 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link as RouterLink, Navigate } from 'react-router-dom';
+import { Link as RouterLink, Navigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { useSession } from '../hooks/useSession';
@@ -39,8 +39,15 @@ function submitErrorMessage(error: unknown): string {
   return messageForStatus(0);
 }
 
+function noticeFrom(state: unknown): string | null {
+  if (typeof state !== 'object' || state === null) return null;
+  const { notice } = state as { notice?: unknown };
+  return typeof notice === 'string' ? notice : null;
+}
+
 export function LoginPage() {
   const { status, user, expiredMessage, signIn } = useSession();
+  const notice = noticeFrom(useLocation().state);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
@@ -78,6 +85,7 @@ export function LoginPage() {
         <Typography variant="h4" component="h1">
           Entrar
         </Typography>
+        {notice && <Alert severity="success">{notice}</Alert>}
         {expiredMessage && <Alert severity="warning">{expiredMessage}</Alert>}
         {submitError && <Alert severity="error">{submitError}</Alert>}
         <TextField

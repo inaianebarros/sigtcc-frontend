@@ -1,11 +1,30 @@
+export type FieldErrors = Record<string, string>;
+
 export class ApiError extends Error {
   readonly status: number;
+  readonly fieldErrors: FieldErrors;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, fieldErrors: FieldErrors = {}) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.fieldErrors = fieldErrors;
   }
+}
+
+export const INVALID_FORM_MESSAGE = 'Verifique os campos do formulário.';
+
+export function fieldErrorsFrom(detail: unknown[]): FieldErrors {
+  const errors: FieldErrors = {};
+  for (const item of detail) {
+    if (typeof item !== 'object' || item === null) continue;
+    if (!('loc' in item) || !('msg' in item)) continue;
+    const { loc, msg } = item;
+    if (!Array.isArray(loc) || typeof msg !== 'string') continue;
+    const field = String(loc.at(-1));
+    errors[field] ??= msg;
+  }
+  return errors;
 }
 
 export const SESSION_EXPIRED_MESSAGE =

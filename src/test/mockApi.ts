@@ -5,7 +5,10 @@ export interface MockResponse {
   body?: unknown;
 }
 
-type Handler = (body: unknown) => MockResponse | Promise<MockResponse>;
+type Handler = (
+  body: unknown,
+  url: URL,
+) => MockResponse | Promise<MockResponse>;
 
 export function jsonResponse({ status = 200, body }: MockResponse): Response {
   return new Response(body === undefined ? null : JSON.stringify(body), {
@@ -16,13 +19,13 @@ export function jsonResponse({ status = 200, body }: MockResponse): Response {
 export function mockApi(routes: Record<string, MockResponse | Handler>) {
   const fetchMock = vi.fn<typeof fetch>(async (input, init) => {
     const method = init?.method ?? 'GET';
-    const path = new URL(String(input), 'http://localhost').pathname;
-    const route = routes[`${method} ${path}`];
+    const url = new URL(String(input), 'http://localhost');
+    const route = routes[`${method} ${url.pathname}`];
     if (!route) return jsonResponse({ status: 404, body: {} });
 
     const body: unknown =
       typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
-    const result = typeof route === 'function' ? await route(body) : route;
+    const result = typeof route === 'function' ? await route(body, url) : route;
     return jsonResponse(result);
   });
   vi.stubGlobal('fetch', fetchMock);
