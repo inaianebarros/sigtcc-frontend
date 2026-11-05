@@ -59,3 +59,5 @@ RN28 - **Orientadores do Curso do Aluno:** O aluno só visualiza, na lista de or
 RN29 - **Funcionalidades Condicionadas à Orientação Ativa:** As funcionalidades que dependem de uma orientação ativa (para o aluno: tema do TCC, atividades e reuniões; para o professor: atividades e reuniões com orientandos) permanecem visíveis, porém desabilitadas, enquanto o aluno não tiver orientador ativo ou o professor não tiver orientandos ativos, com a explicação do motivo.
 
 RN30 - **Encerramento de Orientação:** Somente o professor orientador pode encerrar uma orientação ativa; o aluno não pode. O encerramento é irreversível e exige confirmação explícita, com mensagem que deixe claro que a ação não pode ser desfeita e que as atividades em aberto serão arquivadas (RN07, RNF21).
+
+RN31 - **Unicidade de Artigo Publicado:** Um usuário não pode ter dois artigos publicados com o mesmo título e o mesmo ano. A comparação ignora maiúsculas, acentos e espaços nas pontas; a URL não entra na comparação.
