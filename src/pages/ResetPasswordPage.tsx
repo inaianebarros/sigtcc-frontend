@@ -21,8 +21,8 @@ import { z } from 'zod';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { useSession } from '../hooks/useSession';
 import { homePathFor, paths } from '../navigation/paths';
-import { passwordsMatch, passwordsMismatch } from '../registration/accountForm';
-import { reportRegistrationError } from '../registration/reportRegistrationError';
+import { passwordsMatch, passwordsMismatch } from '../forms/passwordRules';
+import { applyApiFieldErrors } from '../forms/applyApiFieldErrors';
 import { ApiError } from '../services/apiError';
 import { resetPassword } from '../services/passwordRecoveryService';
 
@@ -90,9 +90,7 @@ export function ResetPasswordPage() {
         setLinkRejected(true);
         return;
       }
-      setFormError(
-        reportRegistrationError(error, formFieldByApiField, setError),
-      );
+      setFormError(applyApiFieldErrors(error, formFieldByApiField, setError));
     }
   });
 

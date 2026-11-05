@@ -54,6 +54,28 @@ describe('ResetPasswordPage', () => {
     });
   });
 
+  it('mantém uid e token mesmo com a montagem dupla do StrictMode', async () => {
+    const fetchMock = mockApi({
+      ...sessionless,
+      [RESET_ROUTE]: { status: 200, body: {} },
+    });
+    const user = userEvent.setup();
+    renderApp(LINK, { strict: true });
+    await screen.findByRole('heading', { name: 'Redefinir senha' });
+
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/redefinir-senha$/,
+    );
+    await fillAndSubmit(user);
+
+    await screen.findByRole('heading', { name: 'Entrar' });
+    const [, init] = requestsTo(fetchMock, RESET_ROUTE)[0] ?? [];
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      uid: 'MQ',
+      token: 'abc-123',
+    });
+  });
+
   it('exige as duas senhas e a confirmação igual, sem chamar a API', async () => {
     const fetchMock = mockApi(sessionless);
     const user = userEvent.setup();

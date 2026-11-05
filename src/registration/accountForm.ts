@@ -37,15 +37,6 @@ export const accountDefaults: AccountForm = {
   areaIds: [],
 };
 
-export const passwordsMatch = (
-  form: AccountForm | Pick<AccountForm, 'password' | 'passwordConfirmation'>,
-) => form.password === form.passwordConfirmation;
-
-export const passwordsMismatch = {
-  path: ['passwordConfirmation'],
-  message: 'As senhas não coincidem.',
-};
-
 export const accountFieldByApiField = {
   registration_number: 'registrationNumber',
   full_name: 'fullName',

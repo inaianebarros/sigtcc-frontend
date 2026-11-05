@@ -2,7 +2,7 @@ import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
 import { ApiError, messageForStatus } from '../services/apiError';
 
 /** Leva cada erro da API ao seu campo; devolve o texto do alerta do formulário, se houver. */
-export function reportRegistrationError<T extends FieldValues>(
+export function applyApiFieldErrors<T extends FieldValues>(
   error: unknown,
   fieldByApiField: Record<string, Path<T>>,
   setError: UseFormSetError<T>,
