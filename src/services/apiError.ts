@@ -36,6 +36,9 @@ export function messageForStatus(status: number): string {
   }
   if (status === 401) return SESSION_EXPIRED_MESSAGE;
   if (status === 403) return 'Você não tem permissão para realizar esta ação.';
+  if (status === 429) {
+    return 'Muitos pedidos em pouco tempo. Aguarde um pouco antes de tentar novamente.';
+  }
   if (status === 404) return 'O recurso solicitado não foi encontrado.';
   if (status >= 500) {
     return 'Ocorreu um erro no servidor. Tente novamente em instantes.';
