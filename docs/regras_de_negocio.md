@@ -61,3 +61,5 @@ RN29 - **Funcionalidades Condicionadas à Orientação Ativa:** As funcionalidad
 RN30 - **Encerramento de Orientação:** Somente o professor orientador pode encerrar uma orientação ativa; o aluno não pode. O encerramento é irreversível e exige confirmação explícita, com mensagem que deixe claro que a ação não pode ser desfeita e que as atividades em aberto serão arquivadas (RN07, RNF21).
 
 RN31 - **Unicidade de Artigo Publicado:** Um usuário não pode ter dois artigos publicados com o mesmo título e o mesmo ano. A comparação ignora maiúsculas, acentos e espaços nas pontas; a URL não entra na comparação.
+
+RN32 - **Perfis de Alunos Visíveis ao Professor:** O professor só visualiza o perfil de alunos que lhe enviaram uma solicitação de orientação, em qualquer status, ou que têm ou tiveram orientação com ele. Para qualquer outro aluno, ou para um aluno inativo, o sistema responde como se o perfil não existisse, sem revelar o motivo. O perfil nunca exibe e-mail nem matrícula.

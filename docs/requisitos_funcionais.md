@@ -20,7 +20,7 @@ RF09 - **Pesquisar e Visualizar Orientadores Compatíveis:** O sistema deve apre
 
 RF10 - **Visualizar Perfil do Professor:** O sistema deve permitir que o aluno visualize as informações sobre o professor como: nome, cursos, áreas de interesse e artigos publicados. A disponibilidade para orientar também é exibida.
 
-RF11 - **Visualizar Perfil do Aluno:** O sistema deve permitir que o professor visualize as informações do aluno, como nome, curso e áreas de interesse.
+RF11 - **Visualizar Perfil do Aluno:** O sistema deve permitir que o professor visualize as informações do aluno, como nome, curso, áreas de interesse e artigos publicados, limitado aos alunos com os quais tem vínculo de orientação (RN32).
 
 RF12 - **Solicitar Orientador:** O sistema deve permitir que o aluno que não possua orientador e não tenha nenhuma solicitação em andamento envie pedido de orientação para um professor cadastrado, selecionado a partir da lista de orientadores apresentada no sistema. Não é possível solicitar a um professor indisponível nem a um professor que não seja vinculado ao curso do aluno (RN28).
 
