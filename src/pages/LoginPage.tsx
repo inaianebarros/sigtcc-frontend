@@ -32,9 +32,9 @@ const INVALID_CREDENTIALS_MESSAGE = 'E-mail ou senha inválidos.';
 
 function submitErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    return error.status === 401
-      ? INVALID_CREDENTIALS_MESSAGE
-      : messageForStatus(error.status);
+    if (error.status === 401) return INVALID_CREDENTIALS_MESSAGE;
+    if (error.status === 429) return error.message;
+    return messageForStatus(error.status);
   }
   return messageForStatus(0);
 }

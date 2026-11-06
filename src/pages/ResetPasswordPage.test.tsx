@@ -215,4 +215,28 @@ describe('ResetPasswordPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText('Nova senha')).toBeInTheDocument();
   });
+
+  it('mostra quanto tempo esperar quando há tentativas demais e mantém o formulário', async () => {
+    mockApi({
+      ...sessionless,
+      [RESET_ROUTE]: {
+        status: 429,
+        body: {
+          detail: 'Muitas tentativas. Aguarde antes de tentar novamente.',
+        },
+        headers: { 'Retry-After': '1800' },
+      },
+    });
+    const user = userEvent.setup();
+    await openForm();
+
+    await fillAndSubmit(user);
+
+    expect(
+      await screen.findByText(
+        'Muitas tentativas. Tente novamente em 30 minutos.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Nova senha')).toBeInTheDocument();
+  });
 });

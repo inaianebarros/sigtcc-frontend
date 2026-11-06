@@ -168,4 +168,34 @@ describe('LoginPage', () => {
       await screen.findByText(/Não foi possível conectar ao servidor/),
     ).toBeInTheDocument();
   });
+
+  it('mostra quanto tempo esperar quando as tentativas passam do limite', async () => {
+    mockApi({
+      ...NOT_SIGNED_IN,
+      'POST /api/auth/login': {
+        status: 429,
+        body: {
+          detail: 'Muitas tentativas. Aguarde antes de tentar novamente.',
+        },
+        headers: { 'Retry-After': '900' },
+      },
+    });
+    const user = userEvent.setup();
+    renderApp('/login');
+    await screen.findByRole('heading', { name: 'Entrar' });
+    await user.type(screen.getByLabelText('E-mail'), 'ana@example.com');
+    await user.type(screen.getByLabelText('Senha'), 'qualquer-senha');
+
+    await user.click(screen.getByRole('button', { name: 'Entrar' }));
+
+    expect(
+      await screen.findByText(
+        'Muitas tentativas. Tente novamente em 15 minutos.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeEnabled();
+    expect(
+      screen.queryByText('E-mail ou senha inválidos.'),
+    ).not.toBeInTheDocument();
+  });
 });

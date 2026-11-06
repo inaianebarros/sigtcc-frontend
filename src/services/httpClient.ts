@@ -4,6 +4,7 @@ import {
   SESSION_EXPIRED_MESSAGE,
   fieldErrorsFrom,
   messageForStatus,
+  rateLimitMessage,
 } from './apiError';
 import type { FieldErrors } from './apiError';
 import { tokenStore } from './tokenStore';
@@ -76,6 +77,12 @@ async function send(path: string, init: RequestInit): Promise<Response> {
   }
 }
 
+function retryAfterSecondsOf(response: Response): number | undefined {
+  const header = response.headers.get('Retry-After');
+  const seconds = header === null ? Number.NaN : Number(header);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined;
+}
+
 async function parseError(response: Response): Promise<ApiError> {
   let detail: string | undefined;
   let fieldErrors: FieldErrors = {};
@@ -90,7 +97,13 @@ async function parseError(response: Response): Promise<ApiError> {
     Object.keys(fieldErrors).length > 0
       ? INVALID_FORM_MESSAGE
       : messageForStatus(response.status);
-  return new ApiError(response.status, detail ?? fallback, fieldErrors);
+  const retryAfterSeconds =
+    response.status === 429 ? retryAfterSecondsOf(response) : undefined;
+  const message =
+    retryAfterSeconds === undefined
+      ? (detail ?? fallback)
+      : rateLimitMessage(retryAfterSeconds);
+  return new ApiError(response.status, message, fieldErrors, retryAfterSeconds);
 }
 
 export async function request<T>(

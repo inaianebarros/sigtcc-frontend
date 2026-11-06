@@ -3,13 +3,47 @@ export type FieldErrors = Record<string, string>;
 export class ApiError extends Error {
   readonly status: number;
   readonly fieldErrors: FieldErrors;
+  readonly retryAfterSeconds?: number;
 
-  constructor(status: number, message: string, fieldErrors: FieldErrors = {}) {
+  constructor(
+    status: number,
+    message: string,
+    fieldErrors: FieldErrors = {},
+    retryAfterSeconds?: number,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.fieldErrors = fieldErrors;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
+}
+
+const SECONDS_PER_MINUTE = 60;
+const SECONDS_PER_HOUR = 3600;
+
+function plural(count: number, singular: string): string {
+  return `${count} ${singular}${count === 1 ? '' : 's'}`;
+}
+
+/** Escreve um tempo de espera em segundos, minutos ou horas, arredondando para cima. */
+export function waitTimeText(seconds: number): string {
+  if (seconds < SECONDS_PER_MINUTE) return plural(seconds, 'segundo');
+  if (seconds < SECONDS_PER_HOUR) {
+    return plural(Math.ceil(seconds / SECONDS_PER_MINUTE), 'minuto');
+  }
+  return plural(Math.ceil(seconds / SECONDS_PER_HOUR), 'hora');
+}
+
+export function rateLimitMessage(retryAfterSeconds?: number): string {
+  if (
+    retryAfterSeconds === undefined ||
+    !Number.isFinite(retryAfterSeconds) ||
+    retryAfterSeconds <= 0
+  ) {
+    return 'Muitas tentativas. Aguarde um pouco antes de tentar novamente.';
+  }
+  return `Muitas tentativas. Tente novamente em ${waitTimeText(Math.ceil(retryAfterSeconds))}.`;
 }
 
 export const INVALID_FORM_MESSAGE = 'Verifique os campos do formulário.';
@@ -36,9 +70,7 @@ export function messageForStatus(status: number): string {
   }
   if (status === 401) return SESSION_EXPIRED_MESSAGE;
   if (status === 403) return 'Você não tem permissão para realizar esta ação.';
-  if (status === 429) {
-    return 'Muitos pedidos em pouco tempo. Aguarde um pouco antes de tentar novamente.';
-  }
+  if (status === 429) return rateLimitMessage();
   if (status === 404) return 'O recurso solicitado não foi encontrado.';
   if (status >= 500) {
     return 'Ocorreu um erro no servidor. Tente novamente em instantes.';
