@@ -62,4 +62,4 @@ RNF24 - **Responsividade:** A interface do sistema deve ser responsiva, adaptand
 
 RNF27 - **Navegação Lateral:** A navegação principal deve ser um menu lateral à esquerda, com os itens do perfil do usuário, recolhível em telas pequenas. Os itens indisponíveis por regra de negócio (RN29) permanecem visíveis, desabilitados e com o motivo explicado.
 
-RNF28 - **Alterações Não Salvas:** As telas de edição de perfil devem avisar o usuário e pedir confirmação antes de descartar alterações não salvas ao sair da tela, seja por navegação interna, voltar do navegador ou fechar ou recarregar a aba.
+RNF28 - **Alterações Não Salvas:** As telas de edição de perfil devem gravar todas as alterações por um único fluxo, o botão de salvar. Enquanto houver alterações pendentes, a tela deve exibir no topo um aviso visível informando que é necessário salvá-las. Antes de descartar alterações não salvas ao sair da tela, seja por navegação interna, voltar do navegador ou fechar ou recarregar a aba, o sistema deve pedir confirmação ao usuário.
