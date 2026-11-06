@@ -26,15 +26,16 @@ function plural(count: number, singular: string): string {
   return `${count} ${singular}${count === 1 ? '' : 's'}`;
 }
 
-/** Escreve um tempo de espera em segundos, minutos ou horas, arredondando para cima. */
+/** Escreve um tempo de espera em segundos, minutos ou horas, sempre arredondando para cima. */
 export function waitTimeText(seconds: number): string {
-  if (seconds < SECONDS_PER_MINUTE) return plural(seconds, 'segundo');
-  if (seconds < SECONDS_PER_HOUR) {
-    return plural(Math.ceil(seconds / SECONDS_PER_MINUTE), 'minuto');
-  }
-  return plural(Math.ceil(seconds / SECONDS_PER_HOUR), 'hora');
+  const wholeSeconds = Math.ceil(seconds);
+  if (wholeSeconds < SECONDS_PER_MINUTE) return plural(wholeSeconds, 'segundo');
+  const minutes = Math.ceil(wholeSeconds / SECONDS_PER_MINUTE);
+  if (minutes < SECONDS_PER_MINUTE) return plural(minutes, 'minuto');
+  return plural(Math.ceil(wholeSeconds / SECONDS_PER_HOUR), 'hora');
 }
 
+/** Mensagem do 429: com o tempo de espera quando o servidor o informa, sem ele caso contrário. */
 export function rateLimitMessage(retryAfterSeconds?: number): string {
   if (
     retryAfterSeconds === undefined ||
@@ -43,7 +44,7 @@ export function rateLimitMessage(retryAfterSeconds?: number): string {
   ) {
     return 'Muitas tentativas. Aguarde um pouco antes de tentar novamente.';
   }
-  return `Muitas tentativas. Tente novamente em ${waitTimeText(Math.ceil(retryAfterSeconds))}.`;
+  return `Muitas tentativas. Tente novamente em ${waitTimeText(retryAfterSeconds)}.`;
 }
 
 export const INVALID_FORM_MESSAGE = 'Verifique os campos do formulário.';
