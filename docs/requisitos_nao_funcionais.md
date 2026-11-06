@@ -61,3 +61,5 @@ RNF23 - **Contraste de Interface:** Os elementos visuais da interface devem segu
 RNF24 - **Responsividade:** A interface do sistema deve ser responsiva, adaptando seu layout para diferentes tamanhos de tela com base nos breakpoints do Material UI.
 
 RNF27 - **Navegação Lateral:** A navegação principal deve ser um menu lateral à esquerda, com os itens do perfil do usuário, recolhível em telas pequenas. Os itens indisponíveis por regra de negócio (RN29) permanecem visíveis, desabilitados e com o motivo explicado.
+
+RNF28 - **Alterações Não Salvas:** As telas de edição de perfil devem avisar o usuário e pedir confirmação antes de descartar alterações não salvas ao sair da tela, seja por navegação interna, voltar do navegador ou fechar ou recarregar a aba.
