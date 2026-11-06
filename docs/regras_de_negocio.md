@@ -54,7 +54,7 @@ RN26 - **Disponibilidade do Professor:** O professor indica em seu perfil se est
 
 RN27 - **Encerramento de Sessões:** Ao redefinir ou alterar a senha de um usuário, e ao desativar a sua conta, todas as sessões ativas desse usuário são encerradas.
 
-RN28 - **Orientadores do Curso do Aluno:** O aluno só visualiza, na lista de orientadores, e só pode solicitar orientação a professores vinculados ao seu curso. O curso da lista é sempre o do aluno e não pode ser alterado por ele.
+RN28 - **Orientadores do Curso do Aluno:** O aluno só visualiza, na lista de orientadores e em seus perfis, e só pode solicitar orientação a professores vinculados ao seu curso. O curso da lista é sempre o do aluno e não pode ser alterado por ele.
 
 RN29 - **Funcionalidades Condicionadas à Orientação Ativa:** As funcionalidades que dependem de uma orientação ativa (para o aluno: tema do TCC, atividades e reuniões; para o professor: atividades e reuniões com orientandos) permanecem visíveis, porém desabilitadas, enquanto o aluno não tiver orientador ativo ou o professor não tiver orientandos ativos, com a explicação do motivo.
 
