@@ -2,7 +2,7 @@
 
 RN01 - **Unicidade de E-mail:** O e-mail utilizado no cadastro deve ser único no sistema, independente do tipo de usuário.
 
-RN02 - **Confirmação de Senha na Alteração:** Para alterar a senha, o usuário deve confirmar sua senha atual antes de definir a nova.
+RN02 - **Confirmação de Senha na Alteração:** Para alterar a senha, o usuário deve confirmar sua senha atual antes de definir a nova, e a nova senha deve ser diferente da atual.
 
 RN03 - **Validade do Link de Recuperação:** O link de redefinição de senha enviado por e-mail deve ter validade de tempo limitada, expirando após o prazo definido.
 

@@ -18,7 +18,7 @@ RNF07 - **Expiração de Sessão:** A sessão do usuário deve expirar automatic
 
 RNF08 - **Validade do Link de Recuperação:** O link de recuperação de senha deve expirar em até 1 hora após seu envio.
 
-RNF25 - **Limitação de Tentativas:** O sistema deve limitar a taxa de tentativas de login e de pedidos de redefinição de senha por conta e por cliente, bloqueando temporariamente novas tentativas após 5 falhas em 15 minutos, para dificultar ataques automatizados.
+RNF25 - **Limitação de Tentativas:** O sistema deve limitar a taxa de tentativas de login, de pedidos de redefinição de senha e de confirmação da senha atual na alteração de senha, por conta e por cliente, bloqueando temporariamente novas tentativas após 5 falhas em 15 minutos, para dificultar ataques automatizados.
 
 ## Confiabilidade
 
