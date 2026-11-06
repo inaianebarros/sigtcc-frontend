@@ -96,6 +96,8 @@ RF47 - **Notificar Professor sobre Atividade Aguardando Revisão:** O sistema de
 
 RF48 - **Notificar Aluno sobre Resultado da Revisão de Atividade:** O sistema deve notificar o aluno quando o professor aceitar ou recusar uma atividade em revisão.
 
+RF49 - **Consultar Histórico de Orientações:** O sistema deve permitir que o aluno consulte as suas orientações encerradas e que o professor consulte as orientações que encerrou, exibindo a outra parte, as datas de início e de encerramento e o motivo do encerramento (RN33). Cada usuário vê somente as suas próprias orientações, da mais recente para a mais antiga e de forma paginada.
+
 RFADM01 - **Cadastrar Curso:** O sistema deve permitir que o admin cadastre um novo curso ao sistema.
 
 RFADM02 - **Editar Curso:** O sistema deve permitir que o admin edite as informações de um curso.
