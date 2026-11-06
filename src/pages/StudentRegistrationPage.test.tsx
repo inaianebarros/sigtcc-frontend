@@ -376,4 +376,31 @@ describe('StudentRegistrationPage', () => {
       screen.getByText('Erro de um campo desconhecido.'),
     ).toBeInTheDocument();
   });
+
+  it('mostra quanto tempo esperar quando o servidor limita as tentativas', async () => {
+    mockApi({
+      ...catalog,
+      [REGISTER_ROUTE]: {
+        status: 429,
+        body: {
+          detail: 'Muitas tentativas. Aguarde antes de tentar novamente.',
+        },
+        headers: { 'Retry-After': '120' },
+      },
+    });
+    const user = userEvent.setup();
+    await openForm();
+    await fillValidForm(user);
+
+    await user.click(screen.getByRole('button', { name: 'Cadastrar' }));
+
+    expect(
+      await screen.findByText(
+        'Muitas tentativas. Tente novamente em 2 minutos.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('E-mail')).toHaveValue(
+      'ana.souza@example.com',
+    );
+  });
 });

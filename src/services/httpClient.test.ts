@@ -87,3 +87,102 @@ describe('httpClient', () => {
     expect((error as ApiError).message).toMatch(/conectar ao servidor/);
   });
 });
+
+describe('limite de tentativas (429)', () => {
+  const fetchMock = vi.fn<typeof fetch>();
+  const rateLimited = (headers?: Record<string, string>) =>
+    new Response(
+      JSON.stringify({
+        detail: 'Muitas tentativas. Aguarde antes de tentar novamente.',
+      }),
+      { status: 429, headers },
+    );
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock);
+    tokenStore.clear();
+  });
+
+  afterEach(() => {
+    fetchMock.mockReset();
+    vi.unstubAllGlobals();
+  });
+
+  it('usa o Retry-After para dizer quanto tempo esperar', async () => {
+    fetchMock.mockResolvedValueOnce(rateLimited({ 'Retry-After': '900' }));
+
+    const error: unknown = await httpClient
+      .post('/auth/login', { email: 'a@b.c', password: 'x' })
+      .catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({
+      status: 429,
+      retryAfterSeconds: 900,
+      message: 'Muitas tentativas. Tente novamente em 15 minutos.',
+    });
+  });
+
+  it('sem Retry-After usa a mensagem do servidor', async () => {
+    fetchMock.mockResolvedValueOnce(rateLimited());
+
+    const error: unknown = await httpClient
+      .post('/auth/login', {})
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({
+      status: 429,
+      message: 'Muitas tentativas. Aguarde antes de tentar novamente.',
+    });
+    expect((error as ApiError).retryAfterSeconds).toBeUndefined();
+  });
+
+  it('ignora um Retry-After que não é um número positivo', async () => {
+    fetchMock.mockResolvedValueOnce(rateLimited({ 'Retry-After': 'amanhã' }));
+
+    const error: unknown = await httpClient
+      .post('/auth/login', {})
+      .catch((caught: unknown) => caught);
+
+    expect((error as ApiError).retryAfterSeconds).toBeUndefined();
+  });
+
+  it('entende o Retry-After escrito como data HTTP', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+    fetchMock.mockResolvedValueOnce(
+      rateLimited({ 'Retry-After': 'Thu, 01 Jan 2026 00:01:30 GMT' }),
+    );
+
+    const error: unknown = await httpClient
+      .post('/auth/login', {})
+      .catch((caught: unknown) => caught);
+
+    vi.useRealTimers();
+    expect(error).toMatchObject({
+      retryAfterSeconds: 90,
+      message: 'Muitas tentativas. Tente novamente em 2 minutos.',
+    });
+  });
+
+  it('um 429 na renovação da sessão avisa a espera e não derruba a sessão', async () => {
+    const onExpired = vi.fn();
+    setSessionExpiredHandler(onExpired);
+    tokenStore.set('token-que-expirou');
+    fetchMock
+      .mockResolvedValueOnce(new Response('{}', { status: 401 }))
+      .mockResolvedValueOnce(rateLimited({ 'Retry-After': '30' }));
+
+    const error: unknown = await httpClient
+      .get('/auth/me')
+      .catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({
+      status: 429,
+      retryAfterSeconds: 30,
+      message: 'Muitas tentativas. Tente novamente em 30 segundos.',
+    });
+    expect(tokenStore.get()).toBe('token-que-expirou');
+    expect(onExpired).not.toHaveBeenCalled();
+  });
+});

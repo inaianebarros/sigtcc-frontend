@@ -4,6 +4,7 @@ import {
   SESSION_EXPIRED_MESSAGE,
   fieldErrorsFrom,
   messageForStatus,
+  rateLimitMessage,
 } from './apiError';
 import type { FieldErrors } from './apiError';
 import { tokenStore } from './tokenStore';
@@ -23,7 +24,7 @@ export interface RequestOptions {
 type SessionExpiredHandler = (message: string) => void;
 
 let onSessionExpired: SessionExpiredHandler = () => {};
-let refreshInFlight: Promise<boolean> | null = null;
+let refreshInFlight: Promise<RenewalOutcome> | null = null;
 
 export function setSessionExpiredHandler(
   handler: SessionExpiredHandler,
@@ -34,28 +35,44 @@ export function setSessionExpiredHandler(
   };
 }
 
+type RenewalOutcome =
+  | { renewed: true }
+  | { renewed: false; rateLimited: false }
+  | { renewed: false; rateLimited: true; retryAfterSeconds?: number };
+
 /** Único ponto de renovação do token (ADR frontend 0001: cookie httpOnly de refresh). */
-async function refreshAccessToken(): Promise<boolean> {
+async function refreshAccessToken(): Promise<RenewalOutcome> {
   try {
     const response = await fetch(`${API_BASE_URL}${REFRESH_PATH}`, {
       method: 'POST',
       credentials: 'include',
     });
-    if (!response.ok) return false;
+    if (response.status === 429) {
+      return {
+        renewed: false,
+        rateLimited: true,
+        retryAfterSeconds: retryAfterSecondsOf(response),
+      };
+    }
+    if (!response.ok) return { renewed: false, rateLimited: false };
     const body = (await response.json()) as { access_token?: string };
-    if (!body.access_token) return false;
+    if (!body.access_token) return { renewed: false, rateLimited: false };
     tokenStore.set(body.access_token);
-    return true;
+    return { renewed: true };
   } catch {
-    return false;
+    return { renewed: false, rateLimited: false };
   }
 }
 
-export function renewAccessToken(): Promise<boolean> {
+function renewSession(): Promise<RenewalOutcome> {
   refreshInFlight ??= refreshAccessToken().finally(() => {
     refreshInFlight = null;
   });
   return refreshInFlight;
+}
+
+export async function renewAccessToken(): Promise<boolean> {
+  return (await renewSession()).renewed;
 }
 
 async function send(path: string, init: RequestInit): Promise<Response> {
@@ -76,6 +93,18 @@ async function send(path: string, init: RequestInit): Promise<Response> {
   }
 }
 
+/** O Retry-After vem em segundos ou como data HTTP (RFC 9110); devolve segundos, ou nada se inválido. */
+function retryAfterSecondsOf(response: Response): number | undefined {
+  const header = response.headers.get('Retry-After');
+  if (header === null || header.trim() === '') return undefined;
+  const seconds = Number(header);
+  if (Number.isFinite(seconds)) return seconds > 0 ? seconds : undefined;
+  const untilDate = (Date.parse(header) - Date.now()) / 1000;
+  return Number.isFinite(untilDate) && untilDate > 0
+    ? Math.ceil(untilDate)
+    : undefined;
+}
+
 async function parseError(response: Response): Promise<ApiError> {
   let detail: string | undefined;
   let fieldErrors: FieldErrors = {};
@@ -90,7 +119,13 @@ async function parseError(response: Response): Promise<ApiError> {
     Object.keys(fieldErrors).length > 0
       ? INVALID_FORM_MESSAGE
       : messageForStatus(response.status);
-  return new ApiError(response.status, detail ?? fallback, fieldErrors);
+  const retryAfterSeconds =
+    response.status === 429 ? retryAfterSecondsOf(response) : undefined;
+  const message =
+    retryAfterSeconds === undefined
+      ? (detail ?? fallback)
+      : rateLimitMessage(retryAfterSeconds);
+  return new ApiError(response.status, message, fieldErrors, retryAfterSeconds);
 }
 
 export async function request<T>(
@@ -103,8 +138,17 @@ export async function request<T>(
   let response = await send(path, init);
 
   if (response.status === 401 && renewSessionOn401) {
-    if (await renewAccessToken()) {
+    const renewal = await renewSession();
+    if (renewal.renewed) {
       response = await send(path, init);
+    } else if (renewal.rateLimited) {
+      // Limite de tentativas de renovação: a sessão continua válida, o usuário só precisa esperar.
+      throw new ApiError(
+        429,
+        rateLimitMessage(renewal.retryAfterSeconds),
+        {},
+        renewal.retryAfterSeconds,
+      );
     } else {
       tokenStore.clear();
       onSessionExpired(SESSION_EXPIRED_MESSAGE);

@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 export interface MockResponse {
   status?: number;
   body?: unknown;
+  headers?: Record<string, string>;
 }
 
 type Handler = (
@@ -10,9 +11,14 @@ type Handler = (
   url: URL,
 ) => MockResponse | Promise<MockResponse>;
 
-export function jsonResponse({ status = 200, body }: MockResponse): Response {
+export function jsonResponse({
+  status = 200,
+  body,
+  headers,
+}: MockResponse): Response {
   return new Response(body === undefined ? null : JSON.stringify(body), {
     status,
+    headers,
   });
 }
 

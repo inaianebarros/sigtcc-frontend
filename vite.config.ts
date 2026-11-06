@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       headers: { 'Referrer-Policy': 'no-referrer' },
       proxy: {
-        '/api': { target: proxyTarget, changeOrigin: true },
+        '/api': { target: proxyTarget, changeOrigin: true, xfwd: true },
       },
     },
     test: {

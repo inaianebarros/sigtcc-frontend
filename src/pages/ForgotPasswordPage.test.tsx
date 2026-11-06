@@ -94,6 +94,29 @@ describe('ForgotPasswordPage', () => {
     expect(await screen.findByText(/Se houver uma conta/)).toBeInTheDocument();
   });
 
+  it('mostra quanto tempo esperar quando há pedidos demais e mantém o formulário', async () => {
+    mockApi({
+      ...sessionless,
+      [FORGOT_ROUTE]: {
+        status: 429,
+        body: {
+          detail: 'Muitas tentativas. Aguarde antes de tentar novamente.',
+        },
+        headers: { 'Retry-After': '3600' },
+      },
+    });
+    const user = userEvent.setup();
+    await openForm();
+    await user.type(screen.getByLabelText('E-mail'), 'alguem@example.com');
+
+    await user.click(screen.getByRole('button', { name: 'Enviar link' }));
+
+    expect(
+      await screen.findByText('Muitas tentativas. Tente novamente em 1 hora.'),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('E-mail')).toHaveValue('alguem@example.com');
+  });
+
   it('avisa quando há pedidos demais e mantém o formulário', async () => {
     mockApi({ ...sessionless, [FORGOT_ROUTE]: { status: 429, body: {} } });
     const user = userEvent.setup();
@@ -102,9 +125,7 @@ describe('ForgotPasswordPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Enviar link' }));
 
-    expect(
-      await screen.findByText(/Muitos pedidos em pouco tempo/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Muitas tentativas/)).toBeInTheDocument();
     expect(screen.getByLabelText('E-mail')).toHaveValue('alguem@example.com');
   });
 
