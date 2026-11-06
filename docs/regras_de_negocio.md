@@ -63,3 +63,5 @@ RN30 - **Encerramento de Orientação:** Somente o professor orientador pode enc
 RN31 - **Unicidade de Artigo Publicado:** Um usuário não pode ter dois artigos publicados com o mesmo título e o mesmo ano. A comparação ignora maiúsculas, acentos e espaços nas pontas; a URL não entra na comparação.
 
 RN32 - **Perfis de Alunos Visíveis ao Professor:** O professor só visualiza o perfil de alunos que lhe enviaram uma solicitação de orientação, em qualquer status, ou que têm ou tiveram orientação com ele. Para qualquer outro aluno, ou para um aluno inativo, o sistema responde como se o perfil não existisse, sem revelar o motivo. O perfil nunca exibe e-mail nem matrícula.
+
+RN33 - **Motivo do Encerramento de Orientação:** Ao encerrar uma orientação, o professor deve informar o motivo, em texto livre de 10 a 500 caracteres, sem contar espaços nas pontas. Sem o motivo, o encerramento não é realizado. O motivo fica registrado junto com a data do encerramento e é exibido ao aluno e ao professor no histórico da orientação encerrada (RN30).
