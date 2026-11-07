@@ -59,6 +59,30 @@ const FILTERS: readonly {
   },
 ];
 
+const DIALOG_COPY: Record<
+  AnswerAction,
+  {
+    verb: string;
+    message: string;
+    color: 'primary' | 'error';
+    done: string;
+  }
+> = {
+  accept: {
+    verb: 'Aceitar',
+    message: 'Aceitar cria a orientação ativa com este aluno.',
+    color: 'primary',
+    done: 'Solicitação aceita.',
+  },
+  reject: {
+    verb: 'Recusar',
+    message:
+      'O aluno será avisado da recusa. Não é preciso informar um motivo.',
+    color: 'error',
+    done: 'Solicitação recusada.',
+  },
+};
+
 function foundText(count: number): string {
   return `${count} ${count === 1 ? 'solicitação encontrada' : 'solicitações encontradas'}`;
 }
@@ -77,26 +101,29 @@ export function TeacherRequestsPage() {
     action: AnswerAction;
   } | null>(null);
   // O texto do diálogo fica guardado: ele não pode mudar durante a animação de saída.
-  const [dialogText, setDialogText] = useState({
-    name: '',
-    action: 'accept' as AnswerAction,
-  });
+  const [dialogText, setDialogText] = useState<{
+    name: string;
+    action: AnswerAction;
+  }>({ name: '', action: 'accept' });
   const [sending, setSending] = useState(false);
   // As respostas do servidor valem no lugar da solicitação antiga, só para a lista atual: ao
   // recarregar, a lista que o servidor devolve é a verdade.
-  const [answered, setAnswered] = useState<{
+  const [answeredRequests, setAnsweredRequests] = useState<{
     listKey: string;
     items: Record<number, ReceivedRequest>;
   }>({ listKey, items: {} });
-  const overrides = answered.listKey === listKey ? answered.items : {};
-  const cards = useRef(new Map<number, HTMLElement>());
+  const overrides =
+    answeredRequests.listKey === listKey ? answeredRequests.items : {};
+  const cardElements = useRef(new Map<number, HTMLElement>());
+  const focusAfterClose = useRef<number | null>(null);
   const { knownCount, lastPage } = usePageBounds(
     list,
     REQUESTS_PAGE_SIZE,
     page,
     setPage,
   );
-  const empty = FILTERS.find((item) => item.value === filter)?.empty ?? '';
+  const emptyMessage =
+    FILTERS.find((item) => item.value === filter)?.empty ?? '';
 
   const confirmAnswer = async () => {
     if (!answering || sending) return;
@@ -104,15 +131,15 @@ export function TeacherRequestsPage() {
     setSending(true);
     try {
       const updated = await answerRequest(request.id, action);
-      setAnswered({ listKey, items: { ...overrides, [updated.id]: updated } });
+      setAnsweredRequests({
+        listKey,
+        items: { ...overrides, [updated.id]: updated },
+      });
       setAnswering(null);
-      notify(
-        action === 'accept' ? 'Solicitação aceita.' : 'Solicitação recusada.',
-        'success',
-      );
+      notify(DIALOG_COPY[action].done, 'success');
       if (action === 'accept') void refreshUser();
-      // O botão usado some do cartão: o foco vai para o próprio cartão, depois do diálogo.
-      setTimeout(() => cards.current.get(updated.id)?.focus(), 350);
+      // O botão usado some do cartão: o foco vai para o próprio cartão, quando o diálogo sair.
+      focusAfterClose.current = updated.id;
     } catch (error) {
       setAnswering(null);
       notify(
@@ -141,7 +168,12 @@ export function TeacherRequestsPage() {
         <RadioGroup
           row
           value={filter}
-          onChange={(event) => setFilter(event.target.value as RequestFilter)}
+          onChange={(event) => {
+            const chosen = FILTERS.find(
+              (item) => item.value === event.target.value,
+            );
+            if (chosen) setFilter(chosen.value);
+          }}
         >
           {FILTERS.map((item) => (
             <FormControlLabel
@@ -179,7 +211,7 @@ export function TeacherRequestsPage() {
           </Stack>
         )}
         {list.status === 'ready' && list.data.count === 0 && (
-          <Alert severity="info">{empty}</Alert>
+          <Alert severity="info">{emptyMessage}</Alert>
         )}
         {list.status === 'ready' && list.data.items.length > 0 && (
           <Stack spacing={2}>
@@ -190,8 +222,8 @@ export function TeacherRequestsPage() {
                   key={request.id}
                   request={request}
                   cardRef={(element) => {
-                    if (element) cards.current.set(request.id, element);
-                    else cards.current.delete(request.id);
+                    if (element) cardElements.current.set(request.id, element);
+                    else cardElements.current.delete(request.id);
                   }}
                   onAnswer={(chosen, action) => {
                     setDialogText({ name: chosen.student.fullName, action });
@@ -216,15 +248,16 @@ export function TeacherRequestsPage() {
       />
       <ConfirmDialog
         open={answering !== null}
-        title={`${dialogText.action === 'accept' ? 'Aceitar' : 'Recusar'} a solicitação de ${dialogText.name}?`}
-        message={
-          dialogText.action === 'accept'
-            ? 'Aceitar cria a orientação ativa com este aluno.'
-            : 'O aluno será avisado da recusa. Não é preciso informar um motivo.'
-        }
-        confirmLabel={dialogText.action === 'accept' ? 'Aceitar' : 'Recusar'}
-        confirmColor={dialogText.action === 'accept' ? 'primary' : 'error'}
+        title={`${DIALOG_COPY[dialogText.action].verb} a solicitação de ${dialogText.name}?`}
+        message={DIALOG_COPY[dialogText.action].message}
+        confirmLabel={DIALOG_COPY[dialogText.action].verb}
+        confirmColor={DIALOG_COPY[dialogText.action].color}
         busy={sending}
+        onExited={() => {
+          const id = focusAfterClose.current;
+          focusAfterClose.current = null;
+          if (id !== null) cardElements.current.get(id)?.focus();
+        }}
         onCancel={() => setAnswering(null)}
         onConfirm={confirmAnswer}
       />

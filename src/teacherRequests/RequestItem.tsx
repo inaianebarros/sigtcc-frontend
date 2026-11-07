@@ -26,10 +26,11 @@ function whyNoButtons(status: ReceivedRequest['status']): string {
 interface RequestItemProps {
   request: ReceivedRequest;
   /** Para a tela levar o foco ao cartão depois de uma resposta. */
-  cardRef?: (element: HTMLElement | null) => void;
+  cardRef: (element: HTMLElement | null) => void;
   onAnswer: (request: ReceivedRequest, action: AnswerAction) => void;
 }
 
+/** O cartão de uma solicitação recebida, com Aceitar e Recusar só enquanto ela é respondível. */
 export function RequestItem({ request, cardRef, onAnswer }: RequestItemProps) {
   const titleId = useId();
   const { student } = request;

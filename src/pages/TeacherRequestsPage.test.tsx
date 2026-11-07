@@ -94,6 +94,15 @@ describe('TeacherRequestsPage: a lista e o filtro', () => {
     ).toBeVisible();
   });
 
+  it('mostra as solicitações na ordem em que a API as devolve', async () => {
+    setup([makeRequest(7), makeRequest(3), makeRequest(5)]);
+    await screen.findByText('Aluno 7');
+
+    expect(
+      screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent),
+    ).toEqual(['Aluno 7', 'Aluno 3', 'Aluno 5']);
+  });
+
   it('não mostra e-mail, matrícula nem link para o perfil do aluno', async () => {
     setup();
     await screen.findByText('Ana Souza');
