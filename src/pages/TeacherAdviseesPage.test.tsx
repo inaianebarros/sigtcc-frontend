@@ -120,14 +120,14 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
     ]);
   });
 
-  it('não mostra e-mail, matrícula, link nem botão de encerrar no cartão', async () => {
+  it('não mostra e-mail, matrícula nem link no cartão, só a ação de encerrar', async () => {
     setup();
     await screen.findByText('Orientando 1');
 
     const card = cardOf('Orientando 1');
 
     expect(within(card).queryByRole('link')).not.toBeInTheDocument();
-    expect(within(card).queryByRole('button')).not.toBeInTheDocument();
+    expect(within(card).getAllByRole('button')).toHaveLength(1);
     expect(card.textContent).not.toMatch(/@/);
   });
 
@@ -280,7 +280,7 @@ describe('TeacherAdviseesPage: estados, acesso e celular', () => {
   });
 
   it('sem orientandos, explica e leva a "Solicitações"', async () => {
-    mockApi(adviseeRoutes([], { active_advisees_count: 0 }));
+    mockApi(adviseeRoutes([]));
     renderApp(PATH);
 
     expect(

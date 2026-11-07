@@ -37,33 +37,59 @@ export function makeAdvisee(
 
 type Handler = MockResponse | ((body: unknown, url: URL) => MockResponse);
 
-/** Um servidor simulado que pagina como a API real e mantém a ordem recebida. */
+/**
+ * Um servidor simulado com estado: pagina como a API real, mantém a ordem recebida e, ao encerrar
+ * uma orientação, tira o orientando da lista e da contagem que o menu lê em /auth/me.
+ */
 export function adviseeRoutes(
   items: FakeAdvisee[],
-  teacher: { active_advisees_count: number } = {
-    active_advisees_count: items.length,
-  },
+  ends: Record<number, Handler> = {},
 ): Record<string, Handler> {
-  return {
+  const state = [...items];
+  const routes: Record<string, Handler> = {
     'POST /api/auth/refresh': { body: { access_token: 't' } },
-    'GET /api/auth/me': {
+    'GET /api/auth/me': () => ({
       body: {
         id: 9,
         full_name: 'Carlos Lima',
         email: 'carlos@example.com',
         type: 'teacher',
-        ...teacher,
+        active_advisees_count: state.length,
       },
-    },
+    }),
     'GET /api/orientacao/orientandos': (_body, url) => {
       const limit = Number(url.searchParams.get('limit') ?? 20);
       const offset = Number(url.searchParams.get('offset') ?? 0);
       return {
         body: {
-          items: items.slice(offset, offset + limit),
-          count: items.length,
+          items: state.slice(offset, offset + limit),
+          count: state.length,
         },
       };
     },
   };
+  for (const item of items) {
+    routes[`POST /api/orientacao/${item.advising_id}/encerrar`] = (
+      body,
+      url,
+    ) => {
+      const custom = ends[item.advising_id];
+      if (custom)
+        return typeof custom === 'function' ? custom(body, url) : custom;
+      const index = state.findIndex(
+        (candidate) => candidate.advising_id === item.advising_id,
+      );
+      if (index >= 0) state.splice(index, 1);
+      return {
+        body: {
+          id: item.advising_id,
+          status: 'ended',
+          started_at: item.started_at,
+          ended_at: '2026-11-08T10:00:00Z',
+          reason: (body as { reason: string }).reason,
+        },
+      };
+    };
+  }
+  return routes;
 }

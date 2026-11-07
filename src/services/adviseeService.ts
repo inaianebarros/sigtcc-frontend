@@ -70,3 +70,11 @@ export async function listAdvisees(page: number): Promise<AdviseePage> {
     })),
   };
 }
+
+/** O professor orientador encerra a orientação, com o motivo (RN30 e RN33); o servidor decide. */
+export async function endAdvising(
+  advisingId: number,
+  reason: string,
+): Promise<void> {
+  await httpClient.post(`/orientacao/${advisingId}/encerrar`, { reason });
+}

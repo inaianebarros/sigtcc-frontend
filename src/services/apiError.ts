@@ -47,6 +47,16 @@ export function rateLimitMessage(retryAfterSeconds?: number): string {
   return `Muitas tentativas. Tente novamente em ${waitTimeText(retryAfterSeconds)}.`;
 }
 
+/**
+ * 404 e 409 dizem que a situação do recurso mudou desde que a tela o leu (já respondido, já
+ * encerrado, não é mais seu): quem mostrava a ação deve ler a lista de novo.
+ */
+export function isStateChangedError(error: unknown): error is ApiError {
+  return (
+    error instanceof ApiError && (error.status === 404 || error.status === 409)
+  );
+}
+
 export const INVALID_FORM_MESSAGE = 'Verifique os campos do formulário.';
 
 export function fieldErrorsFrom(detail: unknown[]): FieldErrors {
