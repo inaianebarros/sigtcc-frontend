@@ -40,13 +40,16 @@ function plain(text: string): string {
     .toLowerCase();
 }
 
-/** Um servidor simulado: filtra por nome (sem acentos) e pagina como a API real. */
+/** Um servidor simulado: filtra por nome (sem acentos) e por disponibilidade, e pagina como a API real. */
 export function searchResponse(advisors: FakeAdvisor[], url: URL) {
   const name = plain(url.searchParams.get('name') ?? '');
   const limit = Number(url.searchParams.get('limit') ?? 20);
   const offset = Number(url.searchParams.get('offset') ?? 0);
-  const matching = advisors.filter((advisor) =>
-    plain(advisor.full_name).includes(name),
+  const onlyAvailable = url.searchParams.get('only_available') !== 'false';
+  const matching = advisors.filter(
+    (advisor) =>
+      plain(advisor.full_name).includes(name) &&
+      (!onlyAvailable || advisor.is_available),
   );
   return {
     body: {

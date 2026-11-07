@@ -1,9 +1,11 @@
 import {
   Alert,
   Button,
+  FormControlLabel,
   Pagination,
   Skeleton,
   Stack,
+  Switch,
   TextField,
   Typography,
 } from '@mui/material';
@@ -51,11 +53,20 @@ function pageLabel(
   return 'Ir para a página anterior';
 }
 
-function foundText(count: number): string {
-  return `${count} ${count === 1 ? 'professor encontrado' : 'professores encontrados'}`;
+function foundText(count: number, onlyAvailable: boolean): string {
+  const one = count === 1;
+  if (onlyAvailable) {
+    return `${count} ${one ? 'professor disponível encontrado' : 'professores disponíveis encontrados'}`;
+  }
+  return `${count} ${one ? 'professor encontrado' : 'professores encontrados'}`;
 }
 
-function emptyMessage(name: string): string {
+function emptyMessage(name: string, onlyAvailable: boolean): string {
+  if (onlyAvailable) {
+    return name
+      ? `Nenhum professor disponível encontrado para “${name}”.`
+      : 'Nenhum professor disponível no momento.';
+  }
   return name
     ? `Nenhum professor encontrado para “${name}”.`
     : 'Ainda não há professores cadastrados para o seu curso.';
@@ -67,10 +78,16 @@ export function AdvisorsPage() {
   const [statusReload, setStatusReload] = useState(0);
   const [typed, setTyped] = useState('');
   const name = useDebouncedValue(typed, SEARCH_DEBOUNCE_MS).trim();
-  // A página escolhida vale só para o termo atual: ao mudar o termo, volta à página 1.
-  const [chosen, setChosen] = useState({ name: '', page: 1 });
-  if (chosen.name !== name) setChosen({ name, page: 1 });
-  const page = chosen.name === name ? chosen.page : 1;
+  // A escolha de ver os indisponíveis não é guardada: cada visita começa pelo padrão.
+  const [showAll, setShowAll] = useState(false);
+  const onlyAvailable = !showAll;
+  // A página escolhida vale só para os filtros atuais: se algum mudar, volta à página 1.
+  // Um filtro novo entra só nesta chave.
+  const filterKey = `${name}|${onlyAvailable}`;
+  const [chosen, setChosen] = useState({ filterKey, page: 1 });
+  if (chosen.filterKey !== filterKey) setChosen({ filterKey, page: 1 });
+  const page = chosen.filterKey === filterKey ? chosen.page : 1;
+  const switchInput = useRef<HTMLInputElement>(null);
   const listTop = useRef<HTMLDivElement>(null);
   const eligibility = useLoad(getRequestEligibility, `status-${statusReload}`);
   const noticeId = useId();
@@ -83,8 +100,8 @@ export function AdvisorsPage() {
   const canRequest =
     eligibility.status === 'ready' && eligibility.data.canRequest;
   const list = useLoad<AdvisorPage>(
-    () => searchAdvisors({ name, page }),
-    `${name}|${page}|${listReload}`,
+    () => searchAdvisors({ name, page, onlyAvailable }),
+    `${filterKey}|${page}|${listReload}`,
   );
   // O total da última resposta mantém a paginação montada durante o carregamento: se ela
   // sumisse, o botão que a pessoa acabou de usar deixaria de existir e o foco se perderia.
@@ -101,7 +118,7 @@ export function AdvisorsPage() {
     page > 1
   ) {
     setChosen({
-      name,
+      filterKey,
       page: Math.min(page, Math.ceil(list.data.count / ADVISORS_PAGE_SIZE)),
     });
   }
@@ -138,12 +155,29 @@ export function AdvisorsPage() {
       <Typography variant="h4" component="h1">
         Orientadores
       </Typography>
-      <TextField
-        label="Buscar por nome"
-        value={typed}
-        onChange={(event) => setTyped(event.target.value)}
-        slotProps={{ htmlInput: { maxLength: 150 } }}
-      />
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={1}
+        sx={{ alignItems: { sm: 'center' } }}
+      >
+        <TextField
+          label="Buscar por nome"
+          value={typed}
+          onChange={(event) => setTyped(event.target.value)}
+          slotProps={{ htmlInput: { maxLength: 150 } }}
+          sx={{ flexGrow: 1 }}
+        />
+        <FormControlLabel
+          label="Mostrar indisponíveis"
+          control={
+            <Switch
+              checked={showAll}
+              onChange={(event) => setShowAll(event.target.checked)}
+              slotProps={{ input: { ref: switchInput } }}
+            />
+          }
+        />
+      </Stack>
       <EligibilityNotice
         id={noticeId}
         eligibility={eligibility}
@@ -152,7 +186,7 @@ export function AdvisorsPage() {
       {/* Uma frase curta numa região própria: reler os 20 cards a cada busca seria ruído. */}
       <Typography role="status" aria-live="polite" color="text.secondary">
         {list.status === 'ready' && list.data.count > 0
-          ? foundText(list.data.count)
+          ? foundText(list.data.count, onlyAvailable)
           : ''}
       </Typography>
       <div ref={listTop}>
@@ -169,7 +203,24 @@ export function AdvisorsPage() {
           </Stack>
         )}
         {list.status === 'ready' && list.data.count === 0 && (
-          <Alert severity="info">{emptyMessage(name)}</Alert>
+          <Alert
+            severity="info"
+            action={
+              onlyAvailable ? (
+                <Button
+                  onClick={() => {
+                    setShowAll(true);
+                    // O alerta some ao recarregar: o foco vai para a chave, que anuncia o novo estado.
+                    switchInput.current?.focus();
+                  }}
+                >
+                  Ver também os indisponíveis
+                </Button>
+              ) : undefined
+            }
+          >
+            {emptyMessage(name, onlyAvailable)}
+          </Alert>
         )}
         {list.status === 'ready' && list.data.items.length > 0 && (
           <Stack spacing={2}>
@@ -197,7 +248,7 @@ export function AdvisorsPage() {
           page={Math.min(page, lastPage)}
           getItemAriaLabel={pageLabel}
           onChange={(_, value) => {
-            setChosen({ name, page: value });
+            setChosen({ filterKey, page: value });
             listTop.current?.scrollIntoView?.({ block: 'start' });
           }}
           sx={{ alignSelf: 'center' }}
