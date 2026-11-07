@@ -16,13 +16,13 @@ RF07 - **Recuperar Senha:** O sistema deve permitir que usuários recuperem o ac
 
 RF08 - **Realizar Log Out:** O sistema deve permitir que o usuário encerre sua sessão com segurança.
 
-RF09 - **Pesquisar e Visualizar Orientadores Compatíveis:** O sistema deve apresentar ao aluno uma lista de orientadores ordenada pela compatibilidade entre as áreas de interesse cadastradas pelo aluno e as áreas de interesse cadastradas por cada orientador, limitada aos professores vinculados ao curso do aluno (RN28) e permitindo, adicionalmente, a filtragem por nome (RNF26). Cada professor é exibido com sua disponibilidade para orientar.
+RF09 - **Pesquisar e Visualizar Orientadores Compatíveis:** O sistema deve apresentar ao aluno uma lista de orientadores ordenada pela compatibilidade entre as áreas de interesse cadastradas pelo aluno e as áreas de interesse cadastradas por cada orientador, limitada aos professores vinculados ao curso do aluno (RN28) e permitindo, adicionalmente, a filtragem por nome e por disponibilidade (RNF26). Por padrão, a lista mostra apenas os professores disponíveis para orientar (RN26); o aluno pode optar por exibir também os indisponíveis. Cada professor é exibido com sua disponibilidade para orientar.
 
 RF10 - **Visualizar Perfil do Professor:** O sistema deve permitir que o aluno visualize as informações sobre o professor como: nome, instituto, cursos, áreas de interesse (com as áreas em comum com o aluno destacadas) e artigos publicados, limitado aos professores vinculados ao curso do aluno (RN28). A disponibilidade para orientar também é exibida.
 
 RF11 - **Visualizar Perfil do Aluno:** O sistema deve permitir que o professor visualize as informações do aluno, como nome, instituto, curso, áreas de interesse (com as áreas em comum com o professor destacadas) e artigos publicados, limitado aos alunos que lhe enviaram uma solicitação de orientação, em qualquer status, ou que têm ou tiveram orientação com ele (RN32).
 
-RF12 - **Solicitar Orientador:** O sistema deve permitir que o aluno que não possua orientador e não tenha nenhuma solicitação em andamento envie pedido de orientação para um professor cadastrado, selecionado a partir da lista de orientadores apresentada no sistema. Não é possível solicitar a um professor indisponível nem a um professor que não seja vinculado ao curso do aluno (RN28).
+RF12 - **Solicitar Orientador:** O sistema deve permitir que o aluno que não possua orientador e não tenha nenhuma solicitação em andamento envie pedido de orientação para um professor cadastrado, selecionado a partir da lista de orientadores apresentada no sistema. Não é possível solicitar a um professor indisponível, mesmo quando ele é exibido na lista, nem a um professor que não seja vinculado ao curso do aluno (RN28).
 
 RF13 - **Listar Solicitações de Alunos:** O sistema deve permitir que o professor visualize todas as solicitações de orientação recebidas, incluindo as com status não respondida.
 

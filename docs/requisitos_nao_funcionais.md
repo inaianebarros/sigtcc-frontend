@@ -6,7 +6,7 @@ RNF03 - **Tempo de Resposta:** O sistema deve responder às requisições do usu
 
 RNF04 - **Entrega de Notificações:** O sistema deve entregar notificações ao usuário em até 1 minuto após o evento que a originou.
 
-RNF26 - **Filtros e Paginação:** Toda listagem com campo aberto de filtragem (texto livre) deve executar o filtro no servidor, com busca parcial que ignora maiúsculas e acentos, e devolver os resultados paginados. O desempenho e o comportamento das listagens não podem depender do volume de dados iniciais (seed).
+RNF26 - **Filtros e Paginação:** Todo filtro de uma listagem, seja de texto livre ou de seleção (como a disponibilidade do professor), deve ser executado no servidor, e a contagem e a paginação devem refletir o filtro. O filtro de texto livre faz busca parcial que ignora maiúsculas e acentos, e os resultados são paginados. O desempenho e o comportamento das listagens não podem depender do volume de dados iniciais (seed).
 
 ## Segurança
 

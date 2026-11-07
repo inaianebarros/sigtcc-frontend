@@ -50,7 +50,7 @@ RN24 - **Atividade Atrasada:** Uma atividade cujo prazo venceu sem que esteja co
 
 RN25 - **Unicidade de Matrícula:** A matrícula deve ser única entre os alunos e única entre os professores.
 
-RN26 - **Disponibilidade do Professor:** O professor indica em seu perfil se está disponível para orientar. Ele pode ter nenhum ou vários orientandos, conforme sua capacidade e disponibilidade, e é o próprio professor quem controla essa indicação. Um professor indisponível não recebe novas solicitações de orientação; solicitações já pendentes e orientações ativas não são afetadas.
+RN26 - **Disponibilidade do Professor:** O professor indica em seu perfil se está disponível para orientar. Ele pode ter nenhum ou vários orientandos, conforme sua capacidade e disponibilidade, e é o próprio professor quem controla essa indicação. Um professor indisponível não recebe novas solicitações de orientação; solicitações já pendentes e orientações ativas não são afetadas. Na busca de orientadores, o aluno vê por padrão apenas os professores disponíveis e pode optar por ver também os indisponíveis, que continuam sem poder receber solicitações.
 
 RN27 - **Encerramento de Sessões:** Ao redefinir ou alterar a senha de um usuário, e ao desativar a sua conta, todas as sessões ativas desse usuário são encerradas.
 
