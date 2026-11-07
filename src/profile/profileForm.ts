@@ -1,9 +1,5 @@
 import { z } from 'zod';
-import type {
-  PublishedArticle,
-  StudentProfile,
-  StudentProfileChanges,
-} from '../services/profileService';
+import type { PublishedArticle } from '../services/profileService';
 
 export interface ArticleRow {
   title: string;
@@ -56,8 +52,8 @@ function articleSchema(currentYear: number) {
   });
 }
 
-export function profileSchema(currentYear = new Date().getFullYear()) {
-  return z.object({
+export function profileShape(currentYear = new Date().getFullYear()) {
+  return {
     fullName: z
       .string()
       .trim()
@@ -69,7 +65,11 @@ export function profileSchema(currentYear = new Date().getFullYear()) {
     articles: z
       .array(articleSchema(currentYear))
       .max(MAX_ARTICLES, `Informe no máximo ${MAX_ARTICLES} artigos.`),
-  });
+  };
+}
+
+export function profileSchema(currentYear = new Date().getFullYear()) {
+  return z.object(profileShape(currentYear));
 }
 
 export function toArticleRow(article: PublishedArticle): ArticleRow {
@@ -80,7 +80,20 @@ export function toArticleRow(article: PublishedArticle): ArticleRow {
   };
 }
 
-export function toFormValues(profile: StudentProfile): ProfileFormValues {
+/** O que os perfis do Aluno e do Professor têm em comum. */
+export interface ProfileBase {
+  fullName: string;
+  areaIds: number[];
+  articles: PublishedArticle[];
+}
+
+export interface CommonChanges {
+  fullName?: string;
+  areaIds?: number[];
+  articles?: PublishedArticle[];
+}
+
+export function toFormValues(profile: ProfileBase): ProfileFormValues {
   return {
     fullName: profile.fullName,
     areaIds: profile.areaIds,
@@ -88,11 +101,12 @@ export function toFormValues(profile: StudentProfile): ProfileFormValues {
   };
 }
 
-export type DirtyFields = Partial<
-  Record<keyof ProfileFormValues, boolean | object | object[]>
+export type DirtyFields = Record<
+  string,
+  boolean | object | object[] | undefined
 >;
 
-function isDirty(flag: DirtyFields[keyof DirtyFields]): boolean {
+export function isDirty(flag: DirtyFields[string]): boolean {
   if (Array.isArray(flag)) return flag.some((item) => isDirty(item));
   if (typeof flag === 'object' && flag !== null) {
     return Object.values(flag).some((item) => isDirty(item));
@@ -100,8 +114,10 @@ function isDirty(flag: DirtyFields[keyof DirtyFields]): boolean {
   return flag === true;
 }
 
-function sameSet(a: number[], b: number[]): boolean {
-  return a.length === b.length && new Set([...a, ...b]).size === a.length;
+export function sameSet(a: number[], b: number[]): boolean {
+  const first = new Set(a);
+  const second = new Set(b);
+  return first.size === second.size && [...first].every((id) => second.has(id));
 }
 
 function sameArticles(a: PublishedArticle[], b: PublishedArticle[]): boolean {
@@ -121,12 +137,12 @@ function sameArticles(a: PublishedArticle[], b: PublishedArticle[]): boolean {
  * substituem a lista inteira, então uma mudança que não altera nada (outra ordem das áreas,
  * espaços nas pontas) não deve gerar uma gravação.
  */
-export function toChanges(
+export function commonChanges(
   values: ProfileFormValues,
   dirtyFields: DirtyFields,
-  baseline: StudentProfile,
-): StudentProfileChanges {
-  const changes: StudentProfileChanges = {};
+  baseline: ProfileBase,
+): CommonChanges {
+  const changes: CommonChanges = {};
   const fullName = values.fullName.trim();
   if (isDirty(dirtyFields.fullName) && fullName !== baseline.fullName) {
     changes.fullName = fullName;
