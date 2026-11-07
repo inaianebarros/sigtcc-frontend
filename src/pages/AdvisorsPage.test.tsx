@@ -1085,3 +1085,34 @@ describe('AdvisorsPage: foco e nomes dos controles do filtro', () => {
     expect(screen.getByRole('button', ACTION)).toBeInTheDocument();
   });
 });
+
+describe('AdvisorsPage: a elegibilidade não depende do resto do status', () => {
+  beforeEach(() => {
+    tokenStore.clear();
+    vi.unstubAllGlobals();
+    setViewportWidth(DESKTOP_WIDTH);
+  });
+
+  it('continua habilitando os botões quando a solicitação do status vem sem o professor', async () => {
+    mockApi(
+      advisorRoutes(THREE, {
+        ...ELIGIBLE,
+        request: { id: 5, status: 'rejected' },
+        can_request: true,
+      }),
+    );
+    renderApp('/aluno/orientadores');
+    await screen.findByText('Ana Pereira');
+
+    await waitFor(() =>
+      expect(
+        within(cardOf('Ana Pereira')).getByRole('button', {
+          name: 'Solicitar orientação',
+        }),
+      ).toBeEnabled(),
+    );
+    expect(
+      screen.queryByText(/Não foi possível verificar se você pode solicitar/),
+    ).not.toBeInTheDocument();
+  });
+});

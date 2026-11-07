@@ -8,6 +8,7 @@ export const paths = {
   resetPassword: '/redefinir-senha',
   registerStudent: '/cadastro/aluno',
   registerTeacher: '/cadastro/professor',
+  studentAdvisors: '/aluno/orientadores',
   studentRequest: '/aluno/solicitacao',
 } as const;
 
