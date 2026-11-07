@@ -3,6 +3,11 @@ import { Controller, useFormContext } from 'react-hook-form';
 import type { Catalog } from './useCatalog';
 import type { AccountForm } from './accountForm';
 
+/** O campo de áreas serve a qualquer formulário que guarde os ids em `areaIds`. */
+export interface AreasFormValues {
+  areaIds: number[];
+}
+
 interface InstituteFieldProps {
   institutes: Catalog['institutes'];
   onChange: () => void;
@@ -57,7 +62,7 @@ export function AreasField({ areas }: AreasFieldProps) {
   const {
     control,
     formState: { errors },
-  } = useFormContext<AccountForm>();
+  } = useFormContext<AreasFormValues>();
   const options = areas.status === 'ready' ? areas.data : [];
   const hint =
     areas.status === 'ready' && options.length === 0

@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
@@ -8,10 +9,16 @@ import { ComingSoonPage } from './pages/ComingSoonPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { StudentProfilePage } from './pages/StudentProfilePage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { StudentRegistrationPage } from './pages/StudentRegistrationPage';
 import { TeacherRegistrationPage } from './pages/TeacherRegistrationPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+
+// Telas já implementadas; os itens do menu sem tela mostram a página "em breve".
+const screens: Record<string, ReactElement> = {
+  '/aluno/perfil': <StudentProfilePage />,
+};
 
 export function AppRoutes() {
   return (
@@ -43,7 +50,11 @@ export function AppRoutes() {
                   <Route
                     key={item.path}
                     path={item.path}
-                    element={<ComingSoonPage title={item.label} />}
+                    element={
+                      screens[item.path] ?? (
+                        <ComingSoonPage title={item.label} />
+                      )
+                    }
                   />
                 ))}
               </>
