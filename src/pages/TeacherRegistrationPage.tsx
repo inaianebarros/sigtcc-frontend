@@ -112,7 +112,7 @@ export function TeacherRegistrationPage() {
             <Alert severity="error">{CATALOG_ERROR_MESSAGE}</Alert>
           )}
           {formError && <Alert severity="error">{formError}</Alert>}
-          <AccountFields accountType="Professor" />
+          <AccountFields />
           <InstituteField
             institutes={catalog.institutes}
             onChange={() => {
