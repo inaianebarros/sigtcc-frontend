@@ -8,6 +8,7 @@ export const paths = {
   resetPassword: '/redefinir-senha',
   registerStudent: '/cadastro/aluno',
   registerTeacher: '/cadastro/professor',
+  studentRequest: '/aluno/solicitacao',
 } as const;
 
 export function homePathFor(userType: UserType): string {
