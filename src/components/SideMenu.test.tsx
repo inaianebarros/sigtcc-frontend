@@ -47,6 +47,27 @@ describe('SideMenu', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('marca o item bloqueado com um cadeado decorativo, que o leitor de tela não anuncia', () => {
+    renderMenu(false);
+
+    const item = screen.getByRole('button', { name: /Item de teste/ });
+    const lock = item.querySelector('svg[data-testid="lock-icon"]');
+
+    expect(lock).not.toBeNull();
+    expect(lock).toHaveAttribute('aria-hidden', 'true');
+    expect(item).toHaveAccessibleName(`Item de teste ${REASON}`);
+  });
+
+  it('não põe o cadeado no item habilitado', () => {
+    renderMenu(true);
+
+    expect(
+      screen
+        .getByRole('link', { name: /Item de teste/ })
+        .querySelector('svg[data-testid="lock-icon"]'),
+    ).toBeNull();
+  });
+
   it('não leva a lugar nenhum ao clicar no item desabilitado nem ao usar o teclado', async () => {
     const user = userEvent.setup();
     renderMenu(false);

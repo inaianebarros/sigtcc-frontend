@@ -67,9 +67,7 @@ describe('menu lateral por perfil', () => {
 
     const item = await screen.findByRole('button', { name: /Orientandos/ });
     expect(item).toHaveAttribute('aria-disabled', 'true');
-    expect(
-      screen.getByText('Disponível quando você tiver um orientando ativo'),
-    ).toBeVisible();
+    expect(screen.getByText('Requer orientando ativo')).toBeVisible();
     expect(
       screen.queryByRole('link', { name: 'Orientandos' }),
     ).not.toBeInTheDocument();

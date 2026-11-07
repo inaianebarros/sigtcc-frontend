@@ -34,7 +34,7 @@ export const areas: readonly Area[] = [
         label: 'Orientandos',
         path: '/professor/orientandos',
         requiresActiveAdvising: {
-          reason: 'Disponível quando você tiver um orientando ativo',
+          reason: 'Requer orientando ativo',
         },
       },
       { label: 'Meu perfil', path: '/professor/perfil' },
