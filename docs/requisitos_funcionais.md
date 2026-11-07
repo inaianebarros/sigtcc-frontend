@@ -18,7 +18,7 @@ RF08 - **Realizar Log Out:** O sistema deve permitir que o usuário encerre sua 
 
 RF09 - **Pesquisar e Visualizar Orientadores Compatíveis:** O sistema deve apresentar ao aluno uma lista de orientadores ordenada pela compatibilidade entre as áreas de interesse cadastradas pelo aluno e as áreas de interesse cadastradas por cada orientador, limitada aos professores vinculados ao curso do aluno (RN28) e permitindo, adicionalmente, a filtragem por nome (RNF26). Cada professor é exibido com sua disponibilidade para orientar.
 
-RF10 - **Visualizar Perfil do Professor:** O sistema deve permitir que o aluno visualize as informações sobre o professor como: nome, cursos, áreas de interesse e artigos publicados. A disponibilidade para orientar também é exibida.
+RF10 - **Visualizar Perfil do Professor:** O sistema deve permitir que o aluno visualize as informações sobre o professor como: nome, instituto, cursos, áreas de interesse (com as áreas em comum com o aluno destacadas) e artigos publicados, limitado aos professores vinculados ao curso do aluno (RN28). A disponibilidade para orientar também é exibida.
 
 RF11 - **Visualizar Perfil do Aluno:** O sistema deve permitir que o professor visualize as informações do aluno, como nome, curso, áreas de interesse e artigos publicados, limitado aos alunos com os quais tem vínculo de orientação (RN32).
 
