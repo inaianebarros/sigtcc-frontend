@@ -18,7 +18,11 @@ import { useFilteredPage } from '../hooks/useFilteredPage';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
-import { ApiError, messageForStatus } from '../services/apiError';
+import {
+  ApiError,
+  isStateChangedError,
+  messageForStatus,
+} from '../services/apiError';
 import {
   REQUESTS_PAGE_SIZE,
   answerRequest,
@@ -148,10 +152,7 @@ export function TeacherRequestsPage() {
         'error',
       );
       // 409 e 404 dizem que a situação mudou: a lista é lida de novo.
-      if (
-        error instanceof ApiError &&
-        (error.status === 409 || error.status === 404)
-      ) {
+      if (isStateChangedError(error)) {
         setListReload((current) => current + 1);
       }
     } finally {

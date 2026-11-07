@@ -9,13 +9,20 @@ import {
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { AdviseeCard } from '../advisees/AdviseeCard';
-import { EndAdvisingDialog } from '../advisees/EndAdvisingDialog';
+import {
+  EndAdvisingDialog,
+  REASON_REJECTED_MESSAGE,
+} from '../advisees/EndAdvisingDialog';
 import { PagePagination } from '../components/PagePagination';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
-import { ApiError, messageForStatus } from '../services/apiError';
+import {
+  ApiError,
+  isStateChangedError,
+  messageForStatus,
+} from '../services/apiError';
 import { paths } from '../navigation/paths';
 import {
   ADVISEES_PAGE_SIZE,
@@ -44,11 +51,11 @@ export function TeacherAdviseesPage() {
   const focusHeadingAfterClose = useRef(false);
   const { notify } = useFeedback();
   const { refreshUser } = useSession();
-  // `session` muda a cada abertura, para o diálogo começar com o motivo vazio.
+  // `openCount` muda a cada abertura, para o diálogo começar com o motivo vazio.
   const [dialog, setDialog] = useState<{
     advisee: Advisee;
     open: boolean;
-    session: number;
+    openCount: number;
   } | null>(null);
   const [sending, setSending] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -79,6 +86,11 @@ export function TeacherAdviseesPage() {
     }
   }, [fallbackPage, page]);
 
+  const clearErrors = () => {
+    setFailure(null);
+    setReasonError(null);
+  };
+
   const closeDialog = () =>
     setDialog((current) => current && { ...current, open: false });
 
@@ -86,8 +98,7 @@ export function TeacherAdviseesPage() {
     if (!dialog || sending) return;
     const { advisingId } = dialog.advisee;
     setSending(true);
-    setFailure(null);
-    setReasonError(null);
+    clearErrors();
     try {
       await endAdvising(advisingId, reason);
       closeDialog();
@@ -97,10 +108,7 @@ export function TeacherAdviseesPage() {
       // O cartão do aluno some da lista: o foco vai para o título, quando o diálogo sair.
       focusHeadingAfterClose.current = true;
     } catch (error) {
-      if (
-        error instanceof ApiError &&
-        (error.status === 404 || error.status === 409)
-      ) {
+      if (isStateChangedError(error)) {
         // A situação mudou: a lista é lida de novo e o diálogo não faz mais sentido.
         closeDialog();
         notify(
@@ -115,7 +123,7 @@ export function TeacherAdviseesPage() {
         (error.status === 400 || error.status === 422) &&
         error.fieldErrors.reason
       ) {
-        setReasonError(error.fieldErrors.reason);
+        setReasonError(REASON_REJECTED_MESSAGE);
       } else {
         setFailure(
           error instanceof ApiError ? error.message : messageForStatus(0),
@@ -176,12 +184,11 @@ export function TeacherAdviseesPage() {
                     variant="outlined"
                     aria-label={`Encerrar orientação de ${advisee.student.fullName}`}
                     onClick={() => {
-                      setFailure(null);
-                      setReasonError(null);
+                      clearErrors();
                       setDialog((current) => ({
                         advisee,
                         open: true,
-                        session: (current?.session ?? 0) + 1,
+                        openCount: (current?.openCount ?? 0) + 1,
                       }));
                     }}
                   >
@@ -206,16 +213,13 @@ export function TeacherAdviseesPage() {
       />
       {dialog && (
         <EndAdvisingDialog
-          key={dialog.session}
+          key={dialog.openCount}
           open={dialog.open}
           studentName={dialog.advisee.student.fullName}
           busy={sending}
           failure={failure}
           reasonError={reasonError}
-          onEdit={() => {
-            setFailure(null);
-            setReasonError(null);
-          }}
+          onEdit={clearErrors}
           onCancel={closeDialog}
           onConfirm={confirmEnd}
           onExited={() => {

@@ -93,7 +93,7 @@ describe('Encerrar orientação: o diálogo', () => {
     }
   });
 
-  it('nomeia o aluno e diz que não dá para desfazer, que as atividades em aberto serão arquivadas e as reuniões futuras canceladas', async () => {
+  it('nomeia o aluno e diz que não dá para desfazer, que as atividades em aberto serão arquivadas e as reuniões pendentes ou aceitas ainda não realizadas, canceladas (RN30)', async () => {
     const { user } = setup();
     const { dialog } = await openDialog(user);
 
@@ -102,7 +102,9 @@ describe('Encerrar orientação: o diálogo', () => {
     expect(dialog).toHaveTextContent(
       'As atividades pendentes, em andamento ou em revisão serão arquivadas',
     );
-    expect(dialog).toHaveTextContent('As reuniões futuras serão canceladas');
+    expect(dialog).toHaveTextContent(
+      'As reuniões pendentes ou aceitas ainda não realizadas serão canceladas',
+    );
   });
 
   it('pede o motivo, com o contador, e o botão de confirmar nasce desabilitado', async () => {
@@ -301,7 +303,7 @@ describe('Encerrar orientação: erros', () => {
     );
   });
 
-  it('com o motivo recusado pelo servidor, mostra a mensagem no campo e mantém o diálogo aberto', async () => {
+  it('com o motivo recusado pelo servidor, mostra a mensagem em português no campo, e não a do Pydantic, e mantém o diálogo aberto', async () => {
     const { fetchMock, user } = setup(undefined, {
       1: {
         status: 422,
@@ -309,7 +311,7 @@ describe('Encerrar orientação: erros', () => {
           detail: [
             {
               loc: ['body', 'reason'],
-              msg: 'O motivo deve ter de 10 a 500 caracteres.',
+              msg: 'String should have at least 10 characters',
             },
           ],
         },
@@ -328,6 +330,7 @@ describe('Encerrar orientação: erros', () => {
         'O motivo deve ter de 10 a 500 caracteres.',
       ),
     ).toBeVisible();
+    expect(within(dialog).queryByText(/String should/)).not.toBeInTheDocument();
     expect(field).toBeInvalid();
     expect(field).toHaveValue(REASON);
     expect(screen.getByRole('dialog')).toBeInTheDocument();

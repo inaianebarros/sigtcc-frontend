@@ -11,8 +11,14 @@ import {
 } from '@mui/material';
 import { useId, useState } from 'react';
 
-export const REASON_MIN = 10;
-export const REASON_MAX = 500;
+const REASON_MIN = 10;
+const REASON_MAX = 500;
+
+/**
+ * O servidor valida o tamanho do motivo com a mensagem padrão do Pydantic, em inglês. A tela já
+ * valida antes de enviar, então este texto só aparece se o servidor recusar mesmo assim.
+ */
+export const REASON_REJECTED_MESSAGE = `O motivo deve ter de ${REASON_MIN} a ${REASON_MAX} caracteres.`;
 
 interface EndAdvisingDialogProps {
   open: boolean;
@@ -68,8 +74,8 @@ export function EndAdvisingDialog({
         <Stack spacing={2}>
           <DialogContentText id={`${id}-message`}>
             Esta ação não pode ser desfeita. As atividades pendentes, em
-            andamento ou em revisão serão arquivadas. As reuniões futuras serão
-            canceladas.
+            andamento ou em revisão serão arquivadas. As reuniões pendentes ou
+            aceitas ainda não realizadas serão canceladas.
           </DialogContentText>
           <TextField
             label="Motivo do encerramento"
