@@ -2,7 +2,6 @@ import {
   Alert,
   Button,
   FormControlLabel,
-  Pagination,
   Skeleton,
   Stack,
   Switch,
@@ -14,9 +13,12 @@ import { useNavigate } from 'react-router-dom';
 import { AdvisorCard } from '../advisors/AdvisorCard';
 import { EligibilityNotice } from '../advisors/EligibilityNotice';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { PagePagination } from '../components/PagePagination';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useFeedback } from '../hooks/useFeedback';
+import { useFilteredPage } from '../hooks/useFilteredPage';
 import { useLoad } from '../hooks/useLoad';
+import { usePageBounds } from '../hooks/usePageBounds';
 import { paths } from '../navigation/paths';
 import { ApiError, messageForStatus } from '../services/apiError';
 import {
@@ -37,20 +39,6 @@ function ListSkeleton() {
       ))}
     </Stack>
   );
-}
-
-function pageLabel(
-  type: string,
-  page: number | null,
-  selected: boolean,
-): string {
-  if (type === 'page') {
-    return selected ? `Página ${page}, atual` : `Ir para a página ${page}`;
-  }
-  if (type === 'first') return 'Ir para a primeira página';
-  if (type === 'last') return 'Ir para a última página';
-  if (type === 'next') return 'Ir para a próxima página';
-  return 'Ir para a página anterior';
 }
 
 function foundText(count: number, onlyAvailable: boolean): string {
@@ -81,12 +69,9 @@ export function AdvisorsPage() {
   // A escolha de ver os indisponíveis não é guardada: cada visita começa pelo padrão.
   const [showAll, setShowAll] = useState(false);
   const onlyAvailable = !showAll;
-  // A página escolhida vale só para os filtros atuais: se algum mudar, volta à página 1.
-  // Um filtro novo entra só nesta chave.
+  // Um filtro novo entra só nesta chave: ao mudar, a lista volta à página 1.
   const filterKey = `${name}|${onlyAvailable}`;
-  const [chosen, setChosen] = useState({ filterKey, page: 1 });
-  if (chosen.filterKey !== filterKey) setChosen({ filterKey, page: 1 });
-  const page = chosen.filterKey === filterKey ? chosen.page : 1;
+  const [page, setPage] = useFilteredPage(filterKey);
   const switchInput = useRef<HTMLInputElement>(null);
   const listTop = useRef<HTMLDivElement>(null);
   const eligibility = useLoad(getRequestEligibility, `status-${statusReload}`);
@@ -103,25 +88,12 @@ export function AdvisorsPage() {
     () => searchAdvisors({ name, page, onlyAvailable }),
     `${filterKey}|${page}|${listReload}`,
   );
-  // O total da última resposta mantém a paginação montada durante o carregamento: se ela
-  // sumisse, o botão que a pessoa acabou de usar deixaria de existir e o foco se perderia.
-  const [knownCount, setKnownCount] = useState(0);
-  if (list.status === 'ready' && list.data.count !== knownCount) {
-    setKnownCount(list.data.count);
-  }
-  const lastPage = Math.max(1, Math.ceil(knownCount / ADVISORS_PAGE_SIZE));
-  // Uma página que ficou vazia (a lista encolheu) volta para a última que existe.
-  if (
-    list.status === 'ready' &&
-    list.data.items.length === 0 &&
-    list.data.count > 0 &&
-    page > 1
-  ) {
-    setChosen({
-      filterKey,
-      page: Math.min(page, Math.ceil(list.data.count / ADVISORS_PAGE_SIZE)),
-    });
-  }
+  const { knownCount, lastPage } = usePageBounds(
+    list,
+    ADVISORS_PAGE_SIZE,
+    page,
+    setPage,
+  );
 
   const confirmRequest = async () => {
     if (!asking || sending) return;
@@ -241,19 +213,17 @@ export function AdvisorsPage() {
           </Stack>
         )}
       </div>
-      {knownCount > ADVISORS_PAGE_SIZE && (
-        <Pagination
-          aria-label="Paginação dos orientadores"
-          count={lastPage}
-          page={Math.min(page, lastPage)}
-          getItemAriaLabel={pageLabel}
-          onChange={(_, value) => {
-            setChosen({ filterKey, page: value });
-            listTop.current?.scrollIntoView?.({ block: 'start' });
-          }}
-          sx={{ alignSelf: 'center' }}
-        />
-      )}
+      <PagePagination
+        ariaLabel="Paginação dos orientadores"
+        knownCount={knownCount}
+        pageSize={ADVISORS_PAGE_SIZE}
+        lastPage={lastPage}
+        page={page}
+        onChange={(next) => {
+          setPage(next);
+          listTop.current?.scrollIntoView?.({ block: 'start' });
+        }}
+      />
       <ConfirmDialog
         open={asking !== null}
         title={`Solicitar orientação ao professor ${askedName}?`}
