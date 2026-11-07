@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 import { areas } from './navigation/areas';
 import { paths } from './navigation/paths';
+import { AdvisorsPage } from './pages/AdvisorsPage';
 import { AreaPage } from './pages/AreaPage';
 import { ComingSoonPage } from './pages/ComingSoonPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
@@ -18,6 +19,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 
 // Telas já implementadas; os itens do menu sem tela mostram a página "em breve".
 const screens: Record<string, ReactElement> = {
+  '/aluno/orientadores': <AdvisorsPage />,
   '/aluno/perfil': <StudentProfilePage />,
   '/professor/perfil': <TeacherProfilePage />,
 };

@@ -14,6 +14,10 @@ interface ConfirmDialogProps {
   message: string;
   confirmLabel: string;
   cancelLabel?: string;
+  /** Enquanto uma ação está em andamento, o diálogo não aceita outro clique nem fecha. */
+  busy?: boolean;
+  busyLabel?: string;
+  confirmColor?: 'primary' | 'error';
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -24,6 +28,9 @@ export function ConfirmDialog({
   message,
   confirmLabel,
   cancelLabel = 'Cancelar',
+  busy = false,
+  busyLabel = 'Enviando…',
+  confirmColor = 'error',
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -31,7 +38,7 @@ export function ConfirmDialog({
   return (
     <Dialog
       open={open}
-      onClose={onCancel}
+      onClose={busy ? undefined : onCancel}
       aria-labelledby={`${id}-title`}
       aria-describedby={`${id}-message`}
     >
@@ -40,9 +47,16 @@ export function ConfirmDialog({
         <DialogContentText id={`${id}-message`}>{message}</DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>{cancelLabel}</Button>
-        <Button onClick={onConfirm} variant="contained" color="error">
-          {confirmLabel}
+        <Button onClick={onCancel} disabled={busy}>
+          {cancelLabel}
+        </Button>
+        <Button
+          onClick={onConfirm}
+          variant="contained"
+          color={confirmColor}
+          disabled={busy}
+        >
+          {busy ? busyLabel : confirmLabel}
         </Button>
       </DialogActions>
     </Dialog>
