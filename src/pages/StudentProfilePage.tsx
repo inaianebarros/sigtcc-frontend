@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMemo } from 'react';
 import { useLoad } from '../hooks/useLoad';
+import { paths } from '../navigation/paths';
 import { profileSchema, toFormValues } from '../profile/profileForm';
 import { studentChanges } from '../profile/studentForm';
 import { ProfileEditor } from '../profile/ProfileEditor';
@@ -52,7 +53,7 @@ export function StudentProfilePage() {
           save={updateStudentProfile}
           fieldByApiField={FIELD_BY_API_FIELD}
           facts={<StudentFacts profile={profile} />}
-          changePasswordPath="/aluno/perfil/senha"
+          changePasswordPath={paths.studentPassword}
         />
       )}
     </ProfileScreen>

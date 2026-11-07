@@ -33,9 +33,11 @@ const screens: Record<string, ReactElement> = {
 
 // Telas de uma área que não são itens do menu: abrem a partir de outra tela.
 const subScreens: Record<string, ReactElement> = {
-  '/aluno/perfil/senha': <ChangePasswordPage profilePath="/aluno/perfil" />,
-  '/professor/perfil/senha': (
-    <ChangePasswordPage profilePath="/professor/perfil" />
+  [paths.studentPassword]: (
+    <ChangePasswordPage profilePath={paths.studentProfile} />
+  ),
+  [paths.teacherPassword]: (
+    <ChangePasswordPage profilePath={paths.teacherProfile} />
   ),
 };
 

@@ -2,9 +2,9 @@ import { Button, InputAdornment, TextField } from '@mui/material';
 import type { TextFieldProps } from '@mui/material';
 import { useState } from 'react';
 
-type PasswordFieldProps = Omit<TextFieldProps, 'type' | 'label'> & {
+interface PasswordFieldProps extends Omit<TextFieldProps, 'type' | 'label'> {
   label: string;
-};
+}
 
 /** Um campo de senha com o controle de mostrar e ocultar o que foi digitado. */
 export function PasswordField({

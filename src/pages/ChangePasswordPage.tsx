@@ -53,14 +53,19 @@ export function ChangePasswordPage({ profilePath }: ChangePasswordPageProps) {
     defaultValues: EMPTY_FORM,
   });
 
-  // Voltar a digitar apaga o aviso de sucesso e o alerta da tentativa anterior.
-  const field = (name: keyof ChangeForm) => {
+  const clearFeedback = () => {
+    setChanged(false);
+    setFormError(null);
+  };
+
+  // As props de um campo de senha: o registro no formulário, o erro do campo e, ao voltar a
+  // digitar, o fim do aviso de sucesso e do alerta da tentativa anterior.
+  const passwordFieldProps = (name: keyof ChangeForm) => {
     const registered = register(name);
     return {
       ...registered,
       onChange: (event: ChangeEvent<HTMLInputElement>) => {
-        setChanged(false);
-        setFormError(null);
+        clearFeedback();
         return registered.onChange(event);
       },
       error: Boolean(errors[name]),
@@ -69,8 +74,7 @@ export function ChangePasswordPage({ profilePath }: ChangePasswordPageProps) {
   };
 
   const onSubmit = handleSubmit(async (values) => {
-    setFormError(null);
-    setChanged(false);
+    clearFeedback();
     try {
       await changePassword({
         current_password: values.currentPassword,
@@ -114,17 +118,17 @@ export function ChangePasswordPage({ profilePath }: ChangePasswordPageProps) {
         <PasswordField
           label="Senha atual"
           autoComplete="current-password"
-          {...field('currentPassword')}
+          {...passwordFieldProps('currentPassword')}
         />
         <PasswordField
           label="Nova senha"
           autoComplete="new-password"
-          {...field('password')}
+          {...passwordFieldProps('password')}
         />
         <PasswordField
           label="Confirmação da nova senha"
           autoComplete="new-password"
-          {...field('passwordConfirmation')}
+          {...passwordFieldProps('passwordConfirmation')}
         />
         <Button
           type="submit"
