@@ -10,6 +10,7 @@ export const paths = {
   registerTeacher: '/cadastro/professor',
   studentAdvisors: '/aluno/orientadores',
   studentRequest: '/aluno/solicitacao',
+  teacherRequests: '/professor/solicitacoes',
 } as const;
 
 export function homePathFor(userType: UserType): string {

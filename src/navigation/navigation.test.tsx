@@ -60,6 +60,38 @@ describe('menu lateral por perfil', () => {
     );
   });
 
+  it('mostra ao professor sem orientando o item Orientandos desabilitado, com o motivo visível', async () => {
+    mockApi(sessionOf('teacher', { active_advisees_count: 0 }));
+
+    renderApp('/login');
+
+    const item = await screen.findByRole('button', { name: /Orientandos/ });
+    expect(item).toHaveAttribute('aria-disabled', 'true');
+    expect(
+      screen.getByText('Disponível quando você tiver um orientando ativo'),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('link', { name: 'Orientandos' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('habilita o item Orientandos, entre Solicitações e Meu perfil, quando há orientando ativo', async () => {
+    mockApi(sessionOf('teacher', { active_advisees_count: 2 }));
+
+    renderApp('/login');
+
+    await screen.findByRole('heading', { name: 'Solicitações' });
+    const menu = screen.getByRole('navigation', { name: 'Menu principal' });
+    expect(
+      within(menu)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Solicitações', 'Orientandos', 'Meu perfil']);
+    expect(
+      within(menu).getByRole('link', { name: 'Orientandos' }),
+    ).toHaveAttribute('href', '/professor/orientandos');
+  });
+
   it('não muda a área do administrador e não mostra menu lateral para ele', async () => {
     mockApi(sessionOf('admin'));
 
