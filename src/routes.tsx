@@ -6,6 +6,7 @@ import { areas } from './navigation/areas';
 import { paths } from './navigation/paths';
 import { AdvisorsPage } from './pages/AdvisorsPage';
 import { AreaPage } from './pages/AreaPage';
+import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { ComingSoonPage } from './pages/ComingSoonPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { HomePage } from './pages/HomePage';
@@ -28,6 +29,14 @@ const screens: Record<string, ReactElement> = {
   '/professor/orientandos': <TeacherAdviseesPage />,
   '/professor/perfil': <TeacherProfilePage />,
   '/professor/solicitacoes': <TeacherRequestsPage />,
+};
+
+// Telas de uma área que não são itens do menu: abrem a partir de outra tela.
+const subScreens: Record<string, ReactElement> = {
+  '/aluno/perfil/senha': <ChangePasswordPage profilePath="/aluno/perfil" />,
+  '/professor/perfil/senha': (
+    <ChangePasswordPage profilePath="/professor/perfil" />
+  ),
 };
 
 export function AppRoutes() {
@@ -67,6 +76,11 @@ export function AppRoutes() {
                     }
                   />
                 ))}
+                {Object.entries(subScreens)
+                  .filter(([subPath]) => subPath.startsWith(`${path}/`))
+                  .map(([subPath, element]) => (
+                    <Route key={subPath} path={subPath} element={element} />
+                  ))}
               </>
             )}
           </Route>

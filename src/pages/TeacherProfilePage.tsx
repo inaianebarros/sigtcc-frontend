@@ -70,6 +70,7 @@ export function TeacherProfilePage() {
             toChanges={teacherChanges}
             save={updateTeacherProfile}
             fieldByApiField={FIELD_BY_API_FIELD}
+            changePasswordPath="/professor/perfil/senha"
             facts={<TeacherFacts profile={profile} instituteId={instituteId} />}
             extraFields={
               <>

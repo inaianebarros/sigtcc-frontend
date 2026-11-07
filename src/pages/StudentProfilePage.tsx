@@ -52,6 +52,7 @@ export function StudentProfilePage() {
           save={updateStudentProfile}
           fieldByApiField={FIELD_BY_API_FIELD}
           facts={<StudentFacts profile={profile} />}
+          changePasswordPath="/aluno/perfil/senha"
         />
       )}
     </ProfileScreen>

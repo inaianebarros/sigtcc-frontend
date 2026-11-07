@@ -1,4 +1,5 @@
 import { Button, Paper, Stack, TextField, Typography } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -45,6 +46,8 @@ interface ProfileEditorProps<
   extraFields?: ReactNode;
   /** Campos editáveis próprios do perfil, depois dos artigos. */
   trailingFields?: ReactNode;
+  /** Para onde o botão "Alterar senha" leva. */
+  changePasswordPath: string;
 }
 
 /**
@@ -66,6 +69,7 @@ export function ProfileEditor<
   facts,
   extraFields,
   trailingFields,
+  changePasswordPath,
 }: ProfileEditorProps<TProfile, TValues, TChanges>) {
   const { notify } = useFeedback();
   const { status, refreshUser } = useSession();
@@ -134,6 +138,13 @@ export function ProfileEditor<
             disabled={!isDirty || isSubmitting}
           >
             {isSubmitting ? 'Salvando…' : 'Salvar'}
+          </Button>
+          <Button
+            component={RouterLink}
+            to={changePasswordPath}
+            variant="outlined"
+          >
+            Alterar senha
           </Button>
         </Stack>
       </Paper>
