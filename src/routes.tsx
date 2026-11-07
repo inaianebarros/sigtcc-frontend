@@ -11,6 +11,7 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { StudentProfilePage } from './pages/StudentProfilePage';
+import { StudentRequestPage } from './pages/StudentRequestPage';
 import { TeacherProfilePage } from './pages/TeacherProfilePage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { StudentRegistrationPage } from './pages/StudentRegistrationPage';
@@ -21,6 +22,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 const screens: Record<string, ReactElement> = {
   '/aluno/orientadores': <AdvisorsPage />,
   '/aluno/perfil': <StudentProfilePage />,
+  '/aluno/solicitacao': <StudentRequestPage />,
   '/professor/perfil': <TeacherProfilePage />,
 };
 

@@ -2,20 +2,8 @@ import { Alert, Button, Link, Skeleton } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import type { LoadState } from '../hooks/useLoad';
 import { paths } from '../navigation/paths';
-import type {
-  BlockedReason,
-  RequestEligibility,
-} from '../services/advisorService';
-
-const UNKNOWN_BLOCK_MESSAGE =
-  'No momento você não pode solicitar uma orientação.';
-
-const BLOCKED_MESSAGES: Record<BlockedReason, string> = {
-  active_advising:
-    'Você já tem um orientador ativo, por isso não pode solicitar outra orientação agora.',
-  pending_request:
-    'Você já tem uma solicitação aguardando resposta, por isso não pode enviar outra agora.',
-};
+import type { RequestEligibility } from '../services/advisorService';
+import { blockedMessage } from './blockedMessages';
 
 interface EligibilityNoticeProps {
   id: string;
@@ -51,10 +39,9 @@ export function EligibilityNotice({
     );
   }
   if (eligibility.status === 'ready' && !eligibility.data.canRequest) {
-    const reason = eligibility.data.blockedReason;
     return (
       <Alert id={id} severity="info">
-        {reason ? BLOCKED_MESSAGES[reason] : UNKNOWN_BLOCK_MESSAGE}{' '}
+        {blockedMessage(eligibility.data.blockedReason)}{' '}
         <Link component={RouterLink} to={paths.studentRequest}>
           Ver minha solicitação
         </Link>

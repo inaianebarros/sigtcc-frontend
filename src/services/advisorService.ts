@@ -68,12 +68,82 @@ export interface RequestEligibility {
   blockedReason: BlockedReason | null;
 }
 
-/** O frontend só lê o que o servidor decidiu (RN04 e RN05); não repete as regras. */
+export type AdvisingRequestStatus =
+  'pending' | 'accepted' | 'rejected' | 'unanswered';
+
+export interface MyRequest {
+  id: number;
+  status: AdvisingRequestStatus;
+  requestedAt: string;
+  respondedAt: string | null;
+  /** O prazo para o professor responder; só existe enquanto a solicitação não foi respondida. */
+  expiresAt: string | null;
+  teacher: { id: number; fullName: string };
+}
+
+export interface MyAdvising {
+  id: number;
+  startedAt: string;
+  teacher: { id: number; fullName: string };
+}
+
+export interface RequestStatus extends RequestEligibility {
+  request: MyRequest | null;
+  advising: MyAdvising | null;
+}
+
+interface ApiTeacher {
+  id: number;
+  full_name: string;
+}
+
+/** O frontend só lê o que o servidor decidiu (RN04, RN05 e RN20); não repete as regras. */
+interface ApiRequestStatus {
+  request: {
+    id: number;
+    status: AdvisingRequestStatus;
+    requested_at: string;
+    responded_at: string | null;
+    expires_at: string | null;
+    teacher: ApiTeacher;
+  } | null;
+  advising: { id: number; started_at: string; teacher: ApiTeacher } | null;
+  can_request: boolean;
+  blocked_reason: BlockedReason | null;
+}
+
+function fetchRequestStatus(): Promise<ApiRequestStatus> {
+  return httpClient.get<ApiRequestStatus>('/orientacao/minha-solicitacao');
+}
+
+export async function getRequestStatus(): Promise<RequestStatus> {
+  const response = await fetchRequestStatus();
+  const { request, advising } = response;
+  return {
+    canRequest: response.can_request,
+    blockedReason: response.blocked_reason,
+    request: request && {
+      id: request.id,
+      status: request.status,
+      requestedAt: request.requested_at,
+      respondedAt: request.responded_at,
+      expiresAt: request.expires_at,
+      teacher: { id: request.teacher.id, fullName: request.teacher.full_name },
+    },
+    advising: advising && {
+      id: advising.id,
+      startedAt: advising.started_at,
+      teacher: {
+        id: advising.teacher.id,
+        fullName: advising.teacher.full_name,
+      },
+    },
+  };
+}
+
+/** A busca de orientadores só precisa destes dois campos: o resto do status não pode derrubá-la. */
 export async function getRequestEligibility(): Promise<RequestEligibility> {
-  const response = await httpClient.get<{
-    can_request: boolean;
-    blocked_reason: BlockedReason | null;
-  }>('/orientacao/minha-solicitacao');
+  const response = await fetchRequestStatus();
   return {
     canRequest: response.can_request,
     blockedReason: response.blocked_reason,
