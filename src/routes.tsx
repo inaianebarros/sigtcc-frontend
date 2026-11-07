@@ -10,6 +10,7 @@ import { ComingSoonPage } from './pages/ComingSoonPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { TeacherAdviseesPage } from './pages/TeacherAdviseesPage';
 import { StudentProfilePage } from './pages/StudentProfilePage';
 import { StudentRequestPage } from './pages/StudentRequestPage';
 import { TeacherProfilePage } from './pages/TeacherProfilePage';
@@ -24,6 +25,7 @@ const screens: Record<string, ReactElement> = {
   '/aluno/orientadores': <AdvisorsPage />,
   '/aluno/perfil': <StudentProfilePage />,
   '/aluno/solicitacao': <StudentRequestPage />,
+  '/professor/orientandos': <TeacherAdviseesPage />,
   '/professor/perfil': <TeacherProfilePage />,
   '/professor/solicitacoes': <TeacherRequestsPage />,
 };

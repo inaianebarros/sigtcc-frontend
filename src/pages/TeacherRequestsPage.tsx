@@ -116,12 +116,13 @@ export function TeacherRequestsPage() {
     answeredRequests.listKey === listKey ? answeredRequests.items : {};
   const cardElements = useRef(new Map<number, HTMLElement>());
   const focusAfterClose = useRef<number | null>(null);
-  const { knownCount, lastPage } = usePageBounds(
+  const { knownCount, lastPage, fallbackPage } = usePageBounds(
     list,
     REQUESTS_PAGE_SIZE,
     page,
-    setPage,
   );
+  // Uma página que ficou vazia volta para a última que existe.
+  if (fallbackPage !== null) setPage(fallbackPage);
   const emptyMessage =
     FILTERS.find((item) => item.value === filter)?.empty ?? '';
 

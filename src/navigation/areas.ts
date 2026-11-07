@@ -30,6 +30,13 @@ export const areas: readonly Area[] = [
     title: 'Área do Professor',
     items: [
       { label: 'Solicitações', path: '/professor/solicitacoes' },
+      {
+        label: 'Orientandos',
+        path: '/professor/orientandos',
+        requiresActiveAdvising: {
+          reason: 'Requer orientando ativo',
+        },
+      },
       { label: 'Meu perfil', path: '/professor/perfil' },
     ],
   },

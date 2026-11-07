@@ -316,6 +316,43 @@ describe('TeacherRequestsPage: confirmar e responder', () => {
     await waitFor(() => expect(requestsTo(fetchMock, ME)).toHaveLength(2));
   });
 
+  it('depois de aceitar, o item Orientandos do menu passa de desabilitado a link, sem recarregar a página', async () => {
+    let advisees = 0;
+    const base = requestRoutes(MIXED);
+    const answer = base[ANSWER_1] as (body: unknown, url: URL) => unknown;
+    mockApi({
+      ...base,
+      [ME]: () => ({
+        body: {
+          id: 9,
+          full_name: 'Carlos Lima',
+          email: 'carlos@example.com',
+          type: 'teacher',
+          active_advisees_count: advisees,
+        },
+      }),
+      [ANSWER_1]: (body: unknown, url: URL) => {
+        advisees = 1;
+        return answer(body, url);
+      },
+    } as never);
+    const user = userEvent.setup();
+    renderApp('/professor/solicitacoes');
+    expect(
+      await screen.findByRole('button', { name: /Orientandos/ }),
+    ).toHaveAttribute('aria-disabled', 'true');
+    const { dialog } = await openDialog(user, 'Ana Souza', 'Aceitar');
+
+    await user.click(within(dialog).getByRole('button', { name: 'Aceitar' }));
+
+    expect(
+      await screen.findByRole('link', { name: 'Orientandos' }),
+    ).toHaveAttribute('href', '/professor/orientandos');
+    expect(
+      screen.queryByRole('button', { name: /Orientandos/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it('depois de recusar, mostra o aviso e não relê o usuário', async () => {
     const { fetchMock, user } = setup();
     const { dialog } = await openDialog(user, 'Ana Souza', 'Recusar');
