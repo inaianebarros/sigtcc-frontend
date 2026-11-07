@@ -1,12 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMemo } from 'react';
 import { useLoad } from '../hooks/useLoad';
-import {
-  commonChanges,
-  profileSchema,
-  toFormValues,
-} from '../profile/profileForm';
-import type { DirtyFields, ProfileFormValues } from '../profile/profileForm';
+import { profileSchema, toFormValues } from '../profile/profileForm';
+import { studentChanges } from '../profile/studentForm';
 import { ProfileEditor } from '../profile/ProfileEditor';
 import { ProfileScreen } from '../profile/ProfileScreen';
 import { ReadOnlyFacts } from '../profile/ReadOnlyFacts';
@@ -40,14 +36,6 @@ function StudentFacts({ profile }: { profile: StudentProfile }) {
       ]}
     />
   );
-}
-
-function studentChanges(
-  values: ProfileFormValues,
-  dirtyFields: DirtyFields,
-  baseline: StudentProfile,
-) {
-  return commonChanges(values, dirtyFields, baseline);
 }
 
 export function StudentProfilePage() {

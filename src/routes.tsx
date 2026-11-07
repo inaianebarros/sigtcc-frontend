@@ -10,6 +10,7 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { StudentProfilePage } from './pages/StudentProfilePage';
+import { TeacherProfilePage } from './pages/TeacherProfilePage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { StudentRegistrationPage } from './pages/StudentRegistrationPage';
 import { TeacherRegistrationPage } from './pages/TeacherRegistrationPage';
@@ -18,6 +19,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 // Telas já implementadas; os itens do menu sem tela mostram a página "em breve".
 const screens: Record<string, ReactElement> = {
   '/aluno/perfil': <StudentProfilePage />,
+  '/professor/perfil': <TeacherProfilePage />,
 };
 
 export function AppRoutes() {

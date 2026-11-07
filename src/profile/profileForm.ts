@@ -115,7 +115,9 @@ export function isDirty(flag: DirtyFields[string]): boolean {
 }
 
 export function sameSet(a: number[], b: number[]): boolean {
-  return a.length === b.length && new Set([...a, ...b]).size === a.length;
+  const first = new Set(a);
+  const second = new Set(b);
+  return first.size === second.size && [...first].every((id) => second.has(id));
 }
 
 function sameArticles(a: PublishedArticle[], b: PublishedArticle[]): boolean {
