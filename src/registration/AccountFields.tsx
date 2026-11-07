@@ -2,11 +2,7 @@ import { Stack, TextField } from '@mui/material';
 import { useFormContext } from 'react-hook-form';
 import type { AccountForm } from './accountForm';
 
-interface AccountFieldsProps {
-  accountType: 'Aluno' | 'Professor';
-}
-
-export function AccountFields({ accountType }: AccountFieldsProps) {
+export function AccountFields() {
   const {
     register,
     formState: { errors },
@@ -55,11 +51,6 @@ export function AccountFields({ accountType }: AccountFieldsProps) {
           {...register('passwordConfirmation')}
         />
       </Stack>
-      <TextField
-        label="Tipo de conta"
-        value={accountType}
-        slotProps={{ input: { readOnly: true } }}
-      />
     </>
   );
 }

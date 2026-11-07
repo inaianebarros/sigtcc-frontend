@@ -69,7 +69,7 @@ describe('StudentRegistrationPage', () => {
     vi.unstubAllGlobals();
   });
 
-  it('mostra todos os campos do RF01, com o tipo de conta fixo e somente leitura', async () => {
+  it('mostra todos os campos do RF01, sem campo de tipo de conta (o tipo é o da página)', async () => {
     mockApi(catalog);
 
     await openForm();
@@ -86,8 +86,10 @@ describe('StudentRegistrationPage', () => {
     ]) {
       expect(screen.getByLabelText(label)).toBeInTheDocument();
     }
-    expect(screen.getByLabelText('Tipo de conta')).toHaveValue('Aluno');
-    expect(screen.getByLabelText('Tipo de conta')).toHaveAttribute('readonly');
+    expect(
+      screen.getByRole('heading', { name: 'Cadastro de aluno' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText('Tipo de conta')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Curso')).toHaveAttribute(
       'aria-disabled',
       'true',

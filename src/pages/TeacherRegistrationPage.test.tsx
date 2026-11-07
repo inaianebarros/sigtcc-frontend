@@ -73,7 +73,7 @@ describe('TeacherRegistrationPage', () => {
     vi.unstubAllGlobals();
   });
 
-  it('mostra todos os campos do RF02, com o tipo de conta fixo e somente leitura', async () => {
+  it('mostra todos os campos do RF02, sem campo de tipo de conta (o tipo é o da página)', async () => {
     mockApi(catalog);
 
     await openForm();
@@ -96,7 +96,6 @@ describe('TeacherRegistrationPage', () => {
       'E-mail',
       'Senha',
       'Confirmação de senha',
-      'Tipo de conta',
       'Instituto',
       'Cursos',
       'Áreas de interesse',
@@ -110,8 +109,10 @@ describe('TeacherRegistrationPage', () => {
         : 1,
     );
     expect(byPosition).toEqual(inRf02Order);
-    expect(screen.getByLabelText('Tipo de conta')).toHaveValue('Professor');
-    expect(screen.getByLabelText('Tipo de conta')).toHaveAttribute('readonly');
+    expect(
+      screen.getByRole('heading', { name: 'Cadastro de professor' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText('Tipo de conta')).not.toBeInTheDocument();
   });
 
   it('exige ao menos um curso e uma área, com os erros junto dos campos', async () => {
