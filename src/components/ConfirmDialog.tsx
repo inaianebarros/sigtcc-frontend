@@ -18,6 +18,8 @@ interface ConfirmDialogProps {
   busy?: boolean;
   busyLabel?: string;
   confirmColor?: 'primary' | 'error';
+  /** Chamado quando a animação de saída termina: o momento seguro de mover o foco. */
+  onExited?: () => void;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -31,6 +33,7 @@ export function ConfirmDialog({
   busy = false,
   busyLabel = 'Enviando…',
   confirmColor = 'error',
+  onExited,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -39,6 +42,7 @@ export function ConfirmDialog({
     <Dialog
       open={open}
       onClose={busy ? undefined : onCancel}
+      slotProps={{ transition: { onExited } }}
       aria-labelledby={`${id}-title`}
       aria-describedby={`${id}-message`}
     >

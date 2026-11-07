@@ -13,6 +13,7 @@ import { LoginPage } from './pages/LoginPage';
 import { StudentProfilePage } from './pages/StudentProfilePage';
 import { StudentRequestPage } from './pages/StudentRequestPage';
 import { TeacherProfilePage } from './pages/TeacherProfilePage';
+import { TeacherRequestsPage } from './pages/TeacherRequestsPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { StudentRegistrationPage } from './pages/StudentRegistrationPage';
 import { TeacherRegistrationPage } from './pages/TeacherRegistrationPage';
@@ -24,6 +25,7 @@ const screens: Record<string, ReactElement> = {
   '/aluno/perfil': <StudentProfilePage />,
   '/aluno/solicitacao': <StudentRequestPage />,
   '/professor/perfil': <TeacherProfilePage />,
+  '/professor/solicitacoes': <TeacherRequestsPage />,
 };
 
 export function AppRoutes() {
