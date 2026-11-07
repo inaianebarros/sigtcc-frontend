@@ -20,6 +20,20 @@ describe('httpClient', () => {
     vi.unstubAllGlobals();
   });
 
+  it('envia PATCH com o corpo em JSON', async () => {
+    fetchMock.mockResolvedValueOnce(json({ ok: true }));
+
+    await httpClient.patch('/alunos/me/perfil', { full_name: 'Ana' });
+
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
+    expect(String(url)).toContain('/alunos/me/perfil');
+    expect(init?.method).toBe('PATCH');
+    expect(init?.body).toBe(JSON.stringify({ full_name: 'Ana' }));
+    expect((init?.headers as Headers).get('Content-Type')).toBe(
+      'application/json',
+    );
+  });
+
   it('anexa o access token em memória', async () => {
     tokenStore.set('abc');
     fetchMock.mockResolvedValueOnce(json({ ok: true }));
