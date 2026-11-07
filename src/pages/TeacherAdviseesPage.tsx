@@ -11,6 +11,7 @@ import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { AdviseeCard } from '../advisees/AdviseeCard';
 import { PagePagination } from '../components/PagePagination';
 import { useLoad } from '../hooks/useLoad';
+import { usePageBounds } from '../hooks/usePageBounds';
 import { paths } from '../navigation/paths';
 import { ADVISEES_PAGE_SIZE, listAdvisees } from '../services/adviseeService';
 
@@ -40,25 +41,21 @@ export function TeacherAdviseesPage() {
     });
   };
 
-  // O total da última resposta mantém a paginação montada durante o carregamento.
-  const [knownCount, setKnownCount] = useState(0);
-  if (list.status === 'ready' && list.data.count !== knownCount) {
-    setKnownCount(list.data.count);
-  }
-  const lastPage = Math.max(1, Math.ceil(knownCount / ADVISEES_PAGE_SIZE));
+  const { knownCount, lastPage, fallbackPage } = usePageBounds(
+    list,
+    ADVISEES_PAGE_SIZE,
+    page,
+  );
 
-  // Uma página além da última (um link antigo, ou a lista que encolheu) volta para a última
-  // que existe, sem entrar no histórico.
-  const emptyPage =
-    list.status === 'ready' &&
-    list.data.items.length === 0 &&
-    list.data.count > 0
-      ? Math.ceil(list.data.count / ADVISEES_PAGE_SIZE)
-      : null;
+  // Uma página além da última volta para a última que existe, sem entrar no histórico. Aqui é
+  // um efeito, e não a correção na renderização das outras listas: a página vive na URL, e
+  // navegar durante a renderização atualizaria o roteador no meio dela.
   const backToLastPage = useEffectEvent((last: number) => goToPage(last, true));
   useEffect(() => {
-    if (emptyPage !== null && emptyPage < page) backToLastPage(emptyPage);
-  }, [emptyPage, page]);
+    if (fallbackPage !== null && fallbackPage !== page) {
+      backToLastPage(fallbackPage);
+    }
+  }, [fallbackPage, page]);
 
   return (
     <Stack spacing={3}>

@@ -88,12 +88,13 @@ export function AdvisorsPage() {
     () => searchAdvisors({ name, page, onlyAvailable }),
     `${filterKey}|${page}|${listReload}`,
   );
-  const { knownCount, lastPage } = usePageBounds(
+  const { knownCount, lastPage, fallbackPage } = usePageBounds(
     list,
     ADVISORS_PAGE_SIZE,
     page,
-    setPage,
   );
+  // Uma página que ficou vazia volta para a última que existe.
+  if (fallbackPage !== null) setPage(fallbackPage);
 
   const confirmRequest = async () => {
     if (!asking || sending) return;
