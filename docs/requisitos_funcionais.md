@@ -36,7 +36,7 @@ RF17 - **Solicitar Reunião com Orientador:** O sistema deve permitir que o alun
 
 RF18 - **Solicitar Reunião com Aluno:** O sistema deve permitir que o professor solicite reuniões, informando data, hora, descrição e aluno.
 
-RF19 - **Visualizar Reuniões:** O sistema deve permitir que o usuário visualize a lista de reuniões agendadas.
+RF19 - **Visualizar Reuniões:** O sistema deve permitir que o usuário visualize a lista de reuniões agendadas. A reunião cancelada permanece na lista com o motivo do cancelamento e, quando foi cancelada automaticamente, com a indicação de que o cancelamento foi feito pelo sistema (RN34).
 
 RF20 - **Responder Solicitação de Reunião:** O sistema deve permitir que o usuário aceite ou recuse solicitações de reunião. Em caso de recusa é necessário adicionar a justificativa.
 
