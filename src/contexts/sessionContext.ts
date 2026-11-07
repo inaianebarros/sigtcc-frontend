@@ -9,6 +9,7 @@ export interface SessionContextValue {
   expiredMessage: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 export const SessionContext = createContext<SessionContextValue | null>(null);

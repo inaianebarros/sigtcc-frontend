@@ -7,6 +7,8 @@ interface ApiUser {
   full_name: string;
   email: string;
   type: UserType;
+  has_active_advising?: boolean;
+  active_advisees_count?: number;
 }
 
 interface LoginResponse {
@@ -20,6 +22,8 @@ function toSessionUser(user: ApiUser): SessionUser {
     fullName: user.full_name,
     email: user.email,
     type: user.type,
+    hasActiveAdvising: user.has_active_advising,
+    activeAdviseesCount: user.active_advisees_count,
   };
 }
 
@@ -45,6 +49,10 @@ export async function restoreSession(): Promise<SessionUser | null> {
     tokenStore.clear();
     return null;
   }
+}
+
+export async function fetchCurrentUser(): Promise<SessionUser> {
+  return toSessionUser(await httpClient.get<ApiUser>('/auth/me'));
 }
 
 export async function logout(): Promise<void> {

@@ -5,4 +5,6 @@ export interface SessionUser {
   fullName: string;
   email: string;
   type: UserType;
+  hasActiveAdvising?: boolean;
+  activeAdviseesCount?: number;
 }
