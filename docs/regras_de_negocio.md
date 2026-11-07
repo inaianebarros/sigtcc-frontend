@@ -58,10 +58,12 @@ RN28 - **Orientadores do Curso do Aluno:** O aluno só visualiza, na lista de or
 
 RN29 - **Funcionalidades Condicionadas à Orientação Ativa:** As funcionalidades que dependem de uma orientação ativa (para o aluno: tema do TCC, atividades e reuniões; para o professor: atividades e reuniões com orientandos) permanecem visíveis, porém desabilitadas, enquanto o aluno não tiver orientador ativo ou o professor não tiver orientandos ativos, com a explicação do motivo.
 
-RN30 - **Encerramento de Orientação:** Somente o professor orientador pode encerrar uma orientação ativa; o aluno não pode. O encerramento é irreversível e exige confirmação explícita, com mensagem que deixe claro que a ação não pode ser desfeita e que as atividades em aberto serão arquivadas (RN07, RNF21).
+RN30 - **Encerramento de Orientação:** Somente o professor orientador pode encerrar uma orientação ativa; o aluno não pode. O encerramento é irreversível e exige confirmação explícita, com mensagem que deixe claro que a ação não pode ser desfeita e que as atividades em aberto serão arquivadas e as reuniões pendentes ou aceitas ainda não realizadas serão canceladas (RN07, RN34, RNF21).
 
 RN31 - **Unicidade de Artigo Publicado:** Um usuário não pode ter dois artigos publicados com o mesmo título e o mesmo ano. A comparação ignora maiúsculas, acentos e espaços nas pontas; a URL não entra na comparação.
 
 RN32 - **Perfis de Alunos Visíveis ao Professor:** O professor só visualiza o perfil de alunos que lhe enviaram uma solicitação de orientação, em qualquer status, ou que têm ou tiveram orientação com ele. Para qualquer outro aluno, ou para um aluno inativo, o sistema responde como se o perfil não existisse, sem revelar o motivo. O perfil nunca exibe e-mail nem matrícula.
 
 RN33 - **Motivo do Encerramento de Orientação:** Ao encerrar uma orientação, o professor deve informar o motivo, em texto livre de 10 a 500 caracteres, sem contar espaços nas pontas. Sem o motivo, o encerramento não é realizado. O motivo fica registrado junto com a data do encerramento e é exibido ao aluno e ao professor no histórico da orientação encerrada (RN30).
+
+RN34 - **Cancelamento de Reuniões ao Encerrar Orientação:** Ao encerrar uma orientação, as reuniões pendentes ou aceitas dessa orientação que ainda não foram realizadas, isto é, com data e hora no futuro, são canceladas automaticamente pelo sistema, junto com o arquivamento das atividades (RN07). As reuniões já realizadas, recusadas ou canceladas permanecem como estão, como histórico.
