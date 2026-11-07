@@ -1,9 +1,10 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 import { areas } from './navigation/areas';
 import { paths } from './navigation/paths';
 import { AreaPage } from './pages/AreaPage';
+import { ComingSoonPage } from './pages/ComingSoonPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
@@ -28,9 +29,25 @@ export function AppRoutes() {
           path={paths.registerTeacher}
           element={<TeacherRegistrationPage />}
         />
-        {areas.map(({ userType, path, title }) => (
+        {areas.map(({ userType, path, title, items }) => (
           <Route key={userType} element={<RequireAuth userType={userType} />}>
-            <Route path={path} element={<AreaPage title={title} />} />
+            {items.length === 0 ? (
+              <Route path={path} element={<AreaPage title={title} />} />
+            ) : (
+              <>
+                <Route
+                  path={path}
+                  element={<Navigate to={items[0]!.path} replace />}
+                />
+                {items.map((item) => (
+                  <Route
+                    key={item.path}
+                    path={item.path}
+                    element={<ComingSoonPage title={item.label} />}
+                  />
+                ))}
+              </>
+            )}
           </Route>
         ))}
         <Route path="*" element={<NotFoundPage />} />
