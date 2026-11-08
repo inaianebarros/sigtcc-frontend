@@ -355,6 +355,7 @@ describe('StudentProfileViewPage: o "Voltar"', () => {
     ['//exemplo.com'],
     ['/aluno/perfil'],
     ['/professor/perfil'],
+    ['/aluno/orientadores'],
     [42],
   ])(
     'uma origem que não seja uma das duas listas (%j) é ignorada',

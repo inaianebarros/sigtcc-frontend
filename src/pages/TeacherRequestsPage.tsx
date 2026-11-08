@@ -18,7 +18,8 @@ import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
-import { StudentLink } from '../navigation/StudentLink';
+import { OriginLink } from '../navigation/OriginLink';
+import { teacherStudentPath } from '../navigation/paths';
 import {
   PAGE_PARAM,
   useReturnToLastPage,
@@ -251,9 +252,9 @@ export function TeacherRequestsPage() {
                     else cardElements.current.delete(request.id);
                   }}
                   wrapName={(name, item) => (
-                    <StudentLink studentId={item.student.id}>
+                    <OriginLink to={teacherStudentPath(item.student.id)}>
                       {name}
-                    </StudentLink>
+                    </OriginLink>
                   )}
                   onAnswer={(chosen, action) => {
                     setDialogText({ name: chosen.student.fullName, action });

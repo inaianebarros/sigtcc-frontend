@@ -57,6 +57,21 @@ export function isStateChangedError(error: unknown): error is ApiError {
   );
 }
 
+/**
+ * O resultado de um pedido, ou `null` num 404: o servidor responde o mesmo 404 para um perfil que
+ * o usuário não pode ver e para um que não existe, e a tela não deve distinguir os casos.
+ */
+export async function nullOnNotFound<T>(
+  request: Promise<T>,
+): Promise<T | null> {
+  try {
+    return await request;
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
 export const INVALID_FORM_MESSAGE = 'Verifique os campos do formulário.';
 
 export function fieldErrorsFrom(detail: unknown[]): FieldErrors {

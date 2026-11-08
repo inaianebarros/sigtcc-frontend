@@ -16,10 +16,15 @@ export const paths = {
   teacherProfile: '/professor/perfil',
   teacherPassword: '/professor/perfil/senha',
   teacherStudent: '/professor/alunos/:studentId',
+  studentAdvisor: '/aluno/orientadores/:teacherId',
 } as const;
 
 export function teacherStudentPath(studentId: number): string {
   return paths.teacherStudent.replace(':studentId', String(studentId));
+}
+
+export function studentAdvisorPath(teacherId: number): string {
+  return paths.studentAdvisor.replace(':teacherId', String(teacherId));
 }
 
 export function homePathFor(userType: UserType): string {

@@ -24,8 +24,8 @@ import {
   isStateChangedError,
   messageForStatus,
 } from '../services/apiError';
-import { paths } from '../navigation/paths';
-import { StudentLink } from '../navigation/StudentLink';
+import { paths, teacherStudentPath } from '../navigation/paths';
+import { OriginLink } from '../navigation/OriginLink';
 import {
   ADVISEES_PAGE_SIZE,
   endAdvising,
@@ -157,7 +157,9 @@ export function TeacherAdviseesPage() {
                 key={advisee.advisingId}
                 advisee={advisee}
                 wrapName={(name, item) => (
-                  <StudentLink studentId={item.student.id}>{name}</StudentLink>
+                  <OriginLink to={teacherStudentPath(item.student.id)}>
+                    {name}
+                  </OriginLink>
                 )}
                 actions={
                   <Button
