@@ -30,3 +30,29 @@ export function formatDateTime(iso: string): string {
     ? `${dateFormat.format(date)}, às ${timeFormat.format(date)}`
     : UNAVAILABLE;
 }
+
+const deadlineFormat = new Intl.DateTimeFormat('pt-BR', {
+  dateStyle: 'long',
+  timeZone: 'UTC',
+});
+
+/**
+ * Uma data sem hora, como o prazo de uma atividade (AAAA-MM-DD): vale o mesmo dia em qualquer
+ * fuso, então ela não passa pelo horário da instituição, que a faria cair no dia anterior.
+ */
+export function formatDeadline(isoDate: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  if (!match) return UNAVAILABLE;
+  const [year, month, day] = [
+    Number(match[1]),
+    Number(match[2]),
+    Number(match[3]),
+  ];
+  const date = new Date(Date.UTC(year, month - 1, day));
+  // Um dia que não existe, como 30 de fevereiro, rolaria para o mês seguinte: não é uma data.
+  const exists =
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day;
+  return exists ? deadlineFormat.format(date) : UNAVAILABLE;
+}

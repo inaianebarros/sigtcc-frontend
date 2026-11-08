@@ -120,16 +120,21 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
     ]);
   });
 
-  it('não mostra e-mail nem matrícula, e o cartão tem só o link do nome e a ação de encerrar', async () => {
+  it('não mostra e-mail nem matrícula, e o cartão tem só os links do nome e das atividades e a ação de encerrar', async () => {
     setup();
     await screen.findByText('Orientando 1');
 
     const card = cardOf('Orientando 1');
 
-    expect(within(card).getAllByRole('link')).toHaveLength(1);
+    expect(within(card).getAllByRole('link')).toHaveLength(2);
     expect(
       within(card).getByRole('link', { name: 'Orientando 1' }),
     ).toHaveAttribute('href', '/professor/alunos/101');
+    expect(
+      within(card).getByRole('link', {
+        name: 'Ver atividades de Orientando 1',
+      }),
+    ).toHaveAttribute('href', '/professor/atividades?aluno=101');
     expect(within(card).getAllByRole('button')).toHaveLength(1);
     expect(card.textContent).not.toMatch(/@|Matrícula/);
   });
@@ -344,5 +349,22 @@ describe('TeacherAdviseesPage: estados, acesso e celular', () => {
     expect(
       within(card).getByRole('list', { name: 'Atividades por status' }),
     ).toBeVisible();
+  });
+});
+
+describe('TeacherAdviseesPage: atalho para as atividades do orientando', () => {
+  it('o botão Ver atividades abre a lista de atividades filtrada por aquele aluno', async () => {
+    const { user } = setup([makeAdvisee(1), makeAdvisee(2)]);
+    await screen.findByText('Orientando 2');
+
+    await user.click(
+      within(cardOf('Orientando 2')).getByRole('link', {
+        name: 'Ver atividades de Orientando 2',
+      }),
+    );
+
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/professor/atividades?aluno=102',
+    );
   });
 });

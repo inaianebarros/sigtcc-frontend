@@ -17,6 +17,10 @@ export const paths = {
   teacherPassword: '/professor/perfil/senha',
   teacherStudent: '/professor/alunos/:studentId',
   studentAdvisor: '/aluno/orientadores/:teacherId',
+  studentActivities: '/aluno/atividades',
+  teacherActivities: '/professor/atividades',
+  studentActivity: '/aluno/atividades/:activityId',
+  teacherActivity: '/professor/atividades/:activityId',
 } as const;
 
 export function teacherStudentPath(studentId: number): string {
@@ -25,6 +29,15 @@ export function teacherStudentPath(studentId: number): string {
 
 export function studentAdvisorPath(teacherId: number): string {
   return paths.studentAdvisor.replace(':teacherId', String(teacherId));
+}
+
+export function activityPath(
+  userType: 'student' | 'teacher',
+  activityId: number,
+): string {
+  const pattern =
+    userType === 'student' ? paths.studentActivity : paths.teacherActivity;
+  return pattern.replace(':activityId', String(activityId));
 }
 
 export function homePathFor(userType: UserType): string {

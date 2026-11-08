@@ -162,21 +162,31 @@ export function TeacherAdviseesPage() {
                   </OriginLink>
                 )}
                 actions={
-                  <Button
-                    color="error"
-                    variant="outlined"
-                    aria-label={`Encerrar orientação de ${advisee.student.fullName}`}
-                    onClick={() => {
-                      clearErrors();
-                      setDialog((current) => ({
-                        advisee,
-                        open: true,
-                        openCount: (current?.openCount ?? 0) + 1,
-                      }));
-                    }}
-                  >
-                    Encerrar orientação
-                  </Button>
+                  <>
+                    <Button
+                      component={RouterLink}
+                      to={`${paths.teacherActivities}?aluno=${advisee.student.id}`}
+                      variant="outlined"
+                      aria-label={`Ver atividades de ${advisee.student.fullName}`}
+                    >
+                      Ver atividades
+                    </Button>
+                    <Button
+                      color="error"
+                      variant="outlined"
+                      aria-label={`Encerrar orientação de ${advisee.student.fullName}`}
+                      onClick={() => {
+                        clearErrors();
+                        setDialog((current) => ({
+                          advisee,
+                          open: true,
+                          openCount: (current?.openCount ?? 0) + 1,
+                        }));
+                      }}
+                    >
+                      Encerrar orientação
+                    </Button>
+                  </>
                 }
               />
             ))}

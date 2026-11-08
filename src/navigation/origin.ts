@@ -4,8 +4,8 @@
  * outro valor é ignorado, para o estado de uma navegação não levar a lugar nenhum.
  */
 const ORIGIN_LISTS = {
-  professor: ['solicitacoes', 'orientandos'],
-  aluno: ['orientadores'],
+  professor: ['solicitacoes', 'orientandos', 'atividades'],
+  aluno: ['orientadores', 'atividades'],
 } as const;
 
 export type OriginArea = keyof typeof ORIGIN_LISTS;
