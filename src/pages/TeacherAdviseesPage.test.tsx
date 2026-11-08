@@ -120,15 +120,18 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
     ]);
   });
 
-  it('não mostra e-mail, matrícula nem link no cartão, só a ação de encerrar', async () => {
+  it('não mostra e-mail nem matrícula, e o cartão tem só o link do nome e a ação de encerrar', async () => {
     setup();
     await screen.findByText('Orientando 1');
 
     const card = cardOf('Orientando 1');
 
-    expect(within(card).queryByRole('link')).not.toBeInTheDocument();
+    expect(within(card).getAllByRole('link')).toHaveLength(1);
+    expect(
+      within(card).getByRole('link', { name: 'Orientando 1' }),
+    ).toHaveAttribute('href', '/professor/alunos/101');
     expect(within(card).getAllByRole('button')).toHaveLength(1);
-    expect(card.textContent).not.toMatch(/@/);
+    expect(card.textContent).not.toMatch(/@|Matrícula/);
   });
 
   it('uma só orientação diz "1 orientando encontrado"', async () => {

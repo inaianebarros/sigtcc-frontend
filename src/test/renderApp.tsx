@@ -9,7 +9,15 @@ import { LocationProbe } from './LocationProbe';
 
 export function renderApp(
   path: string,
-  { strict = false, entries }: { strict?: boolean; entries?: string[] } = {},
+  {
+    strict = false,
+    entries,
+  }: {
+    strict?: boolean;
+    entries?: (
+      string | { pathname: string; search?: string; state?: unknown }
+    )[];
+  } = {},
 ) {
   const Mode = strict ? StrictMode : Fragment;
   const router = createMemoryRouter(

@@ -103,14 +103,17 @@ describe('TeacherRequestsPage: a lista e o filtro', () => {
     ).toEqual(['Aluno 7', 'Aluno 3', 'Aluno 5']);
   });
 
-  it('não mostra e-mail, matrícula nem link para o perfil do aluno', async () => {
+  it('não mostra e-mail nem matrícula, e o único link do cartão é o do nome, para o perfil do aluno', async () => {
     setup();
     await screen.findByText('Ana Souza');
 
     const ana = cardOf('Ana Souza');
 
-    expect(within(ana).queryByRole('link')).not.toBeInTheDocument();
-    expect(ana.textContent).not.toMatch(/@/);
+    expect(within(ana).getAllByRole('link')).toHaveLength(1);
+    expect(
+      within(ana).getByRole('link', { name: 'Ana Souza' }),
+    ).toHaveAttribute('href', '/professor/alunos/101');
+    expect(ana.textContent).not.toMatch(/@|Matrícula/);
   });
 
   it('oferece as cinco situações e manda cada uma ao servidor, "Todas" sem o parâmetro', async () => {
@@ -596,5 +599,143 @@ describe('TeacherRequestsPage: estados', () => {
 
     expect(await screen.findByText('Solicitação aceita.')).toBeVisible();
     expect(requestsTo(fetchMock, ANSWER_1)).toHaveLength(1);
+  });
+});
+
+describe('TeacherRequestsPage: filtro e página na URL', () => {
+  const ITEMS = [
+    ...Array.from({ length: 45 }, (_, index) =>
+      makeRequest(index + 1, 'pending'),
+    ),
+    ...Array.from({ length: 25 }, (_, index) =>
+      makeRequest(100 + index, 'accepted'),
+    ),
+  ];
+
+  beforeEach(() => {
+    tokenStore.clear();
+    vi.unstubAllGlobals();
+    setViewportWidth(DESKTOP_WIDTH);
+  });
+
+  function open(path: string) {
+    const fetchMock = mockApi(requestRoutes(ITEMS));
+    const user = userEvent.setup();
+    renderApp(path);
+    return { fetchMock, user };
+  }
+
+  it('abre direto no filtro e na página da URL, como ao recarregar ou voltar de outra tela', async () => {
+    const { fetchMock } = open(
+      '/professor/solicitacoes?situacao=accepted&pagina=2',
+    );
+
+    expect(await screen.findByText('Aluno 120')).toBeInTheDocument();
+
+    expect(statusParams(fetchMock)).toEqual([
+      { status: 'accepted', limit: '20', offset: '20' },
+    ]);
+    expect(screen.getByRole('radio', { name: 'Aceitas' })).toBeChecked();
+    expect(
+      screen.getByRole('button', { name: 'Página 2, atual' }),
+    ).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('trocar o filtro guarda a situação na URL e volta à página 1', async () => {
+    const { user } = open('/professor/solicitacoes?pagina=2');
+    await screen.findByText('Aluno 21');
+
+    await user.click(screen.getByRole('radio', { name: 'Aceitas' }));
+
+    await screen.findByText('Aluno 100');
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/professor\/solicitacoes\?situacao=accepted$/,
+    );
+  });
+
+  it('"Pendentes", que é o padrão, não põe nada na URL', async () => {
+    const { user } = open('/professor/solicitacoes?situacao=accepted');
+    await screen.findByText('Aluno 100');
+
+    await user.click(screen.getByRole('radio', { name: 'Pendentes' }));
+
+    await screen.findByText('Aluno 1');
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/professor\/solicitacoes$/,
+    );
+  });
+
+  it('"Todas" fica na URL e vai ao servidor sem o parâmetro de situação', async () => {
+    const { fetchMock, user } = open('/professor/solicitacoes');
+    await screen.findByText('Aluno 1');
+
+    await user.click(screen.getByRole('radio', { name: 'Todas' }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent('situacao=all'),
+    );
+    await waitFor(() =>
+      expect(statusParams(fetchMock).at(-1)?.status).toBeNull(),
+    );
+  });
+
+  it('mudar de página guarda a página na URL e mantém o filtro', async () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    const { user } = open('/professor/solicitacoes?situacao=accepted');
+    await screen.findByText('Aluno 100');
+
+    await user.click(
+      screen.getByRole('button', { name: 'Ir para a página 2' }),
+    );
+
+    await screen.findByText('Aluno 120');
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/professor\/solicitacoes\?situacao=accepted&pagina=2$/,
+    );
+  });
+
+  it.each(['foo', '', 'ACCEPTED'])(
+    'uma situação inválida ("%s") na URL vale como "Pendentes"',
+    async (value) => {
+      const { fetchMock } = open(`/professor/solicitacoes?situacao=${value}`);
+
+      expect(await screen.findByText('Aluno 1')).toBeInTheDocument();
+
+      expect(statusParams(fetchMock)[0]?.status).toBe('pending');
+      expect(screen.getByRole('radio', { name: 'Pendentes' })).toBeChecked();
+    },
+  );
+
+  it.each(['abc', '0', '-2'])(
+    'uma página inválida ("%s") na URL vale como a primeira',
+    async (value) => {
+      const { fetchMock } = open(`/professor/solicitacoes?pagina=${value}`);
+
+      expect(await screen.findByText('Aluno 1')).toBeInTheDocument();
+
+      expect(statusParams(fetchMock)[0]).toEqual({
+        status: 'pending',
+        limit: '20',
+        offset: '0',
+      });
+    },
+  );
+
+  it('uma página além da última volta para a última que existe, sem entrar no histórico', async () => {
+    const { fetchMock } = open(
+      '/professor/solicitacoes?situacao=accepted&pagina=9',
+    );
+
+    expect(await screen.findByText('Aluno 120')).toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent('pagina=2'),
+    );
+    expect(statusParams(fetchMock).at(-1)).toEqual({
+      status: 'accepted',
+      limit: '20',
+      offset: '20',
+    });
   });
 });

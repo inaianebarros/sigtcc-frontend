@@ -62,6 +62,9 @@ describe('item que exige orientação ativa, no menu real', () => {
     expect(disabled).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByText(REASON)).toBeVisible();
 
+    // O ouvinte de foco é registrado num efeito que depende da sessão autenticada: o `act`
+    // o descarrega antes do evento, que senão pode cair no vazio.
+    await act(async () => {});
     advising = true;
     act(() => {
       window.dispatchEvent(new Event('focus'));

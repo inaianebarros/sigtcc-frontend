@@ -44,9 +44,16 @@ function renderProvider() {
 }
 
 async function signedIn() {
-  await waitFor(() =>
-    expect(screen.getByTestId('status')).toHaveTextContent('authenticated'),
+  // Com a máquina carregada a primeira renderização pode passar do 1 s padrão da espera.
+  await waitFor(
+    () =>
+      expect(screen.getByTestId('status')).toHaveTextContent('authenticated'),
+    { timeout: 5000 },
   );
+  // Os ouvintes de foco e de visibilidade são registrados num efeito que depende da sessão
+  // autenticada. O React o descarrega logo depois da renderização, e um evento disparado antes
+  // disso cai no vazio: o `act` descarrega o efeito antes de o teste seguir.
+  await act(async () => {});
 }
 
 describe('SessionProvider: estado da orientação', () => {
@@ -199,7 +206,9 @@ describe('SessionProvider: releitura ao voltar para a aba', () => {
     act(() => {
       document.dispatchEvent(new Event('visibilitychange'));
     });
-    await waitFor(() => expect(requestsTo(fetchMock, ME)).toHaveLength(2));
+    await waitFor(() => expect(requestsTo(fetchMock, ME)).toHaveLength(2), {
+      timeout: 5000,
+    });
     visibility.mockRestore();
   });
 
