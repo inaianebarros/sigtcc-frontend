@@ -22,7 +22,7 @@ RN10 - **Cancelamento de Reunião:** Uma reunião só pode ser cancelada pelo se
 
 RN11 - **Justificativa de Recusa de Reunião:** A recusa de uma solicitação de reunião deve ser obrigatoriamente acompanhada de uma justificativa.
 
-RN12 - **Pré-requisito para Cadastro de Tema:** O tema do TCC somente pode ser cadastrado após o aluno ter um orientador ativo, e pode ser cadastrado e alterado tanto pelo aluno quanto pelo seu orientador.
+RN12 - **Pré-requisito para Cadastro de Tema:** O tema do TCC pertence à orientação: somente pode ser cadastrado e alterado enquanto a orientação estiver ativa, tanto pelo aluno quanto pelo seu orientador. Ao encerrar a orientação (RN30), o tema fica congelado e ninguém mais pode alterá-lo; uma nova orientação começa sem tema.
 
 RN13 - **Vínculo de Atividade ao Orientado:** O professor só pode criar atividades para alunos sob sua orientação ativa.
 
