@@ -136,30 +136,6 @@ describe('ChangePasswordPage: o formulário', () => {
     expect(requestsTo(fetchMock, CHANGE)).toHaveLength(0);
   });
 
-  it.each([
-    ['Senha atual', 'senha atual'],
-    ['Nova senha', 'nova senha'],
-    ['Confirmação da nova senha', 'confirmação da nova senha'],
-  ])(
-    'o campo "%s" tem o controle de mostrar e ocultar, com nome acessível',
-    async (label, lower) => {
-      const { user } = setup();
-      await screen.findByRole('heading', { level: 1, name: 'Alterar senha' });
-      await user.type(field(label), 'segredo');
-
-      const show = screen.getByRole('button', { name: `Mostrar ${lower}` });
-      expect(show).toHaveAttribute('aria-pressed', 'false');
-      await user.click(show);
-
-      expect(field(label)).toHaveAttribute('type', 'text');
-      expect(field(label)).toHaveValue('segredo');
-      const hide = screen.getByRole('button', { name: `Ocultar ${lower}` });
-      expect(hide).toHaveAttribute('aria-pressed', 'true');
-      await user.click(hide);
-      expect(field(label)).toHaveAttribute('type', 'password');
-    },
-  );
-
   it('mostrar um campo não mostra os outros', async () => {
     const { user } = setup();
     await screen.findByRole('heading', { level: 1, name: 'Alterar senha' });

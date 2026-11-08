@@ -1,5 +1,6 @@
 import { Stack, TextField } from '@mui/material';
 import { useFormContext } from 'react-hook-form';
+import { PasswordField } from '../components/PasswordField';
 import type { AccountForm } from './accountForm';
 
 export function AccountFields() {
@@ -32,18 +33,16 @@ export function AccountFields() {
         {...register('email')}
       />
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-        <TextField
+        <PasswordField
           label="Senha"
-          type="password"
           autoComplete="new-password"
           fullWidth
           error={Boolean(errors.password)}
           helperText={errors.password?.message}
           {...register('password')}
         />
-        <TextField
+        <PasswordField
           label="Confirmação de senha"
-          type="password"
           autoComplete="new-password"
           fullWidth
           error={Boolean(errors.passwordConfirmation)}
