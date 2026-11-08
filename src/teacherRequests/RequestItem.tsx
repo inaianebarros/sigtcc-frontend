@@ -28,8 +28,8 @@ interface RequestItemProps {
   request: ReceivedRequest;
   /** Para a tela levar o foco ao cartão depois de uma resposta. */
   cardRef: (element: HTMLElement | null) => void;
-  /** Ponto de encaixe do nome do aluno, que a tela usa para levar ao perfil dele (RF11). */
-  wrapName?: (name: string, request: ReceivedRequest) => ReactNode;
+  /** O nome do aluno, que a tela transforma no link para o perfil dele (RF11). */
+  wrapName: (name: string, request: ReceivedRequest) => ReactNode;
   onAnswer: (request: ReceivedRequest, action: AnswerAction) => void;
 }
 
@@ -60,7 +60,7 @@ export function RequestItem({
       <CardContent>
         <Stack spacing={1.5}>
           <Typography id={titleId} variant="h6" component="h2">
-            {wrapName ? wrapName(student.fullName, request) : student.fullName}
+            {wrapName(student.fullName, request)}
           </Typography>
           <Typography color="text.secondary">{student.course.name}</Typography>
           {student.areas.length > 0 && (

@@ -4,7 +4,6 @@ import {
   FormControl,
   FormControlLabel,
   FormLabel,
-  Link,
   Radio,
   RadioGroup,
   Skeleton,
@@ -12,20 +11,19 @@ import {
   Typography,
 } from '@mui/material';
 import { useRef, useState } from 'react';
-import {
-  Link as RouterLink,
-  useLocation,
-  useSearchParams,
-} from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PagePagination } from '../components/PagePagination';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
-import { originState } from '../navigation/origin';
-import { teacherStudentPath } from '../navigation/paths';
-import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
+import { StudentLink } from '../navigation/StudentLink';
+import {
+  PAGE_PARAM,
+  useReturnToLastPage,
+  useUrlPage,
+} from '../hooks/useUrlPage';
 import {
   ApiError,
   isStateChangedError,
@@ -110,14 +108,13 @@ export function TeacherRequestsPage() {
   const [listReload, setListReload] = useState(0);
   // O filtro e a página vivem na URL: recarregar ou voltar de outra tela, como o perfil do aluno,
   // os restaura. "Pendentes", o padrão, e a primeira página ficam sem parâmetro.
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const filter = filterFrom(searchParams.get(FILTER_PARAM));
   const [page, setPage] = useUrlPage();
   const chooseFilter = (next: RequestFilter) =>
     setSearchParams((current) => {
       const params = new URLSearchParams(current);
-      params.delete('pagina');
+      params.delete(PAGE_PARAM);
       if (next === 'pending') params.delete(FILTER_PARAM);
       else params.set(FILTER_PARAM, next);
       return params;
@@ -254,13 +251,9 @@ export function TeacherRequestsPage() {
                     else cardElements.current.delete(request.id);
                   }}
                   wrapName={(name, item) => (
-                    <Link
-                      component={RouterLink}
-                      to={teacherStudentPath(item.student.id)}
-                      state={originState(location)}
-                    >
+                    <StudentLink studentId={item.student.id}>
                       {name}
-                    </Link>
+                    </StudentLink>
                   )}
                   onAnswer={(chosen, action) => {
                     setDialogText({ name: chosen.student.fullName, action });

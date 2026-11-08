@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useEffectEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { positiveIntFrom } from '../navigation/positiveInt';
 
-const PAGE_PARAM = 'pagina';
+/** O nome do parâmetro da página na URL; quem troca o filtro de uma lista o apaga. */
+export const PAGE_PARAM = 'pagina';
 
 /** Só um inteiro de 1 em diante vale; qualquer outra coisa na URL é a primeira página. */
 export function pageFrom(value: string | null): number {
-  return value !== null && /^[1-9]\d*$/.test(value) ? Number(value) : 1;
+  return positiveIntFrom(value) ?? 1;
 }
 
 export type SetUrlPage = (

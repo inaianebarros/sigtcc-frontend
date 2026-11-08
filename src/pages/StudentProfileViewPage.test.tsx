@@ -176,7 +176,9 @@ describe('StudentProfileViewPage: o conteúdo', () => {
     expect(
       await screen.findByTestId('student-profile-skeleton'),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Perfil do aluno' }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -230,13 +232,20 @@ describe('StudentProfileViewPage: aluno não encontrado e erros', () => {
       },
     });
 
-    await user.click(
-      await screen.findByRole('button', { name: 'Tentar novamente' }),
-    );
+    const retry = await screen.findByRole('button', {
+      name: 'Tentar novamente',
+    });
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Perfil do aluno' }),
+    ).toBeInTheDocument();
+    await user.click(retry);
 
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Ana Souza' }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Perfil do aluno' }),
+    ).not.toBeInTheDocument();
     expect(attempts).toBe(2);
     expect(requestsTo(fetchMock, PROFILE_OF_7)).toHaveLength(2);
   });
