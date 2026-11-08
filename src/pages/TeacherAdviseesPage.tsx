@@ -14,6 +14,7 @@ import {
   REASON_REJECTED_MESSAGE,
 } from '../advisees/EndAdvisingDialog';
 import { PagePagination } from '../components/PagePagination';
+import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
@@ -32,6 +33,7 @@ import {
   listAdvisees,
 } from '../services/adviseeService';
 import type { Advisee } from '../services/adviseeService';
+import { ThesisTopicDialog } from '../thesis/ThesisTopicDialog';
 
 function foundText(count: number): string {
   return `${count} ${count === 1 ? 'orientando encontrado' : 'orientandos encontrados'}`;
@@ -44,6 +46,8 @@ export function TeacherAdviseesPage() {
   const heading = useRef<HTMLHeadingElement>(null);
   const focusHeadingAfterClose = useRef(false);
   const { notify } = useFeedback();
+  // O diálogo do tema: o orientando escolhido fica guardado para o diálogo sair com ele.
+  const topicDialog = useDialogSlot<Advisee>();
   const { refreshUser } = useSession();
   // `openCount` muda a cada abertura, para o diálogo começar com o motivo vazio.
   const [dialog, setDialog] = useState<{
@@ -172,6 +176,13 @@ export function TeacherAdviseesPage() {
                       Ver atividades
                     </Button>
                     <Button
+                      variant="outlined"
+                      aria-label={`${advisee.thesisTopic ? 'Editar tema' : 'Cadastrar tema'} de ${advisee.student.fullName}`}
+                      onClick={() => topicDialog.show(advisee)}
+                    >
+                      {advisee.thesisTopic ? 'Editar tema' : 'Cadastrar tema'}
+                    </Button>
+                    <Button
                       color="error"
                       variant="outlined"
                       aria-label={`Encerrar orientação de ${advisee.student.fullName}`}
@@ -204,6 +215,28 @@ export function TeacherAdviseesPage() {
           listTop.current?.scrollIntoView?.({ block: 'start' });
         }}
       />
+      {topicDialog.slot && (
+        <ThesisTopicDialog
+          key={topicDialog.slot.openCount}
+          advisee={{
+            id: topicDialog.slot.payload.student.id,
+            name: topicDialog.slot.payload.student.fullName,
+          }}
+          open={topicDialog.slot.open}
+          onSaved={() => {
+            topicDialog.hide();
+            notify('Tema salvo.', 'success');
+            setReload((current) => current + 1);
+          }}
+          onStateChanged={() => {
+            // O diálogo fica aberto, com o aviso: a sessão e a lista é que se atualizam.
+            void refreshUser();
+            setReload((current) => current + 1);
+          }}
+          onClose={topicDialog.hide}
+          onExited={topicDialog.unmount}
+        />
+      )}
       {dialog && (
         <EndAdvisingDialog
           key={dialog.openCount}

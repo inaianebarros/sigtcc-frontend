@@ -18,6 +18,7 @@ export const paths = {
   teacherStudent: '/professor/alunos/:studentId',
   studentAdvisor: '/aluno/orientadores/:teacherId',
   studentActivities: '/aluno/atividades',
+  studentThesis: '/aluno/tema',
   teacherActivities: '/professor/atividades',
   studentActivity: '/aluno/atividades/:activityId',
   teacherActivity: '/professor/atividades/:activityId',

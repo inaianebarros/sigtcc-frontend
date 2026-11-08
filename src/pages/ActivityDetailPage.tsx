@@ -5,7 +5,7 @@ import { ActivityDetailView } from '../activities/ActivityDetailView';
 import { ActivityFormDialog } from '../activities/ActivityFormDialog';
 import { changesOf } from '../activities/activityForm';
 import type { ActivityFormValues } from '../activities/activityForm';
-import { useStateChangedNotice } from '../activities/useStateChangedNotice';
+import { useStateChangedNotice } from '../hooks/useStateChangedNotice';
 import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
@@ -131,7 +131,7 @@ export function ActivityDetailPage() {
           <ActivityDetailView
             activity={data}
             canManage={isTeacher}
-            onEdit={dialog.show}
+            onEdit={() => dialog.show()}
             onDelete={() => setConfirmingDelete(true)}
           />
         )}

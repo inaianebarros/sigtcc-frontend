@@ -1,5 +1,5 @@
-import { useFeedback } from '../hooks/useFeedback';
-import { useSession } from '../hooks/useSession';
+import { useFeedback } from './useFeedback';
+import { useSession } from './useSession';
 
 export const ADVISING_ENDED_MESSAGE = 'A orientação foi encerrada.';
 

@@ -120,7 +120,7 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
     ]);
   });
 
-  it('não mostra e-mail nem matrícula, e o cartão tem só os links do nome e das atividades e a ação de encerrar', async () => {
+  it('não mostra e-mail nem matrícula, e o cartão tem só os links do nome e das atividades e as ações de tema e de encerrar', async () => {
     setup();
     await screen.findByText('Orientando 1');
 
@@ -135,7 +135,11 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
         name: 'Ver atividades de Orientando 1',
       }),
     ).toHaveAttribute('href', '/professor/atividades?aluno=101');
-    expect(within(card).getAllByRole('button')).toHaveLength(1);
+    expect(
+      within(card)
+        .getAllByRole('button')
+        .map((button) => button.textContent),
+    ).toEqual(['Editar tema', 'Encerrar orientação']);
     expect(card.textContent).not.toMatch(/@|Matrícula/);
   });
 

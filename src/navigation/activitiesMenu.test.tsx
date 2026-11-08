@@ -37,7 +37,8 @@ describe('item Atividades do menu lateral', () => {
 
     const item = await screen.findByRole('button', { name: /Atividades/ });
     expect(item).toHaveAttribute('aria-disabled', 'true');
-    expect(screen.getByText('Requer orientação ativa')).toBeVisible();
+    // Atividades e Tema do TCC exigem o mesmo vínculo: o motivo aparece nos dois itens.
+    expect(screen.getAllByText('Requer orientação ativa')).toHaveLength(2);
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
     expect(
       within(menu).queryByRole('link', { name: 'Atividades' }),

@@ -18,6 +18,7 @@ import { TeacherAdviseesPage } from './pages/TeacherAdviseesPage';
 import { StudentProfilePage } from './pages/StudentProfilePage';
 import { StudentProfileViewPage } from './pages/StudentProfileViewPage';
 import { StudentRequestPage } from './pages/StudentRequestPage';
+import { StudentThesisPage } from './pages/StudentThesisPage';
 import { TeacherProfilePage } from './pages/TeacherProfilePage';
 import { TeacherRequestsPage } from './pages/TeacherRequestsPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
@@ -31,6 +32,7 @@ const screens: Record<string, ReactElement> = {
   '/aluno/orientadores': <AdvisorsPage />,
   '/aluno/perfil': <StudentProfilePage />,
   '/aluno/solicitacao': <StudentRequestPage />,
+  '/aluno/tema': <StudentThesisPage />,
   '/professor/atividades': <ActivitiesPage />,
   '/professor/orientandos': <TeacherAdviseesPage />,
   '/professor/perfil': <TeacherProfilePage />,
