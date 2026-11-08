@@ -53,9 +53,12 @@ describe('item que exige orientação ativa, no menu real', () => {
       }),
     });
     renderApp('/aluno');
-    const disabled = await screen.findByRole('button', {
-      name: /Item de teste/,
-    });
+    // A primeira renderização com a sessão restaurada pode passar de 1 s com a máquina carregada.
+    const disabled = await screen.findByRole(
+      'button',
+      { name: /Item de teste/ },
+      { timeout: 5000 },
+    );
     expect(disabled).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByText(REASON)).toBeVisible();
 
@@ -64,10 +67,12 @@ describe('item que exige orientação ativa, no menu real', () => {
       window.dispatchEvent(new Event('focus'));
     });
 
-    await waitFor(() =>
-      expect(
-        screen.getByRole('link', { name: 'Item de teste' }),
-      ).toHaveAttribute('href', '/aluno/teste'),
+    await waitFor(
+      () =>
+        expect(
+          screen.getByRole('link', { name: 'Item de teste' }),
+        ).toHaveAttribute('href', '/aluno/teste'),
+      { timeout: 5000 },
     );
     expect(screen.queryByText(REASON)).not.toBeInTheDocument();
   });

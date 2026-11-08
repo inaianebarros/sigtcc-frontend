@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMemo } from 'react';
 import { useLoad } from '../hooks/useLoad';
+import { paths } from '../navigation/paths';
 import { AvailabilityField } from '../profile/AvailabilityField';
 import { catalogName } from '../profile/catalogName';
 import { CoursesField } from '../profile/CoursesField';
@@ -70,6 +71,7 @@ export function TeacherProfilePage() {
             toChanges={teacherChanges}
             save={updateTeacherProfile}
             fieldByApiField={FIELD_BY_API_FIELD}
+            changePasswordPath={paths.teacherPassword}
             facts={<TeacherFacts profile={profile} instituteId={instituteId} />}
             extraFields={
               <>
