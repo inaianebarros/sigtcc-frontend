@@ -102,6 +102,10 @@ RF50 - **Visualizar Dashboard do Aluno:** O sistema deve permitir que o aluno vi
 
 RF51 - **Visualizar Dashboard do Professor:** O sistema deve permitir que o professor visualize, como página inicial após o login, uma Dashboard com o resumo das suas orientações ativas: a quantidade de orientandos ativos; o total de atividades e a quantidade por status (pendente, em andamento, em revisão e concluída); a quantidade de atividades atrasadas (RN37) e de atividades aguardando revisão; o progresso geral (RN36); os orientandos que precisam de atenção, isto é, que têm ao menos uma atividade atrasada ou em revisão, priorizados conforme a RN38, com nome, tema do TCC (quando cadastrado) e as quantidades de atividades atrasadas e em revisão, em lista limitada a 5 itens com acesso à lista completa de orientandos; e os próximos prazos de atividades, com título, nome do orientando, prazo e status, em lista limitada a 5 itens. A Dashboard deve permitir acessar as atividades, os orientandos e as solicitações de orientação recebidas. As próximas reuniões aceitas, com data e horário futuros, também são exibidas, a partir da entrega das reuniões. Sem orientações ativas, a Dashboard apresenta um estado vazio informativo, sem indicadores que sugiram orientações ou atividades inexistentes.
 
+RF52 - **Notificar Aluno sobre Alteração de Atividade:** O sistema deve notificar o aluno quando o professor alterar o título, a descrição ou o prazo de uma atividade, informando o que mudou, ou quando o professor excluí-la. Uma edição que não muda nenhum campo não gera notificação.
+
+RF53 - **Notificar Aluno sobre Encerramento da Orientação:** O sistema deve notificar o aluno, com uma única notificação, quando o professor encerrar a orientação, informando que as atividades em aberto foram arquivadas e que as reuniões pendentes ou aceitas ainda não realizadas foram canceladas (RN07, RN34).
+
 RFADM01 - **Cadastrar Curso:** O sistema deve permitir que o admin cadastre um novo curso ao sistema.
 
 RFADM02 - **Editar Curso:** O sistema deve permitir que o admin edite as informações de um curso.
