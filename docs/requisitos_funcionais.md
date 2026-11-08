@@ -48,7 +48,7 @@ RF23 - **Cadastrar Tema do TCC:** O sistema deve permitir que o **aluno** ou o *
 
 RF24 - **Alterar Tema do TCC:** O sistema deve permitir que o aluno e o professor alterem o tema do TCC enquanto a orientação estiver ativa. Depois do encerramento da orientação o tema não pode mais ser alterado (RN12).
 
-RF25 - **Criar Atividade:** O sistema deve permitir que o professor crie atividades relacionadas ao TCC para seus orientados, informando título, descrição e prazo.
+RF25 - **Criar Atividade:** O sistema deve permitir que o professor crie atividades relacionadas ao TCC para seus orientados, informando título, descrição e prazo, que não pode ser anterior à data atual.
 
 RF26 - **Editar Atividade:** O sistema deve permitir que o professor edite atividades previamente cadastradas, incluindo o prazo.
 
