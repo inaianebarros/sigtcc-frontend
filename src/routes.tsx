@@ -4,6 +4,8 @@ import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 import { areas } from './navigation/areas';
 import { paths } from './navigation/paths';
+import { ActivitiesPage } from './pages/ActivitiesPage';
+import { ActivityDetailPage } from './pages/ActivityDetailPage';
 import { AdvisorProfilePage } from './pages/AdvisorProfilePage';
 import { AdvisorsPage } from './pages/AdvisorsPage';
 import { AreaPage } from './pages/AreaPage';
@@ -25,9 +27,11 @@ import { NotFoundPage } from './pages/NotFoundPage';
 
 // Telas já implementadas; os itens do menu sem tela mostram a página "em breve".
 const screens: Record<string, ReactElement> = {
+  '/aluno/atividades': <ActivitiesPage />,
   '/aluno/orientadores': <AdvisorsPage />,
   '/aluno/perfil': <StudentProfilePage />,
   '/aluno/solicitacao': <StudentRequestPage />,
+  '/professor/atividades': <ActivitiesPage />,
   '/professor/orientandos': <TeacherAdviseesPage />,
   '/professor/perfil': <TeacherProfilePage />,
   '/professor/solicitacoes': <TeacherRequestsPage />,
@@ -41,6 +45,8 @@ const subScreens: Record<string, ReactElement> = {
   [paths.teacherPassword]: (
     <ChangePasswordPage profilePath={paths.teacherProfile} />
   ),
+  [paths.studentActivity]: <ActivityDetailPage />,
+  [paths.teacherActivity]: <ActivityDetailPage />,
   [paths.teacherStudent]: <StudentProfileViewPage />,
   [paths.studentAdvisor]: <AdvisorProfilePage />,
 };

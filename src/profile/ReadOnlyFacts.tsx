@@ -1,9 +1,10 @@
 import { Box, Typography } from '@mui/material';
+import type { ReactNode } from 'react';
 
 export function ReadOnlyFacts({
   facts,
 }: {
-  facts: readonly (readonly [label: string, value: string])[];
+  facts: readonly (readonly [label: string, value: ReactNode])[];
 }) {
   return (
     <Box

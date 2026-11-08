@@ -67,13 +67,14 @@ describe('menu lateral por perfil', () => {
 
     const item = await screen.findByRole('button', { name: /Orientandos/ });
     expect(item).toHaveAttribute('aria-disabled', 'true');
-    expect(screen.getByText('Requer orientando ativo')).toBeVisible();
+    // Orientandos e Atividades exigem o mesmo vínculo: o motivo aparece nos dois itens.
+    expect(screen.getAllByText('Requer orientando ativo')).toHaveLength(2);
     expect(
       screen.queryByRole('link', { name: 'Orientandos' }),
     ).not.toBeInTheDocument();
   });
 
-  it('habilita o item Orientandos, entre Solicitações e Meu perfil, quando há orientando ativo', async () => {
+  it('habilita os itens Orientandos e Atividades, entre Solicitações e Meu perfil, quando há orientando ativo', async () => {
     mockApi(sessionOf('teacher', { active_advisees_count: 2 }));
 
     renderApp('/login');
@@ -84,7 +85,7 @@ describe('menu lateral por perfil', () => {
       within(menu)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['Solicitações', 'Orientandos', 'Meu perfil']);
+    ).toEqual(['Solicitações', 'Orientandos', 'Atividades', 'Meu perfil']);
     expect(
       within(menu).getByRole('link', { name: 'Orientandos' }),
     ).toHaveAttribute('href', '/professor/orientandos');
