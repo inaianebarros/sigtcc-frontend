@@ -22,7 +22,8 @@ export function StudentProfileViewPage() {
   const { studentId } = useParams();
   // Só um inteiro de 1 em diante é um id: qualquer outra coisa na URL é um aluno que não existe.
   const id = positiveIntFrom(studentId);
-  const backPath = originPath(useLocation().state) ?? paths.teacherRequests;
+  const backPath =
+    originPath(useLocation().state, 'professor') ?? paths.teacherRequests;
   const [reload, setReload] = useState(0);
   // Sem um id válido a API nem é chamada: a chave nula deixa a carga parada.
   const profile = useLoad(

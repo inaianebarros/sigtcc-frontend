@@ -7,6 +7,8 @@ import {
   Typography,
 } from '@mui/material';
 import { useId } from 'react';
+import { OriginLink } from '../navigation/OriginLink';
+import { studentAdvisorPath } from '../navigation/paths';
 import type { Advisor } from '../services/advisorService';
 import { RequestAdvisingButton } from './RequestAdvisingButton';
 import type { AdvisorToAsk } from './useRequestAdvising';
@@ -38,7 +40,9 @@ export function AdvisorCard({
       <CardContent>
         <Stack spacing={1.5}>
           <Typography id={titleId} variant="h6" component="h2">
-            {advisor.fullName}
+            <OriginLink to={studentAdvisorPath(advisor.id)}>
+              {advisor.fullName}
+            </OriginLink>
           </Typography>
           <Typography color="text.secondary">
             {advisor.institute.name}

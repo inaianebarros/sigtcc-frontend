@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { RequireAuth } from './components/RequireAuth';
 import { areas } from './navigation/areas';
 import { paths } from './navigation/paths';
+import { AdvisorProfilePage } from './pages/AdvisorProfilePage';
 import { AdvisorsPage } from './pages/AdvisorsPage';
 import { AreaPage } from './pages/AreaPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
@@ -41,6 +42,7 @@ const subScreens: Record<string, ReactElement> = {
     <ChangePasswordPage profilePath={paths.teacherProfile} />
   ),
   [paths.teacherStudent]: <StudentProfileViewPage />,
+  [paths.studentAdvisor]: <AdvisorProfilePage />,
 };
 
 export function AppRoutes() {
