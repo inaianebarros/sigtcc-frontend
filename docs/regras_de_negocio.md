@@ -18,7 +18,7 @@ RN08 - **Restrição de Solicitação de Reunião pelo Aluno:** O aluno só pode
 
 RN09 - **Edição de Reunião:** Uma reunião só pode ser editada pelo seu autor e somente enquanto ainda não tiver sido realizada.
 
-RN10 - **Cancelamento de Reunião:** Uma reunião só pode ser cancelada pelo seu autor e somente enquanto ainda não tiver sido realizada.
+RN10 - **Cancelamento de Reunião:** Uma reunião pendente só pode ser cancelada pelo seu autor. Uma reunião aceita pode ser cancelada por qualquer das partes da orientação, o autor ou a outra parte, para o caso de imprevisto. Em ambos os casos o cancelamento só vale enquanto a reunião ainda não tiver sido realizada, exige um motivo e é definitivo. A outra parte de uma reunião pendente não a cancela: ela a recusa (RN11).
 
 RN11 - **Justificativa de Recusa de Reunião:** A recusa de uma solicitação de reunião deve ser obrigatoriamente acompanhada de uma justificativa.
 
@@ -75,3 +75,5 @@ RN36 - **Cálculo do Progresso Geral:** O progresso geral é a proporção entre
 RN37 - **Identificação de Atividades Atrasadas na Dashboard:** A identificação de atividades atrasadas segue integralmente a RN24: o prazo venceu, o status é diferente de concluída e a atividade não está arquivada. Atrasada é uma indicação calculada, não um status persistido, e a atividade continua exibindo o status original, acompanhado da indicação visual de atraso.
 
 RN38 - **Priorização dos Orientandos que Precisam de Atenção:** Na Dashboard do professor, um orientando precisa de atenção quando possui ao menos uma atividade atrasada ou ao menos uma atividade em revisão. A lista prioriza quem tem mais atividades atrasadas; em caso de empate, quem tem mais atividades em revisão; persistindo o empate, o nome em ordem alfabética. A classificação é informativa e não altera o status das atividades nem das orientações.
+
+RN39 - **Edição de Reunião Aceita:** Quando o autor altera a data ou a hora de uma reunião aceita, ela volta ao status pendente e a outra parte precisa aceitá-la de novo, porque aceitou outro horário. Alterar apenas a descrição mantém o status. Só o autor edita (RN09).

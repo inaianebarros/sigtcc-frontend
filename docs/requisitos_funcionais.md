@@ -42,7 +42,7 @@ RF20 - **Responder Solicitação de Reunião:** O sistema deve permitir que o us
 
 RF21 - **Editar Reunião:** O sistema deve permitir que reuniões sejam editadas pelo autor das solicitações, desde que ainda não realizadas.
 
-RF22 - **Cancelar Reunião:** O sistema deve permitir que o autor da solicitação cancele uma reunião ainda não realizada.
+RF22 - **Cancelar Reunião:** O sistema deve permitir que o autor cancele uma reunião pendente e que qualquer das partes da orientação cancele uma reunião aceita, desde que ainda não realizada, informando o motivo (RN10).
 
 RF23 - **Cadastrar Tema do TCC:** O sistema deve permitir que o **aluno** ou o **professor** cadastre o tema do TCC da orientação enquanto ela estiver ativa, após a aceitação da solicitação de orientação (RN12).
 
