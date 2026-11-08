@@ -1,4 +1,10 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { tokenStore } from '../services/tokenStore';
@@ -1114,5 +1120,185 @@ describe('AdvisorsPage: a elegibilidade não depende do resto do status', () => 
     expect(
       screen.queryByText(/Não foi possível verificar se você pode solicitar/),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('AdvisorsPage: busca, página e chave na URL', () => {
+  const MANY = [
+    ...Array.from({ length: 30 }, (_, index) =>
+      makeAdvisor(index + 1, {
+        full_name: `Professor ${String(index + 1).padStart(2, '0')}`,
+      }),
+    ),
+    ...Array.from({ length: 25 }, (_, index) =>
+      makeAdvisor(100 + index, {
+        full_name: `Docente ${String(index + 1).padStart(2, '0')}`,
+        is_available: false,
+      }),
+    ),
+  ];
+
+  beforeEach(() => {
+    tokenStore.clear();
+    vi.unstubAllGlobals();
+    setViewportWidth(DESKTOP_WIDTH);
+  });
+
+  function listParams(fetchMock: ReturnType<typeof mockApi>) {
+    return requestsTo(fetchMock, SEARCH).map(([input]) => {
+      const params = new URL(String(input), 'http://localhost').searchParams;
+      return {
+        name: params.get('name'),
+        offset: params.get('offset'),
+        onlyAvailable: params.get('only_available'),
+      };
+    });
+  }
+
+  function open(path: string) {
+    const fetchMock = mockApi(advisorRoutes(MANY));
+    const user = userEvent.setup();
+    const { router } = renderApp(path);
+    return { fetchMock, user, router };
+  }
+
+  const location = () => screen.getByTestId('location');
+
+  it('sem parâmetros, a URL fica limpa e a busca começa pelo padrão', async () => {
+    const { fetchMock } = open('/aluno/orientadores');
+    await screen.findByText('Professor 01');
+
+    expect(location()).toHaveTextContent(/^\/aluno\/orientadores$/);
+    expect(listParams(fetchMock)).toEqual([
+      { name: null, offset: '0', onlyAvailable: null },
+    ]);
+  });
+
+  it('abre direto no nome, na página e na chave da URL, com um único pedido', async () => {
+    const { fetchMock } = open(
+      '/aluno/orientadores?nome=Docente&pagina=2&indisponiveis=1',
+    );
+
+    expect(await screen.findByText('Docente 21')).toBeInTheDocument();
+
+    expect(screen.getByLabelText('Buscar por nome')).toHaveValue('Docente');
+    expect(
+      screen.getByRole('switch', { name: 'Mostrar indisponíveis' }),
+    ).toBeChecked();
+    expect(
+      screen.getByRole('button', { name: 'Página 2, atual' }),
+    ).toBeInTheDocument();
+    expect(listParams(fetchMock)).toEqual([
+      { name: 'Docente', offset: '20', onlyAvailable: 'false' },
+    ]);
+  });
+
+  it('digitar guarda o nome na URL, sem entrar no histórico, e volta à página 1', async () => {
+    const { user, router } = open('/aluno/orientadores?pagina=2');
+    await screen.findByText('Professor 21');
+
+    await user.type(screen.getByLabelText('Buscar por nome'), ' Professor 0 ');
+
+    await waitFor(() =>
+      expect(location()).toHaveTextContent(
+        /^\/aluno\/orientadores\?nome=Professor\+0$/,
+      ),
+    );
+    expect(router.state.historyAction).toBe('REPLACE');
+    expect(await screen.findByText('Professor 01')).toBeInTheDocument();
+  });
+
+  it('um nome que muda por fora, como num link para a lista, passa para o campo e não é desfeito pela pausa da digitação', async () => {
+    const { router, fetchMock } = open('/aluno/orientadores');
+    await screen.findByText('Professor 01');
+
+    await act(async () => {
+      await router.navigate('/aluno/orientadores?nome=Docente&indisponiveis=1');
+    });
+
+    expect(await screen.findByText('Docente 01')).toBeInTheDocument();
+    expect(screen.getByLabelText('Buscar por nome')).toHaveValue('Docente');
+    // Espera mais que a pausa da digitação: a URL nova não pode ser sobrescrita pelo valor antigo.
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(location()).toHaveTextContent(
+      /^\/aluno\/orientadores\?nome=Docente&indisponiveis=1$/,
+    );
+    expect(listParams(fetchMock).at(-1)).toMatchObject({ name: 'Docente' });
+  });
+
+  it('apagar o texto tira o nome da URL', async () => {
+    const { user } = open('/aluno/orientadores?nome=Professor');
+    await screen.findByText('Professor 01');
+
+    await user.clear(screen.getByLabelText('Buscar por nome'));
+
+    await waitFor(() =>
+      expect(location()).toHaveTextContent(/^\/aluno\/orientadores$/),
+    );
+  });
+
+  it('ligar a chave a guarda na URL e volta à página 1; desligar a tira', async () => {
+    const { user } = open('/aluno/orientadores?pagina=2');
+    await screen.findByText('Professor 21');
+    const toggle = screen.getByRole('switch', {
+      name: 'Mostrar indisponíveis',
+    });
+
+    await user.click(toggle);
+
+    await waitFor(() =>
+      expect(location()).toHaveTextContent(
+        /^\/aluno\/orientadores\?indisponiveis=1$/,
+      ),
+    );
+    await user.click(toggle);
+    await waitFor(() =>
+      expect(location()).toHaveTextContent(/^\/aluno\/orientadores$/),
+    );
+  });
+
+  it('mudar de página guarda a página na URL e mantém o nome e a chave', async () => {
+    const { user } = open('/aluno/orientadores?nome=Docente&indisponiveis=1');
+    await screen.findByText('Docente 01');
+
+    await user.click(
+      screen.getByRole('button', { name: 'Ir para a página 2' }),
+    );
+
+    await screen.findByText('Docente 21');
+    expect(location()).toHaveTextContent(
+      /^\/aluno\/orientadores\?nome=Docente&indisponiveis=1&pagina=2$/,
+    );
+  });
+
+  it.each(['abc', '0', '-2'])(
+    'uma página inválida ("%s") na URL vale como a primeira',
+    async (value) => {
+      const { fetchMock } = open(`/aluno/orientadores?pagina=${value}`);
+
+      expect(await screen.findByText('Professor 01')).toBeInTheDocument();
+
+      expect(listParams(fetchMock)[0]?.offset).toBe('0');
+    },
+  );
+
+  it('uma página além da última volta para a última que existe', async () => {
+    const { fetchMock } = open('/aluno/orientadores?pagina=9');
+
+    expect(await screen.findByText('Professor 21')).toBeInTheDocument();
+
+    await waitFor(() => expect(location()).toHaveTextContent('pagina=2'));
+    expect(listParams(fetchMock).at(-1)?.offset).toBe('20');
+  });
+
+  it('uma chave com outro valor que não "1" na URL vale como desligada', async () => {
+    const { fetchMock } = open('/aluno/orientadores?indisponiveis=sim');
+
+    expect(await screen.findByText('Professor 01')).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('switch', { name: 'Mostrar indisponíveis' }),
+    ).not.toBeChecked();
+    expect(listParams(fetchMock)[0]?.onlyAvailable).toBeNull();
   });
 });
