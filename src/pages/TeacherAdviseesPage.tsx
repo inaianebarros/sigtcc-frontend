@@ -7,7 +7,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useRef, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { AdviseeCard } from '../advisees/AdviseeCard';
 import {
   EndAdvisingDialog,
@@ -24,7 +24,8 @@ import {
   isStateChangedError,
   messageForStatus,
 } from '../services/apiError';
-import { paths } from '../navigation/paths';
+import { originState } from '../navigation/origin';
+import { paths, teacherStudentPath } from '../navigation/paths';
 import {
   ADVISEES_PAGE_SIZE,
   endAdvising,
@@ -38,6 +39,7 @@ function foundText(count: number): string {
 
 export function TeacherAdviseesPage() {
   const [reload, setReload] = useState(0);
+  const location = useLocation();
   const [page, setPage] = useUrlPage();
   const listTop = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -155,6 +157,15 @@ export function TeacherAdviseesPage() {
               <AdviseeCard
                 key={advisee.advisingId}
                 advisee={advisee}
+                wrapName={(name, item) => (
+                  <Link
+                    component={RouterLink}
+                    to={teacherStudentPath(item.student.id)}
+                    state={originState(location)}
+                  >
+                    {name}
+                  </Link>
+                )}
                 actions={
                   <Button
                     color="error"

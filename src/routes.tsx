@@ -13,6 +13,7 @@ import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { TeacherAdviseesPage } from './pages/TeacherAdviseesPage';
 import { StudentProfilePage } from './pages/StudentProfilePage';
+import { StudentProfileViewPage } from './pages/StudentProfileViewPage';
 import { StudentRequestPage } from './pages/StudentRequestPage';
 import { TeacherProfilePage } from './pages/TeacherProfilePage';
 import { TeacherRequestsPage } from './pages/TeacherRequestsPage';
@@ -39,6 +40,7 @@ const subScreens: Record<string, ReactElement> = {
   [paths.teacherPassword]: (
     <ChangePasswordPage profilePath={paths.teacherProfile} />
   ),
+  [paths.teacherStudent]: <StudentProfileViewPage />,
 };
 
 export function AppRoutes() {

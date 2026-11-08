@@ -8,6 +8,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useId } from 'react';
+import type { ReactNode } from 'react';
 import { RequestStatusChip } from '../advisingRequests/requestStatus';
 import { formatDate, formatDateTime } from '../formatters/dateTime';
 import type {
@@ -27,11 +28,18 @@ interface RequestItemProps {
   request: ReceivedRequest;
   /** Para a tela levar o foco ao cartão depois de uma resposta. */
   cardRef: (element: HTMLElement | null) => void;
+  /** Ponto de encaixe do nome do aluno, que a tela usa para levar ao perfil dele (RF11). */
+  wrapName?: (name: string, request: ReceivedRequest) => ReactNode;
   onAnswer: (request: ReceivedRequest, action: AnswerAction) => void;
 }
 
 /** O cartão de uma solicitação recebida, com Aceitar e Recusar só enquanto ela é respondível. */
-export function RequestItem({ request, cardRef, onAnswer }: RequestItemProps) {
+export function RequestItem({
+  request,
+  cardRef,
+  wrapName,
+  onAnswer,
+}: RequestItemProps) {
   const titleId = useId();
   const { student } = request;
   const pending = request.status === 'pending';
@@ -52,7 +60,7 @@ export function RequestItem({ request, cardRef, onAnswer }: RequestItemProps) {
       <CardContent>
         <Stack spacing={1.5}>
           <Typography id={titleId} variant="h6" component="h2">
-            {student.fullName}
+            {wrapName ? wrapName(student.fullName, request) : student.fullName}
           </Typography>
           <Typography color="text.secondary">{student.course.name}</Typography>
           {student.areas.length > 0 && (

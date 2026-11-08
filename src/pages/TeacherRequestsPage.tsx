@@ -4,6 +4,7 @@ import {
   FormControl,
   FormControlLabel,
   FormLabel,
+  Link,
   Radio,
   RadioGroup,
   Skeleton,
@@ -11,13 +12,19 @@ import {
   Typography,
 } from '@mui/material';
 import { useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import {
+  Link as RouterLink,
+  useLocation,
+  useSearchParams,
+} from 'react-router-dom';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PagePagination } from '../components/PagePagination';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
+import { originState } from '../navigation/origin';
+import { teacherStudentPath } from '../navigation/paths';
 import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
 import {
   ApiError,
@@ -103,6 +110,7 @@ export function TeacherRequestsPage() {
   const [listReload, setListReload] = useState(0);
   // O filtro e a página vivem na URL: recarregar ou voltar de outra tela, como o perfil do aluno,
   // os restaura. "Pendentes", o padrão, e a primeira página ficam sem parâmetro.
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const filter = filterFrom(searchParams.get(FILTER_PARAM));
   const [page, setPage] = useUrlPage();
@@ -245,6 +253,15 @@ export function TeacherRequestsPage() {
                     if (element) cardElements.current.set(request.id, element);
                     else cardElements.current.delete(request.id);
                   }}
+                  wrapName={(name, item) => (
+                    <Link
+                      component={RouterLink}
+                      to={teacherStudentPath(item.student.id)}
+                      state={originState(location)}
+                    >
+                      {name}
+                    </Link>
+                  )}
                   onAnswer={(chosen, action) => {
                     setDialogText({ name: chosen.student.fullName, action });
                     setAnswering({ request: chosen, action });

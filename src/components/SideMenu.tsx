@@ -9,8 +9,9 @@ import {
   ListItemText,
   SvgIcon,
 } from '@mui/material';
-import { NavLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useMatch } from 'react-router-dom';
 import type { NavigationItem } from '../navigation/areas';
+import { originPathname } from '../navigation/origin';
 
 export const DRAWER_WIDTH = 240;
 
@@ -45,6 +46,8 @@ function MenuItem({
   hasActiveAdvising: boolean;
   onNavigate?: () => void;
 }) {
+  const location = useLocation();
+  const onItemPath = useMatch({ path: item.path, end: false }) !== null;
   if (item.requiresActiveAdvising && !hasActiveAdvising) {
     // O estado "disabled" do MUI aplica opacidade 0,38 e derrubaria o contraste do motivo
     // (RNF23). Por isso o item fica focável, com aria-disabled e o motivo sempre visível.
@@ -69,11 +72,16 @@ function MenuItem({
       </ListItemButton>
     );
   }
+  // Uma tela aberta a partir de uma lista, como o perfil de um aluno, mantém selecionado o item da
+  // lista de onde veio.
+  const selected = onItemPath || originPathname(location.state) === item.path;
   return (
     <ListItemButton
-      component={NavLink}
+      component={RouterLink}
       to={item.path}
       onClick={onNavigate}
+      aria-current={selected ? 'page' : undefined}
+      className={selected ? 'active' : undefined}
       sx={{
         '&.active': { backgroundColor: 'action.selected' },
       }}

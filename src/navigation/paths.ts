@@ -15,7 +15,12 @@ export const paths = {
   studentPassword: '/aluno/perfil/senha',
   teacherProfile: '/professor/perfil',
   teacherPassword: '/professor/perfil/senha',
+  teacherStudent: '/professor/alunos/:studentId',
 } as const;
+
+export function teacherStudentPath(studentId: number): string {
+  return paths.teacherStudent.replace(':studentId', String(studentId));
+}
 
 export function homePathFor(userType: UserType): string {
   const area = areas.find((candidate) => candidate.userType === userType);

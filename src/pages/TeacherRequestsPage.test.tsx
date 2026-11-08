@@ -103,14 +103,17 @@ describe('TeacherRequestsPage: a lista e o filtro', () => {
     ).toEqual(['Aluno 7', 'Aluno 3', 'Aluno 5']);
   });
 
-  it('não mostra e-mail, matrícula nem link para o perfil do aluno', async () => {
+  it('não mostra e-mail nem matrícula, e o único link do cartão é o do nome, para o perfil do aluno', async () => {
     setup();
     await screen.findByText('Ana Souza');
 
     const ana = cardOf('Ana Souza');
 
-    expect(within(ana).queryByRole('link')).not.toBeInTheDocument();
-    expect(ana.textContent).not.toMatch(/@/);
+    expect(within(ana).getAllByRole('link')).toHaveLength(1);
+    expect(
+      within(ana).getByRole('link', { name: 'Ana Souza' }),
+    ).toHaveAttribute('href', '/professor/alunos/101');
+    expect(ana.textContent).not.toMatch(/@|Matrícula/);
   });
 
   it('oferece as cinco situações e manda cada uma ao servidor, "Todas" sem o parâmetro', async () => {
