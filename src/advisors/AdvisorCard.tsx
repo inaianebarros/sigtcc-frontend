@@ -1,5 +1,4 @@
 import {
-  Button,
   Card,
   CardActions,
   CardContent,
@@ -9,6 +8,8 @@ import {
 } from '@mui/material';
 import { useId } from 'react';
 import type { Advisor } from '../services/advisorService';
+import { RequestAdvisingButton } from './RequestAdvisingButton';
+import type { AdvisorToAsk } from './useRequestAdvising';
 
 function commonAreasText(count: number): string {
   if (count === 0) return 'Nenhuma área em comum';
@@ -21,7 +22,7 @@ interface AdvisorCardProps {
   canRequest: boolean;
   /** O aviso do topo que explica por que o aluno não pode solicitar agora. */
   blockedNoticeId: string | null;
-  onRequest: (advisor: Advisor) => void;
+  onRequest: (advisor: AdvisorToAsk) => void;
 }
 
 export function AdvisorCard({
@@ -32,13 +33,6 @@ export function AdvisorCard({
 }: AdvisorCardProps) {
   const titleId = useId();
   const unavailableId = useId();
-  const describedBy = [
-    canRequest ? null : blockedNoticeId,
-    advisor.isAvailable ? null : unavailableId,
-  ]
-    .filter(Boolean)
-    .join(' ');
-
   return (
     <Card component="article" aria-labelledby={titleId} variant="outlined">
       <CardContent>
@@ -67,14 +61,13 @@ export function AdvisorCard({
         </Stack>
       </CardContent>
       <CardActions sx={{ px: 2, pb: 2 }}>
-        <Button
-          variant="contained"
-          disabled={!canRequest || !advisor.isAvailable}
-          aria-describedby={describedBy || undefined}
-          onClick={() => onRequest(advisor)}
-        >
-          Solicitar orientação
-        </Button>
+        <RequestAdvisingButton
+          advisor={advisor}
+          canRequest={canRequest}
+          blockedNoticeId={blockedNoticeId}
+          unavailableId={unavailableId}
+          onRequest={onRequest}
+        />
       </CardActions>
     </Card>
   );

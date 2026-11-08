@@ -8,26 +8,18 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useId, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRef, useState } from 'react';
 import { AdvisorCard } from '../advisors/AdvisorCard';
 import { EligibilityNotice } from '../advisors/EligibilityNotice';
-import { ConfirmDialog } from '../components/ConfirmDialog';
+import { RequestAdvisingDialog } from '../advisors/RequestAdvisingDialog';
+import { useRequestAdvising } from '../advisors/useRequestAdvising';
 import { PagePagination } from '../components/PagePagination';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { useFeedback } from '../hooks/useFeedback';
 import { useFilteredPage } from '../hooks/useFilteredPage';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
-import { paths } from '../navigation/paths';
-import { ApiError, messageForStatus } from '../services/apiError';
-import {
-  ADVISORS_PAGE_SIZE,
-  getRequestEligibility,
-  requestAdvising,
-  searchAdvisors,
-} from '../services/advisorService';
-import type { Advisor, AdvisorPage } from '../services/advisorService';
+import { ADVISORS_PAGE_SIZE, searchAdvisors } from '../services/advisorService';
+import type { AdvisorPage } from '../services/advisorService';
 
 const SEARCH_DEBOUNCE_MS = 400;
 
@@ -63,7 +55,6 @@ function emptyMessage(name: string, onlyAvailable: boolean): string {
 export function AdvisorsPage() {
   // Cada carga tem o seu contador: refazer a elegibilidade não recarrega a lista, e vice-versa.
   const [listReload, setListReload] = useState(0);
-  const [statusReload, setStatusReload] = useState(0);
   const [typed, setTyped] = useState('');
   const name = useDebouncedValue(typed, SEARCH_DEBOUNCE_MS).trim();
   // A escolha de ver os indisponíveis não é guardada: cada visita começa pelo padrão.
@@ -74,16 +65,10 @@ export function AdvisorsPage() {
   const [page, setPage] = useFilteredPage(filterKey);
   const switchInput = useRef<HTMLInputElement>(null);
   const listTop = useRef<HTMLDivElement>(null);
-  const eligibility = useLoad(getRequestEligibility, `status-${statusReload}`);
-  const noticeId = useId();
-  const navigate = useNavigate();
-  const { notify } = useFeedback();
-  const [asking, setAsking] = useState<Advisor | null>(null);
-  // O nome fica guardado: o texto do diálogo não pode mudar durante a animação de saída.
-  const [askedName, setAskedName] = useState('');
-  const [sending, setSending] = useState(false);
-  const canRequest =
-    eligibility.status === 'ready' && eligibility.data.canRequest;
+  // A solicitação de orientação é a mesma do perfil do professor; um 409 relê a lista também.
+  const request = useRequestAdvising({
+    onConflict: () => setListReload((current) => current + 1),
+  });
   const list = useLoad<AdvisorPage>(
     () => searchAdvisors({ name, page, onlyAvailable }),
     `${filterKey}|${page}|${listReload}`,
@@ -95,33 +80,6 @@ export function AdvisorsPage() {
   );
   // Uma página que ficou vazia volta para a última que existe.
   if (fallbackPage !== null) setPage(fallbackPage);
-
-  const confirmRequest = async () => {
-    if (!asking || sending) return;
-    setSending(true);
-    try {
-      await requestAdvising(asking.id);
-      setAsking(null);
-      notify(
-        'Solicitação enviada. Acompanhe a resposta do professor em “Minha solicitação”.',
-        'success',
-      );
-      navigate(paths.studentRequest);
-    } catch (error) {
-      setAsking(null);
-      notify(
-        error instanceof ApiError ? error.message : messageForStatus(0),
-        'error',
-      );
-      // Um 409 quer dizer que a situação mudou: relê a elegibilidade e a lista.
-      if (error instanceof ApiError && error.status === 409) {
-        setStatusReload((current) => current + 1);
-        setListReload((current) => current + 1);
-      }
-    } finally {
-      setSending(false);
-    }
-  };
 
   return (
     <Stack spacing={3}>
@@ -152,9 +110,9 @@ export function AdvisorsPage() {
         />
       </Stack>
       <EligibilityNotice
-        id={noticeId}
-        eligibility={eligibility}
-        onRetry={() => setStatusReload((current) => current + 1)}
+        id={request.noticeId}
+        eligibility={request.eligibility}
+        onRetry={request.reloadEligibility}
       />
       {/* Uma frase curta numa região própria: reler os 20 cards a cada busca seria ruído. */}
       <Typography role="status" aria-live="polite" color="text.secondary">
@@ -201,14 +159,9 @@ export function AdvisorsPage() {
               <AdvisorCard
                 key={advisor.id}
                 advisor={advisor}
-                canRequest={canRequest}
-                blockedNoticeId={
-                  eligibility.status === 'loading' ? null : noticeId
-                }
-                onRequest={(advisor) => {
-                  setAskedName(advisor.fullName);
-                  setAsking(advisor);
-                }}
+                canRequest={request.canRequest}
+                blockedNoticeId={request.blockedNoticeId}
+                onRequest={request.ask}
               />
             ))}
           </Stack>
@@ -225,16 +178,7 @@ export function AdvisorsPage() {
           listTop.current?.scrollIntoView?.({ block: 'start' });
         }}
       />
-      <ConfirmDialog
-        open={asking !== null}
-        title={`Solicitar orientação ao professor ${askedName}?`}
-        message="O professor tem 7 dias para responder. Enquanto a solicitação estiver pendente, você não poderá enviar outra."
-        confirmLabel="Solicitar"
-        confirmColor="primary"
-        busy={sending}
-        onCancel={() => setAsking(null)}
-        onConfirm={confirmRequest}
-      />
+      <RequestAdvisingDialog {...request.dialog} />
     </Stack>
   );
 }
