@@ -1,13 +1,6 @@
-import {
-  Alert,
-  Button,
-  Link,
-  Skeleton,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Typography } from '@mui/material';
 import { useId, useState } from 'react';
-import { Link as RouterLink, useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { EligibilityNotice } from '../advisors/EligibilityNotice';
 import { RequestAdvisingButton } from '../advisors/RequestAdvisingButton';
 import { RequestAdvisingDialog } from '../advisors/RequestAdvisingDialog';
@@ -16,8 +9,8 @@ import { useLoad } from '../hooks/useLoad';
 import { originPath } from '../navigation/origin';
 import { positiveIntFrom } from '../navigation/positiveInt';
 import { paths } from '../navigation/paths';
-import { ArticleList } from '../profile/ArticleList';
-import { CommonAreaChips } from '../profile/CommonAreaChips';
+import { ProfileSections } from '../profile/ProfileSections';
+import { ProfileView } from '../profile/ProfileView';
 import { ReadOnlyFacts } from '../profile/ReadOnlyFacts';
 import { getAdvisorProfile } from '../services/advisorProfileService';
 
@@ -40,96 +33,50 @@ export function AdvisorProfilePage() {
   });
   const availabilityId = useId();
 
-  const notFound =
-    id === null || (profile.status === 'ready' && profile.data === null);
-
   return (
-    <Stack spacing={3} sx={{ maxWidth: 720, mx: 'auto' }}>
-      <Link
-        component={RouterLink}
-        to={backPath}
-        sx={{ alignSelf: 'flex-start' }}
+    <>
+      <ProfileView
+        backPath={backPath}
+        notFoundTitle="Professor não encontrado"
+        genericTitle="Perfil do professor"
+        skeletonTestId="advisor-profile-skeleton"
+        invalidId={id === null}
+        profile={profile}
+        onRetry={() => setReload((current) => current + 1)}
+        title={(advisor) => advisor.fullName}
       >
-        Voltar
-      </Link>
-      {notFound && (
-        <Typography variant="h4" component="h1">
-          Professor não encontrado
-        </Typography>
-      )}
-      {/* O nome do professor só chega com o perfil: até lá, e no erro, a página tem um título geral. */}
-      {!notFound && profile.status !== 'ready' && (
-        <Typography variant="h4" component="h1">
-          Perfil do professor
-        </Typography>
-      )}
-      {!notFound && profile.status === 'loading' && (
-        <Stack spacing={2} data-testid="advisor-profile-skeleton" aria-hidden>
-          <Skeleton variant="rounded" height={80} />
-          <Skeleton variant="rounded" height={120} />
-        </Stack>
-      )}
-      {!notFound && profile.status === 'error' && (
-        <Stack spacing={2}>
-          <Alert severity="error">{profile.message}</Alert>
-          <Button
-            onClick={() => setReload((current) => current + 1)}
-            sx={{ alignSelf: 'flex-start' }}
-          >
-            Tentar novamente
-          </Button>
-        </Stack>
-      )}
-      {profile.status === 'ready' && profile.data !== null && (
-        <>
-          <Typography variant="h4" component="h1">
-            {profile.data.fullName}
-          </Typography>
-          <ReadOnlyFacts
-            facts={[
-              ['Instituto', profile.data.institute.name],
-              [
-                'Cursos',
-                profile.data.courses.map((course) => course.name).join(', ') ||
-                  'Nenhum curso cadastrado',
-              ],
-            ]}
-          />
-          <Typography id={availabilityId}>
-            {profile.data.isAvailable
-              ? 'Disponível para orientar'
-              : 'Este professor não está disponível para novas solicitações.'}
-          </Typography>
-          <EligibilityNotice
-            id={request.noticeId}
-            eligibility={request.eligibility}
-            onRetry={request.reloadEligibility}
-          />
-          <RequestAdvisingButton
-            advisor={profile.data}
-            canRequest={request.canRequest}
-            blockedNoticeId={request.blockedNoticeId}
-            unavailableId={availabilityId}
-            onRequest={request.ask}
-          />
-          <Stack spacing={1.5} component="section">
-            <Typography variant="h6" component="h2">
-              Áreas de interesse
-            </Typography>
-            <CommonAreaChips
-              areas={profile.data.areas}
-              compatibility={profile.data.compatibility}
+        {(advisor) => (
+          <>
+            <ReadOnlyFacts
+              facts={[
+                ['Instituto', advisor.institute.name],
+                [
+                  'Cursos',
+                  advisor.courses.map((course) => course.name).join(', ') ||
+                    'Nenhum curso cadastrado',
+                ],
+              ]}
             />
-          </Stack>
-          <Stack spacing={1.5} component="section">
-            <Typography variant="h6" component="h2">
-              Artigos publicados
+            <Typography id={availabilityId}>
+              {advisor.isAvailable
+                ? 'Disponível para orientar'
+                : 'Este professor não está disponível para novas solicitações.'}
             </Typography>
-            <ArticleList articles={profile.data.articles} />
-          </Stack>
-        </>
-      )}
+            <EligibilityNotice {...request.notice} />
+            <RequestAdvisingButton
+              advisor={advisor}
+              {...request.requesting}
+              unavailableId={availabilityId}
+            />
+            <ProfileSections
+              areas={advisor.areas}
+              compatibility={advisor.compatibility}
+              articles={advisor.articles}
+            />
+          </>
+        )}
+      </ProfileView>
       <RequestAdvisingDialog {...request.dialog} />
-    </Stack>
+    </>
   );
 }

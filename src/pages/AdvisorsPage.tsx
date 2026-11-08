@@ -146,11 +146,7 @@ export function AdvisorsPage() {
           }
         />
       </Stack>
-      <EligibilityNotice
-        id={request.noticeId}
-        eligibility={request.eligibility}
-        onRetry={request.reloadEligibility}
-      />
+      <EligibilityNotice {...request.notice} />
       {/* Uma frase curta numa região própria: reler os 20 cards a cada busca seria ruído. */}
       <Typography role="status" aria-live="polite" color="text.secondary">
         {list.status === 'ready' && list.data.count > 0
@@ -196,9 +192,7 @@ export function AdvisorsPage() {
               <AdvisorCard
                 key={advisor.id}
                 advisor={advisor}
-                canRequest={request.canRequest}
-                blockedNoticeId={request.blockedNoticeId}
-                onRequest={request.ask}
+                {...request.requesting}
               />
             ))}
           </Stack>

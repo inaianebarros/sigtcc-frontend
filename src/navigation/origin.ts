@@ -10,6 +10,13 @@ const ORIGIN_LISTS = {
 
 export type OriginArea = keyof typeof ORIGIN_LISTS;
 
+const ORIGIN_PATTERNS = Object.fromEntries(
+  Object.entries(ORIGIN_LISTS).map(([area, lists]) => [
+    area,
+    new RegExp(`^/${area}/(${lists.join('|')})(\\?[^#]*)?$`),
+  ]),
+) as Record<OriginArea, RegExp>;
+
 export function originState(location: { pathname: string; search: string }) {
   return { from: `${location.pathname}${location.search}` };
 }
@@ -19,10 +26,7 @@ export function originPath(state: unknown, area: OriginArea): string | null {
   if (typeof state !== 'object' || state === null) return null;
   const { from } = state as { from?: unknown };
   if (typeof from !== 'string') return null;
-  const lists = ORIGIN_LISTS[area].join('|');
-  return new RegExp(`^/${area}/(${lists})(\\?[^#]*)?$`).test(from)
-    ? from
-    : null;
+  return ORIGIN_PATTERNS[area].test(from) ? from : null;
 }
 
 /** O caminho da origem, sem a query, de qualquer das áreas: é o que o menu compara com os itens. */

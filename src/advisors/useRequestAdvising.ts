@@ -63,15 +63,16 @@ export function useRequestAdvising({
   };
 
   return {
-    eligibility,
-    noticeId,
-    canRequest: eligibility.status === 'ready' && eligibility.data.canRequest,
-    /** O aviso que explica o bloqueio; não existe enquanto a elegibilidade ainda carrega. */
-    blockedNoticeId: eligibility.status === 'loading' ? null : noticeId,
-    reloadEligibility,
-    ask: (advisor: AdvisorToAsk) => {
-      setAskedName(advisor.fullName);
-      setAsking(advisor);
+    /** As props do aviso que explica, sempre visível, por que o botão está desabilitado. */
+    notice: { id: noticeId, eligibility, onRetry: reloadEligibility },
+    /** O que um botão de solicitar precisa: o `blockedNoticeId` não existe enquanto a elegibilidade carrega. */
+    requesting: {
+      canRequest: eligibility.status === 'ready' && eligibility.data.canRequest,
+      blockedNoticeId: eligibility.status === 'loading' ? null : noticeId,
+      onRequest: (advisor: AdvisorToAsk) => {
+        setAskedName(advisor.fullName);
+        setAsking(advisor);
+      },
     },
     dialog: {
       open: asking !== null,
