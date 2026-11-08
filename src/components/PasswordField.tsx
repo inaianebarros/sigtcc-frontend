@@ -32,7 +32,9 @@ export function PasswordField({
             <InputAdornment position="end">
               {/* O nome é o mesmo nos dois estados: só o `aria-pressed` diz o estado, e o
                   leitor de tela não repete a informação. */}
+              {/* Tamanho grande: o alvo de toque fica com 48 px, adequado ao celular (RNF24). */}
               <IconButton
+                size="large"
                 edge="end"
                 aria-label={`Mostrar ${label.toLowerCase()}`}
                 aria-pressed={shown}

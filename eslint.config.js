@@ -5,6 +5,9 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+const PASSWORD_FIELD_MESSAGE =
+  'Use o componente PasswordField em vez de um campo com type password (RNF29).';
+
 export default tseslint.config(
   { ignores: ['dist', 'docs'] },
   {
@@ -31,15 +34,14 @@ export default tseslint.config(
       'no-restricted-syntax': [
         'error',
         {
-          selector: "JSXAttribute[name.name='type'][value.value='password']",
-          message:
-            'Use o componente PasswordField em vez de type="password" (RNF29).',
+          // type="password", type={'password'} e type={cond ? 'text' : 'password'}
+          selector: "JSXAttribute[name.name='type'] Literal[value='password']",
+          message: PASSWORD_FIELD_MESSAGE,
         },
         {
-          selector:
-            "JSXAttribute[name.name='type'] > JSXExpressionContainer > Literal[value='password']",
-          message:
-            'Use o componente PasswordField em vez de type="password" (RNF29).',
+          // slotProps={{ htmlInput: { type: 'password' } }} e inputProps={{ type: 'password' }}
+          selector: "Property[key.name='type'] > Literal[value='password']",
+          message: PASSWORD_FIELD_MESSAGE,
         },
       ],
     },

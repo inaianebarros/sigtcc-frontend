@@ -27,6 +27,25 @@ describe('Regra de lint dos campos de senha (RNF29)', () => {
     expect(messages).toHaveLength(1);
   });
 
+  it('proíbe o type de senha escondido numa condicional', async () => {
+    const messages = await lint(
+      "export const Field = ({ on }: { on: boolean }) => <input type={on ? 'text' : 'password'} />;",
+      'src/pages/NewPage.tsx',
+    );
+
+    expect(messages).toHaveLength(1);
+  });
+
+  it('proíbe o type de senha passado por slotProps ou inputProps', async () => {
+    const messages = await lint(
+      "export const Field = () => <TextField slotProps={{ htmlInput: { type: 'password' } }} />;",
+      'src/pages/NewPage.tsx',
+    );
+
+    expect(messages).toHaveLength(1);
+    expect(messages[0]!.message).toMatch(/PasswordField/);
+  });
+
   it('deixa o PasswordField usar o type de senha', async () => {
     const messages = await lint(
       "export const Field = ({ shown }: { shown: boolean }) => <input type={shown ? 'text' : 'password'} />;",
