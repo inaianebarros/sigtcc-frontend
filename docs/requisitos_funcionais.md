@@ -44,9 +44,9 @@ RF21 - **Editar Reunião:** O sistema deve permitir que reuniões sejam editadas
 
 RF22 - **Cancelar Reunião:** O sistema deve permitir que o autor da solicitação cancele uma reunião ainda não realizada.
 
-RF23 - **Cadastrar Tema do TCC:** O sistema deve permitir que o **aluno** ou o **professor** cadastre o tema do TCC após a aceitação da solicitação de orientação.
+RF23 - **Cadastrar Tema do TCC:** O sistema deve permitir que o **aluno** ou o **professor** cadastre o tema do TCC da orientação enquanto ela estiver ativa, após a aceitação da solicitação de orientação (RN12).
 
-RF24 - **Alterar Tema do TCC:** O sistema deve permitir que o aluno e o professor alterem o tema do TCC.
+RF24 - **Alterar Tema do TCC:** O sistema deve permitir que o aluno e o professor alterem o tema do TCC enquanto a orientação estiver ativa. Depois do encerramento da orientação o tema não pode mais ser alterado (RN12).
 
 RF25 - **Criar Atividade:** O sistema deve permitir que o professor crie atividades relacionadas ao TCC para seus orientados, informando título, descrição e prazo.
 
@@ -96,7 +96,7 @@ RF47 - **Notificar Professor sobre Atividade Aguardando Revisão:** O sistema de
 
 RF48 - **Notificar Aluno sobre Resultado da Revisão de Atividade:** O sistema deve notificar o aluno quando o professor aceitar ou recusar uma atividade em revisão.
 
-RF49 - **Consultar Histórico de Orientações:** O sistema deve permitir que o aluno consulte as suas orientações encerradas e que o professor consulte as orientações que encerrou, exibindo a outra parte, as datas de início e de encerramento e o motivo do encerramento (RN33). Cada usuário vê somente as suas próprias orientações, da mais recente para a mais antiga e de forma paginada.
+RF49 - **Consultar Histórico de Orientações:** O sistema deve permitir que o aluno consulte as suas orientações encerradas e que o professor consulte as orientações que encerrou, exibindo a outra parte, as datas de início e de encerramento, o motivo do encerramento (RN33) e o tema do TCC congelado da orientação (RN12). Cada usuário vê somente as suas próprias orientações, da mais recente para a mais antiga e de forma paginada.
 
 RFADM01 - **Cadastrar Curso:** O sistema deve permitir que o admin cadastre um novo curso ao sistema.
 
