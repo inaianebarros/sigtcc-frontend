@@ -3,7 +3,10 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ActivityDetailView } from '../activities/ActivityDetailView';
 import { ActivityFormDialog } from '../activities/ActivityFormDialog';
+import { changesOf } from '../activities/activityForm';
 import type { ActivityFormValues } from '../activities/activityForm';
+import { useStateChangedNotice } from '../activities/useStateChangedNotice';
+import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { useSession } from '../hooks/useSession';
@@ -17,10 +20,7 @@ import {
   getActivity,
   updateActivity,
 } from '../services/activityService';
-import type {
-  ActivityDetail,
-  ActivityInput,
-} from '../services/activityService';
+import type { ActivityDetail } from '../services/activityService';
 import {
   ApiError,
   isStateChangedError,
@@ -28,25 +28,15 @@ import {
   nullOnNotFound,
 } from '../services/apiError';
 
-/** O que o formulário de edição muda em relação à atividade: só esses campos vão ao servidor. */
-function changesOf(
-  activity: ActivityDetail,
-  values: ActivityFormValues,
-): Partial<ActivityInput> {
-  const changes: Partial<ActivityInput> = {};
-  const title = values.title.trim();
-  const description = values.description.trim();
-  if (title !== activity.title) changes.title = title;
-  if (description !== activity.description) changes.description = description;
-  if (values.deadline !== activity.deadline) changes.deadline = values.deadline;
-  return changes;
-}
+const DELETE_NOT_FOUND_MESSAGE =
+  'A atividade não está mais disponível. A orientação pode ter sido encerrada.';
 
 /** O detalhe de uma atividade (RF30): o aluno lê, e o professor orientador também edita e exclui. */
 export function ActivityDetailPage() {
   const { activityId } = useParams();
-  const { user, refreshUser } = useSession();
+  const { user } = useSession();
   const { notify } = useFeedback();
+  const notifyStateChanged = useStateChangedNotice();
   const navigate = useNavigate();
   const isTeacher = user?.type === 'teacher';
   const area: OriginArea = isTeacher ? 'professor' : 'aluno';
@@ -64,28 +54,26 @@ export function ActivityDetailPage() {
     id === null ? null : `${id}|${reload}`,
   );
   // A última leitura completa: o diálogo de edição parte dela, e ela sobrevive à recarga.
-  const [shown, setShown] = useState<ActivityDetail | null>(null);
-  if (activity.status === 'ready' && activity.data && activity.data !== shown) {
-    setShown(activity.data);
+  const [lastLoaded, setLastLoaded] = useState<ActivityDetail | null>(null);
+  if (
+    activity.status === 'ready' &&
+    activity.data &&
+    activity.data !== lastLoaded
+  ) {
+    setLastLoaded(activity.data);
   }
-  // `openCount` muda a cada abertura, para o formulário recomeçar dos dados da atividade.
-  const [dialog, setDialog] = useState<{
-    open: boolean;
-    openCount: number;
-  } | null>(null);
-  const closeDialog = () =>
-    setDialog((current) => current && { ...current, open: false });
+  const dialog = useDialogSlot();
 
   const saveEdit = async (values: ActivityFormValues) => {
-    if (id === null || shown === null) return;
-    const changes = changesOf(shown, values);
+    if (id === null || lastLoaded === null) return;
+    const changes = changesOf(lastLoaded, values);
     if (Object.keys(changes).length === 0) {
-      closeDialog();
+      dialog.hide();
       notify('Nenhuma alteração para salvar.', 'info');
       return;
     }
     await updateActivity(id, changes);
-    closeDialog();
+    dialog.hide();
     notify('Atividade atualizada.', 'success');
     setReload((current) => current + 1);
   };
@@ -93,15 +81,12 @@ export function ActivityDetailPage() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const onStateChanged = (error: { status: number; message: string }) => {
-    closeDialog();
-    if (error.status === 404) {
-      // O servidor responde 404 quando a orientação da atividade já não está ativa.
-      notify('A orientação foi encerrada.', 'error');
-      void refreshUser();
-    } else {
-      notify(error.message, 'error');
-    }
+  const refreshAfter = (
+    error: { status: number; message: string },
+    notFoundMessage?: string,
+  ) => {
+    dialog.hide();
+    notifyStateChanged(error, notFoundMessage);
     setReload((current) => current + 1);
   };
 
@@ -117,7 +102,8 @@ export function ActivityDetailPage() {
     } catch (error) {
       setConfirmingDelete(false);
       if (isStateChangedError(error)) {
-        onStateChanged(error);
+        // Um 404 aqui também pode ser uma atividade que já foi removida.
+        refreshAfter(error, DELETE_NOT_FOUND_MESSAGE);
       } else {
         notify(
           error instanceof ApiError ? error.message : messageForStatus(0),
@@ -145,38 +131,33 @@ export function ActivityDetailPage() {
           <ActivityDetailView
             activity={data}
             canManage={isTeacher}
-            onEdit={() =>
-              setDialog((current) => ({
-                open: true,
-                openCount: (current?.openCount ?? 0) + 1,
-              }))
-            }
+            onEdit={dialog.show}
             onDelete={() => setConfirmingDelete(true)}
           />
         )}
       </ProfileView>
-      {dialog && shown && (
+      {dialog.slot && lastLoaded && (
         <ActivityFormDialog
-          key={dialog.openCount}
+          key={dialog.slot.openCount}
           mode="edit"
-          open={dialog.open}
+          open={dialog.slot.open}
           initial={{
             studentId: '',
-            title: shown.title,
-            description: shown.description,
-            deadline: shown.deadline,
+            title: lastLoaded.title,
+            description: lastLoaded.description,
+            deadline: lastLoaded.deadline,
           }}
           onSave={saveEdit}
-          onStateChanged={onStateChanged}
-          onClose={closeDialog}
-          onExited={() => setDialog(null)}
+          onStateChanged={refreshAfter}
+          onClose={dialog.hide}
+          onExited={dialog.unmount}
         />
       )}
-      {shown && (
+      {lastLoaded && (
         <ConfirmDialog
           open={confirmingDelete}
           title="Excluir a atividade?"
-          message={`A atividade "${shown.title}" deixará de ser exibida para você e para o aluno. As entregas, os comentários e as revisões são preservados. Esta ação não pode ser desfeita.`}
+          message={`A atividade "${lastLoaded.title}" deixará de ser exibida para você e para o aluno. As entregas, os comentários e as revisões são preservados. Esta ação não pode ser desfeita.`}
           confirmLabel="Excluir atividade"
           busy={deleting}
           busyLabel="Excluindo…"

@@ -8,18 +8,22 @@ import {
 } from '@mui/material';
 import type { Theme } from '@mui/material';
 import { useRef, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ActivitiesTable, ActivityCards } from '../activities/ActivitiesTable';
 import { ActivityFormDialog } from '../activities/ActivityFormDialog';
 import { ActivityFiltersBar } from '../activities/ActivityFiltersBar';
 import type { ActivityFormValues } from '../activities/activityForm';
 import { useActivityFilters } from '../activities/useActivityFilters';
+import { useStateChangedNotice } from '../activities/useStateChangedNotice';
 import { PagePagination } from '../components/PagePagination';
+import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
 import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
 import { OriginLink } from '../navigation/OriginLink';
+import { originState } from '../navigation/origin';
 import { activityPath } from '../navigation/paths';
 import {
   ACTIVITIES_PAGE_SIZE,
@@ -32,8 +36,11 @@ function foundText(count: number): string {
 }
 
 export function ActivitiesPage() {
-  const { user, refreshUser } = useSession();
+  const { user } = useSession();
   const { notify } = useFeedback();
+  const notifyStateChanged = useStateChangedNotice();
+  const navigate = useNavigate();
+  const location = useLocation();
   const isTeacher = user?.type === 'teacher';
   const userType = isTeacher ? 'teacher' : 'student';
   const filters = useActivityFilters(isTeacher);
@@ -78,13 +85,7 @@ export function ActivitiesPage() {
       ? null
       : (studentNames[filters.studentId] ?? 'Aluno selecionado');
 
-  // `openCount` muda a cada abertura, para o formulário recomeçar vazio.
-  const [dialog, setDialog] = useState<{
-    open: boolean;
-    openCount: number;
-  } | null>(null);
-  const closeDialog = () =>
-    setDialog((current) => current && { ...current, open: false });
+  const dialog = useDialogSlot();
 
   const saveActivity = async (values: ActivityFormValues) => {
     await createActivity(Number(values.studentId), {
@@ -92,22 +93,21 @@ export function ActivitiesPage() {
       description: values.description.trim(),
       deadline: values.deadline,
     });
-    closeDialog();
+    dialog.hide();
     notify('Atividade criada.', 'success');
     setReload((current) => current + 1);
   };
 
   const onStateChanged = (error: { status: number; message: string }) => {
-    closeDialog();
-    if (error.status === 404) {
-      // O servidor responde 404 quando a orientação com o aluno já não está ativa.
-      notify('A orientação foi encerrada.', 'error');
-      void refreshUser();
-    } else {
-      notify(error.message, 'error');
-    }
+    dialog.hide();
+    notifyStateChanged(error);
     setReload((current) => current + 1);
   };
+
+  const openActivity = (item: { id: number }) =>
+    navigate(activityPath(userType, item.id), {
+      state: originState(location),
+    });
 
   const renderTitle = (item: { id: number; title: string }) => (
     <OriginLink to={activityPath(userType, item.id)}>{item.title}</OriginLink>
@@ -123,15 +123,7 @@ export function ActivitiesPage() {
           Atividades
         </Typography>
         {isTeacher && (
-          <Button
-            variant="contained"
-            onClick={() =>
-              setDialog((current) => ({
-                open: true,
-                openCount: (current?.openCount ?? 0) + 1,
-              }))
-            }
-          >
+          <Button variant="contained" onClick={dialog.show}>
             Nova atividade
           </Button>
         )}
@@ -181,7 +173,9 @@ export function ActivitiesPage() {
           >
             {filters.hasFilters
               ? 'Nenhuma atividade encontrada com esses filtros'
-              : 'Você ainda não possui atividades cadastradas'}
+              : isTeacher
+                ? 'Você ainda não cadastrou atividades. Use Nova atividade para criar a primeira.'
+                : 'Você ainda não possui atividades cadastradas'}
           </Alert>
         )}
         {list.status === 'ready' && list.data.items.length > 0 && (
@@ -191,12 +185,14 @@ export function ActivitiesPage() {
                 items={list.data.items}
                 showStudent={isTeacher}
                 renderTitle={renderTitle}
+                onOpen={openActivity}
               />
             ) : (
               <ActivitiesTable
                 items={list.data.items}
                 showStudent={isTeacher}
                 renderTitle={renderTitle}
+                onOpen={openActivity}
               />
             )}
           </>
@@ -213,11 +209,11 @@ export function ActivitiesPage() {
           listTop.current?.scrollIntoView?.({ block: 'start' });
         }}
       />
-      {dialog && (
+      {dialog.slot && (
         <ActivityFormDialog
-          key={dialog.openCount}
+          key={dialog.slot.openCount}
           mode="create"
-          open={dialog.open}
+          open={dialog.slot.open}
           initial={{
             studentId:
               filters.studentId === null ? '' : String(filters.studentId),
@@ -232,8 +228,8 @@ export function ActivitiesPage() {
           }
           onSave={saveActivity}
           onStateChanged={onStateChanged}
-          onClose={closeDialog}
-          onExited={() => setDialog(null)}
+          onClose={dialog.hide}
+          onExited={dialog.unmount}
         />
       )}
     </Stack>

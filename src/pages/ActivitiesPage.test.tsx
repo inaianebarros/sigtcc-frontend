@@ -110,6 +110,19 @@ describe('ActivitiesPage: a lista do aluno', () => {
     );
   });
 
+  it('a linha inteira abre o detalhe, e não só o título', async () => {
+    const { events } = setup(
+      [makeActivity(5, { title: 'Capítulo 2', deadline: '2026-12-31' })],
+      'student',
+    );
+
+    await events.click(await screen.findByText('31 de dezembro de 2026'));
+
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/aluno/atividades/5',
+    );
+  });
+
   it('mostra o estado vazio quando o aluno não tem atividades', async () => {
     setup([], 'student');
 
@@ -147,7 +160,9 @@ describe('ActivitiesPage: a lista do professor', () => {
     setup([], 'teacher');
 
     expect(
-      await screen.findByText('Você ainda não possui atividades cadastradas'),
+      await screen.findByText(
+        'Você ainda não cadastrou atividades. Use Nova atividade para criar a primeira.',
+      ),
     ).toBeVisible();
     expect(
       screen.getByRole('button', { name: 'Nova atividade' }),
@@ -407,6 +422,20 @@ describe('ActivitiesPage: carregamento, erro e celular', () => {
     );
 
     expect(await screen.findByText('Atividade 1')).toBeVisible();
+  });
+
+  it('no celular o cartão inteiro abre o detalhe', async () => {
+    setViewportWidth(PHONE_WIDTH);
+    const { events } = setup(
+      [makeActivity(5, { title: 'Capítulo 2' })],
+      'student',
+    );
+
+    await events.click(await screen.findByText(/Prazo:/));
+
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/aluno/atividades/5',
+    );
   });
 
   it('no celular mostra cartões, com o selo Atrasada, em vez da tabela', async () => {

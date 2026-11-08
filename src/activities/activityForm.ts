@@ -1,4 +1,8 @@
 import { z } from 'zod';
+import type {
+  ActivityDetail,
+  ActivityInput,
+} from '../services/activityService';
 
 export const TITLE_MAX = 200;
 export const DESCRIPTION_MAX = 2000;
@@ -60,4 +64,18 @@ export function activityFormSchema({
         PAST_DEADLINE_MESSAGE,
       ),
   });
+}
+
+/** O que o formulário de edição muda em relação à atividade: só esses campos vão ao servidor. */
+export function changesOf(
+  activity: ActivityDetail,
+  values: ActivityFormValues,
+): Partial<ActivityInput> {
+  const changes: Partial<ActivityInput> = {};
+  const title = values.title.trim();
+  const description = values.description.trim();
+  if (title !== activity.title) changes.title = title;
+  if (description !== activity.description) changes.description = description;
+  if (values.deadline !== activity.deadline) changes.deadline = values.deadline;
+  return changes;
 }

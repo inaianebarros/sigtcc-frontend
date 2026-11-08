@@ -192,7 +192,7 @@ describe('Excluir atividade: falhas', () => {
     expect(screen.getByTestId('location')).toHaveTextContent(PATH);
   });
 
-  it('um 404 diz que a orientação foi encerrada e atualiza a sessão', async () => {
+  it('um 404 diz que a atividade não está mais disponível e atualiza a sessão', async () => {
     const { fetchMock, events } = setup({
       overrides: {
         [DELETE]: {
@@ -209,7 +209,9 @@ describe('Excluir atividade: falhas', () => {
     );
 
     expect(
-      await screen.findByText('A orientação foi encerrada.'),
+      await screen.findByText(
+        'A atividade não está mais disponível. A orientação pode ter sido encerrada.',
+      ),
     ).toBeVisible();
     await waitFor(() =>
       expect(requestsTo(fetchMock, 'GET /api/auth/me').length).toBeGreaterThan(
