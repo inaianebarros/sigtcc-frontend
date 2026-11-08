@@ -13,7 +13,9 @@ import {
   EndAdvisingDialog,
   REASON_REJECTED_MESSAGE,
 } from '../advisees/EndAdvisingDialog';
+import { useStateChangedNotice } from '../activities/useStateChangedNotice';
 import { PagePagination } from '../components/PagePagination';
+import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
@@ -32,6 +34,8 @@ import {
   listAdvisees,
 } from '../services/adviseeService';
 import type { Advisee } from '../services/adviseeService';
+import { ThesisTopicDialog } from '../thesis/ThesisTopicDialog';
+import { ADVISING_ENDED_TOPIC_MESSAGE } from '../thesis/thesisForm';
 
 function foundText(count: number): string {
   return `${count} ${count === 1 ? 'orientando encontrado' : 'orientandos encontrados'}`;
@@ -44,6 +48,10 @@ export function TeacherAdviseesPage() {
   const heading = useRef<HTMLHeadingElement>(null);
   const focusHeadingAfterClose = useRef(false);
   const { notify } = useFeedback();
+  const notifyStateChanged = useStateChangedNotice();
+  // O diálogo do tema: o orientando escolhido fica guardado para o diálogo sair com ele.
+  const topicDialog = useDialogSlot();
+  const [topicTarget, setTopicTarget] = useState<Advisee | null>(null);
   const { refreshUser } = useSession();
   // `openCount` muda a cada abertura, para o diálogo começar com o motivo vazio.
   const [dialog, setDialog] = useState<{
@@ -172,6 +180,16 @@ export function TeacherAdviseesPage() {
                       Ver atividades
                     </Button>
                     <Button
+                      variant="outlined"
+                      aria-label={`${advisee.thesisTopic ? 'Editar tema' : 'Cadastrar tema'} de ${advisee.student.fullName}`}
+                      onClick={() => {
+                        setTopicTarget(advisee);
+                        topicDialog.show();
+                      }}
+                    >
+                      {advisee.thesisTopic ? 'Editar tema' : 'Cadastrar tema'}
+                    </Button>
+                    <Button
                       color="error"
                       variant="outlined"
                       aria-label={`Encerrar orientação de ${advisee.student.fullName}`}
@@ -204,6 +222,28 @@ export function TeacherAdviseesPage() {
           listTop.current?.scrollIntoView?.({ block: 'start' });
         }}
       />
+      {topicDialog.slot && topicTarget && (
+        <ThesisTopicDialog
+          key={topicDialog.slot.openCount}
+          advisee={{
+            id: topicTarget.student.id,
+            name: topicTarget.student.fullName,
+          }}
+          open={topicDialog.slot.open}
+          onSaved={() => {
+            topicDialog.hide();
+            notify('Tema salvo.', 'success');
+            setReload((current) => current + 1);
+          }}
+          onStateChanged={(error) => {
+            topicDialog.hide();
+            notifyStateChanged(error, ADVISING_ENDED_TOPIC_MESSAGE);
+            setReload((current) => current + 1);
+          }}
+          onClose={topicDialog.hide}
+          onExited={topicDialog.unmount}
+        />
+      )}
       {dialog && (
         <EndAdvisingDialog
           key={dialog.openCount}

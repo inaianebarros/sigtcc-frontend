@@ -26,6 +26,11 @@ export const areas: readonly Area[] = [
         path: '/aluno/atividades',
         requiresActiveAdvising: { reason: 'Requer orientação ativa' },
       },
+      {
+        label: 'Tema do TCC',
+        path: '/aluno/tema',
+        requiresActiveAdvising: { reason: 'Requer orientação ativa' },
+      },
       { label: 'Meu perfil', path: '/aluno/perfil' },
     ],
   },
