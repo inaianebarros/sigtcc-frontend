@@ -6,8 +6,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { Link as RouterLink, useSearchParams } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { AdviseeCard } from '../advisees/AdviseeCard';
 import {
   EndAdvisingDialog,
@@ -18,6 +18,7 @@ import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
+import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
 import {
   ApiError,
   isStateChangedError,
@@ -31,21 +32,13 @@ import {
 } from '../services/adviseeService';
 import type { Advisee } from '../services/adviseeService';
 
-const PAGE_PARAM = 'pagina';
-
-/** Só um inteiro de 1 em diante vale; qualquer outra coisa na URL é a primeira página. */
-function pageFrom(value: string | null): number {
-  return value !== null && /^[1-9]\d*$/.test(value) ? Number(value) : 1;
-}
-
 function foundText(count: number): string {
   return `${count} ${count === 1 ? 'orientando encontrado' : 'orientandos encontrados'}`;
 }
 
 export function TeacherAdviseesPage() {
   const [reload, setReload] = useState(0);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const page = pageFrom(searchParams.get(PAGE_PARAM));
+  const [page, setPage] = useUrlPage();
   const listTop = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const focusHeadingAfterClose = useRef(false);
@@ -62,29 +55,13 @@ export function TeacherAdviseesPage() {
   const [reasonError, setReasonError] = useState<string | null>(null);
   const list = useLoad(() => listAdvisees(page), `${page}|${reload}`);
 
-  // A página vive na URL: assim recarregar ou voltar de outra tela a restaura. A primeira
-  // página fica sem o parâmetro.
-  const goToPage = (next: number, replace = false) => {
-    setSearchParams(next === 1 ? {} : { [PAGE_PARAM]: String(next) }, {
-      replace,
-    });
-  };
-
   const { knownCount, lastPage, fallbackPage } = usePageBounds(
     list,
     ADVISEES_PAGE_SIZE,
     page,
   );
 
-  // Uma página além da última volta para a última que existe, sem entrar no histórico. Aqui é
-  // um efeito, e não a correção na renderização das outras listas: a página vive na URL, e
-  // navegar durante a renderização atualizaria o roteador no meio dela.
-  const backToLastPage = useEffectEvent((last: number) => goToPage(last, true));
-  useEffect(() => {
-    if (fallbackPage !== null && fallbackPage !== page) {
-      backToLastPage(fallbackPage);
-    }
-  }, [fallbackPage, page]);
+  useReturnToLastPage(fallbackPage, page, setPage);
 
   const clearErrors = () => {
     setFailure(null);
@@ -207,7 +184,7 @@ export function TeacherAdviseesPage() {
         lastPage={lastPage}
         page={page}
         onChange={(next) => {
-          goToPage(next);
+          setPage(next);
           listTop.current?.scrollIntoView?.({ block: 'start' });
         }}
       />

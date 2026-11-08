@@ -11,13 +11,14 @@ import {
   Typography,
 } from '@mui/material';
 import { useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PagePagination } from '../components/PagePagination';
 import { useFeedback } from '../hooks/useFeedback';
-import { useFilteredPage } from '../hooks/useFilteredPage';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
+import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
 import {
   ApiError,
   isStateChangedError,
@@ -63,6 +64,13 @@ const FILTERS: readonly {
   },
 ];
 
+const FILTER_PARAM = 'situacao';
+
+/** Só uma das cinco situações vale; qualquer outra coisa na URL é "Pendentes", o padrão. */
+function filterFrom(value: string | null): RequestFilter {
+  return FILTERS.find((item) => item.value === value)?.value ?? 'pending';
+}
+
 const DIALOG_COPY: Record<
   AnswerAction,
   {
@@ -93,8 +101,19 @@ function foundText(count: number): string {
 
 export function TeacherRequestsPage() {
   const [listReload, setListReload] = useState(0);
-  const [filter, setFilter] = useState<RequestFilter>('pending');
-  const [page, setPage] = useFilteredPage(filter);
+  // O filtro e a página vivem na URL: recarregar ou voltar de outra tela, como o perfil do aluno,
+  // os restaura. "Pendentes", o padrão, e a primeira página ficam sem parâmetro.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filter = filterFrom(searchParams.get(FILTER_PARAM));
+  const [page, setPage] = useUrlPage();
+  const chooseFilter = (next: RequestFilter) =>
+    setSearchParams((current) => {
+      const params = new URLSearchParams(current);
+      params.delete('pagina');
+      if (next === 'pending') params.delete(FILTER_PARAM);
+      else params.set(FILTER_PARAM, next);
+      return params;
+    });
   const listTop = useRef<HTMLDivElement>(null);
   const listKey = `${filter}|${page}|${listReload}`;
   const list = useLoad(() => listReceivedRequests({ filter, page }), listKey);
@@ -125,8 +144,7 @@ export function TeacherRequestsPage() {
     REQUESTS_PAGE_SIZE,
     page,
   );
-  // Uma página que ficou vazia volta para a última que existe.
-  if (fallbackPage !== null) setPage(fallbackPage);
+  useReturnToLastPage(fallbackPage, page, setPage);
   const emptyMessage =
     FILTERS.find((item) => item.value === filter)?.empty ?? '';
 
@@ -174,7 +192,7 @@ export function TeacherRequestsPage() {
             const chosen = FILTERS.find(
               (item) => item.value === event.target.value,
             );
-            if (chosen) setFilter(chosen.value);
+            if (chosen) chooseFilter(chosen.value);
           }}
         >
           {FILTERS.map((item) => (
