@@ -13,6 +13,7 @@ import { useForm } from 'react-hook-form';
 import { Link as RouterLink, Navigate, useLocation } from 'react-router-dom';
 import { z } from 'zod';
 import { LoadingIndicator } from '../components/LoadingIndicator';
+import { PasswordField } from '../components/PasswordField';
 import { useSession } from '../hooks/useSession';
 import { homePathFor, paths } from '../navigation/paths';
 import { ApiError, messageForStatus } from '../services/apiError';
@@ -96,9 +97,8 @@ export function LoginPage() {
           helperText={errors.email?.message}
           {...register('email')}
         />
-        <TextField
+        <PasswordField
           label="Senha"
-          type="password"
           autoComplete="current-password"
           error={Boolean(errors.password)}
           helperText={errors.password?.message}

@@ -23,5 +23,26 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // RNF29: todo campo de senha é o PasswordField, com o ícone de olho para exibir e ocultar.
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/components/PasswordField.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "JSXAttribute[name.name='type'][value.value='password']",
+          message:
+            'Use o componente PasswordField em vez de type="password" (RNF29).',
+        },
+        {
+          selector:
+            "JSXAttribute[name.name='type'] > JSXExpressionContainer > Literal[value='password']",
+          message:
+            'Use o componente PasswordField em vez de type="password" (RNF29).',
+        },
+      ],
+    },
+  },
   prettier,
 );

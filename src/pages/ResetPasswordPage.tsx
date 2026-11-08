@@ -1,13 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Alert,
-  Button,
-  Link,
-  Paper,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Alert, Button, Link, Paper, Stack, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
@@ -19,6 +11,7 @@ import {
 } from 'react-router-dom';
 import { z } from 'zod';
 import { LoadingIndicator } from '../components/LoadingIndicator';
+import { PasswordField } from '../components/PasswordField';
 import { useSession } from '../hooks/useSession';
 import { homePathFor, paths } from '../navigation/paths';
 import { passwordsMatch, passwordsMismatch } from '../forms/passwordRules';
@@ -110,17 +103,15 @@ export function ResetPasswordPage() {
         {linkUsable ? (
           <>
             {formError && <Alert severity="error">{formError}</Alert>}
-            <TextField
+            <PasswordField
               label="Nova senha"
-              type="password"
               autoComplete="new-password"
               error={Boolean(errors.password)}
               helperText={errors.password?.message}
               {...register('password')}
             />
-            <TextField
+            <PasswordField
               label="Confirmação da nova senha"
-              type="password"
               autoComplete="new-password"
               error={Boolean(errors.passwordConfirmation)}
               helperText={errors.passwordConfirmation?.message}
