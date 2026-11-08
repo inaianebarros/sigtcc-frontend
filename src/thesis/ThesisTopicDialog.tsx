@@ -10,22 +10,21 @@ import {
   Stack,
 } from '@mui/material';
 import { useId, useState } from 'react';
-import { ConfirmDialog } from '../components/ConfirmDialog';
-import { UnsavedChangesDialog } from '../components/UnsavedChangesDialog';
 import { applyApiFieldErrors } from '../forms/applyApiFieldErrors';
 import { useLoad } from '../hooks/useLoad';
-import { useUnsavedChangesGuard } from '../hooks/useUnsavedChangesGuard';
+import { useDiscardGuard } from '../hooks/useDiscardGuard';
 import { isStateChangedError } from '../services/apiError';
 import { getAdviseeTopic, saveAdviseeTopic } from '../services/thesisService';
 import { ThesisTopicField } from './ThesisTopicField';
+import { ADVISING_ENDED_TOPIC_MESSAGE } from './thesisMessages';
 import { useThesisTopicForm } from './useThesisTopicForm';
 
 interface ThesisTopicDialogProps {
   advisee: { id: number; name: string };
   open: boolean;
   onSaved: () => void;
-  /** A orientação terminou com o diálogo aberto: o servidor responde 404 ao professor. */
-  onStateChanged: (error: { status: number; message: string }) => void;
+  /** A orientação terminou com o diálogo aberto: quem usa atualiza a sessão e a lista. */
+  onStateChanged: () => void;
   onClose: () => void;
   onExited: () => void;
 }
@@ -49,14 +48,14 @@ export function ThesisTopicDialog({
   const found = topic.status === 'ready' && topic.data !== null;
   const saved = found ? (topic.data?.description ?? '') : '';
   const { form, trimmed, pending, canSave } = useThesisTopicForm(saved, found);
-  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
-  const blocker = useUnsavedChangesGuard(pending && open);
-
-  const requestClose = () => {
-    if (form.formState.isSubmitting) return;
-    if (pending) setConfirmingDiscard(true);
-    else onClose();
-  };
+  // A orientação terminou com o diálogo aberto: o texto fica à vista, sem edição (RN12).
+  const [ended, setEnded] = useState(false);
+  const { requestClose, dialogs } = useDiscardGuard({
+    pending: pending && !ended,
+    open,
+    busy: form.formState.isSubmitting,
+    onClose,
+  });
 
   const submit = form.handleSubmit(async () => {
     try {
@@ -64,7 +63,9 @@ export function ThesisTopicDialog({
       onSaved();
     } catch (error) {
       if (isStateChangedError(error)) {
-        onStateChanged(error);
+        // 404 para o professor e 409 para o aluno dizem o mesmo: a orientação já não está ativa.
+        setEnded(true);
+        onStateChanged();
         return;
       }
       const message = applyApiFieldErrors(
@@ -114,19 +115,22 @@ export function ThesisTopicDialog({
               {topic.status === 'ready' && topic.data === null && (
                 <Alert severity="warning">Orientando não encontrado</Alert>
               )}
+              {ended && (
+                <Alert severity="warning">{ADVISING_ENDED_TOPIC_MESSAGE}</Alert>
+              )}
               {found && (
                 <ThesisTopicField
                   form={form}
                   length={trimmed.length}
-                  pending={pending}
-                  disabled={form.formState.isSubmitting}
+                  pending={pending && !ended}
+                  disabled={form.formState.isSubmitting || ended}
                 />
               )}
               {rootError && <Alert severity="error">{rootError}</Alert>}
             </Stack>
           </DialogContent>
           <DialogActions>
-            {topic.status === 'ready' && topic.data === null ? (
+            {ended || (topic.status === 'ready' && topic.data === null) ? (
               <Button onClick={onClose}>Fechar</Button>
             ) : (
               <>
@@ -148,19 +152,7 @@ export function ThesisTopicDialog({
           </DialogActions>
         </Box>
       </Dialog>
-      <ConfirmDialog
-        open={confirmingDiscard}
-        title="Descartar alterações?"
-        message="Você tem alterações que ainda não foram salvas. Se fechar agora, elas serão perdidas."
-        confirmLabel="Sair sem salvar"
-        cancelLabel="Continuar editando"
-        onCancel={() => setConfirmingDiscard(false)}
-        onConfirm={() => {
-          setConfirmingDiscard(false);
-          onClose();
-        }}
-      />
-      <UnsavedChangesDialog blocker={blocker} />
+      {dialogs}
     </>
   );
 }

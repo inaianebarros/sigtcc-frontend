@@ -15,10 +15,8 @@ import {
 import { useId, useMemo, useState } from 'react';
 import type { HTMLAttributes } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { ConfirmDialog } from '../components/ConfirmDialog';
-import { UnsavedChangesDialog } from '../components/UnsavedChangesDialog';
 import { applyApiFieldErrors } from '../forms/applyApiFieldErrors';
-import { useUnsavedChangesGuard } from '../hooks/useUnsavedChangesGuard';
+import { useDiscardGuard } from '../hooks/useDiscardGuard';
 import { PendingChangesNotice } from '../profile/PendingChangesNotice';
 import { isStateChangedError } from '../services/apiError';
 import { activityFormSchema, DESCRIPTION_MAX, TITLE_MAX } from './activityForm';
@@ -104,17 +102,15 @@ export function ActivityFormDialog({
     defaultValues: initial,
   });
   const [failure, setFailure] = useState<string | null>(null);
-  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
-  const blocker = useUnsavedChangesGuard(isDirty && open);
+  const { requestClose, dialogs } = useDiscardGuard({
+    pending: isDirty,
+    open,
+    busy: isSubmitting,
+    onClose,
+  });
   const students = useAdviseeOptions(
     mode === 'create' ? preselectedStudent : null,
   );
-
-  const requestClose = () => {
-    if (isSubmitting) return;
-    if (isDirty) setConfirmingDiscard(true);
-    else onClose();
-  };
 
   const submit = handleSubmit(async (values) => {
     setFailure(null);
@@ -250,19 +246,7 @@ export function ActivityFormDialog({
           </DialogActions>
         </Box>
       </Dialog>
-      <ConfirmDialog
-        open={confirmingDiscard}
-        title="Descartar alterações?"
-        message="Você tem alterações que ainda não foram salvas. Se fechar agora, elas serão perdidas."
-        confirmLabel="Sair sem salvar"
-        cancelLabel="Continuar editando"
-        onCancel={() => setConfirmingDiscard(false)}
-        onConfirm={() => {
-          setConfirmingDiscard(false);
-          onClose();
-        }}
-      />
-      <UnsavedChangesDialog blocker={blocker} />
+      {dialogs}
     </>
   );
 }

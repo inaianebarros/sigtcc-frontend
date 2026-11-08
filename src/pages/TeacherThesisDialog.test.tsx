@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { tokenStore } from '../services/tokenStore';
@@ -189,6 +189,16 @@ describe('Tema do TCC no cartão do orientando: abrir e salvar', () => {
     expect(
       await screen.findByRole('button', { name: 'Salvando…' }),
     ).toBeDisabled();
+    // Durante o envio, Esc não fecha o diálogo nem descarta o que está sendo gravado.
+    fireEvent.keyDown(screen.getByRole('dialog', { name: /Tema do TCC de/ }), {
+      key: 'Escape',
+    });
+    expect(
+      screen.getByRole('dialog', { name: /Tema do TCC de/ }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('dialog', { name: 'Descartar alterações?' }),
+    ).not.toBeInTheDocument();
     releaseSave();
     await screen.findByText('Tema salvo.');
     expect(putBodies(fetchMock)).toHaveLength(1);
@@ -274,28 +284,48 @@ describe('Tema do TCC no cartão do orientando: falhas', () => {
     await waitFor(() => expect(field()).toHaveValue('Tema atual do primeiro'));
   });
 
-  it('um 404 ao salvar diz que a orientação foi encerrada, fecha o diálogo e atualiza a sessão', async () => {
-    const { fetchMock, events } = setup({
-      [PUT]: { status: 404, body: { detail: 'Aluno não encontrado.' } },
-    });
-    await openFor(events, 'Cadastrar tema de Orientando 2');
-    await events.type(field(), VALID);
-    const meBefore = requestsTo(fetchMock, 'GET /api/auth/me').length;
+  it.each([
+    ['404', 404],
+    ['409', 409],
+  ])(
+    'um %s ao salvar mostra que a orientação foi encerrada, mantém o texto sem edição e atualiza a sessão',
+    async (_name, status) => {
+      const { fetchMock, events } = setup({
+        [PUT]: { status, body: { detail: 'Aluno não encontrado.' } },
+      });
+      const dialog = await openFor(events, 'Cadastrar tema de Orientando 2');
+      await events.type(field(), VALID);
+      const meBefore = requestsTo(fetchMock, 'GET /api/auth/me').length;
 
-    await events.click(saveButton());
+      await events.click(saveButton());
 
-    expect(await screen.findByText(ENDED)).toBeVisible();
-    await waitFor(() =>
+      expect(await within(dialog).findByText(ENDED)).toBeVisible();
+      // O diálogo fica aberto: o texto digitado continua à vista, sem edição e sem como salvar.
+      expect(field()).toHaveValue(VALID);
+      expect(field()).toBeDisabled();
       expect(
-        screen.queryByRole('dialog', { name: /Tema do TCC de/ }),
-      ).not.toBeInTheDocument(),
-    );
-    await waitFor(() =>
-      expect(requestsTo(fetchMock, 'GET /api/auth/me').length).toBeGreaterThan(
-        meBefore,
-      ),
-    );
-  });
+        screen.queryByRole('button', { name: 'Salvar tema' }),
+      ).not.toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          requestsTo(fetchMock, 'GET /api/auth/me').length,
+        ).toBeGreaterThan(meBefore),
+      );
+
+      await events.click(
+        within(dialog).getByRole('button', { name: 'Fechar' }),
+      );
+
+      await waitFor(() =>
+        expect(
+          screen.queryByRole('dialog', { name: /Tema do TCC de/ }),
+        ).not.toBeInTheDocument(),
+      );
+      expect(
+        screen.queryByRole('dialog', { name: 'Descartar alterações?' }),
+      ).not.toBeInTheDocument();
+    },
+  );
 });
 
 describe('Tema do TCC no cartão do orientando: alterações não salvas (RNF28)', () => {

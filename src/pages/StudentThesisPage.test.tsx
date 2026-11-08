@@ -389,8 +389,11 @@ describe('StudentThesisPage: orientação encerrada com a tela aberta', () => {
         'A orientação foi encerrada. O tema não pode mais ser alterado.',
       ),
     ).toBeVisible();
+    // O texto digitado continua à vista, sem edição, e não há mais como salvar.
+    expect(field()).toHaveValue('Um tema novo para o meu TCC');
+    expect(field()).toBeDisabled();
     expect(
-      screen.queryByRole('textbox', { name: /Tema do TCC/ }),
+      screen.queryByRole('button', { name: 'Salvar tema' }),
     ).not.toBeInTheDocument();
     expect(screen.getAllByText(VALID).length).toBeGreaterThan(0);
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });

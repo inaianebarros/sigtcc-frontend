@@ -14,7 +14,7 @@ import { ActivityFormDialog } from '../activities/ActivityFormDialog';
 import { ActivityFiltersBar } from '../activities/ActivityFiltersBar';
 import type { ActivityFormValues } from '../activities/activityForm';
 import { useActivityFilters } from '../activities/useActivityFilters';
-import { useStateChangedNotice } from '../activities/useStateChangedNotice';
+import { useStateChangedNotice } from '../hooks/useStateChangedNotice';
 import { PagePagination } from '../components/PagePagination';
 import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
@@ -123,7 +123,7 @@ export function ActivitiesPage() {
           Atividades
         </Typography>
         {isTeacher && (
-          <Button variant="contained" onClick={dialog.show}>
+          <Button variant="contained" onClick={() => dialog.show()}>
             Nova atividade
           </Button>
         )}

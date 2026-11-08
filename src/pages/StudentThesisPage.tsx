@@ -12,11 +12,11 @@ import { isStateChangedError } from '../services/apiError';
 import { getMyTopic, saveMyTopic } from '../services/thesisService';
 import type { ThesisTopic } from '../services/thesisService';
 import { ThesisTopicField } from '../thesis/ThesisTopicField';
-import { ADVISING_ENDED_TOPIC_MESSAGE } from '../thesis/thesisForm';
+import {
+  ADVISING_ENDED_TOPIC_MESSAGE,
+  NO_ADVISING_TOPIC_MESSAGE,
+} from '../thesis/thesisMessages';
 import { useThesisTopicForm } from '../thesis/useThesisTopicForm';
-
-const NO_ADVISING_MESSAGE =
-  'O tema do TCC só pode ser cadastrado com uma orientação ativa.';
 
 function TopicEditor({ initial }: { initial: ThesisTopic }) {
   const { user, refreshUser } = useSession();
@@ -26,9 +26,12 @@ function TopicEditor({ initial }: { initial: ThesisTopic }) {
   const { form, trimmed, pending, canSave } = useThesisTopicForm(
     saved.description ?? '',
   );
-  const noAdvising = user !== null && !hasActiveAdvisingOf(user);
-  const readOnly = ended || noAdvising;
-  const blocker = useUnsavedChangesGuard(pending && !readOnly);
+  // Lido uma vez, ao abrir: se a orientação terminar depois, a sessão atualizada não esconde o
+  // texto que o aluno estava vendo (`ended` é quem trata esse caso).
+  const [noAdvising] = useState(
+    () => user !== null && !hasActiveAdvisingOf(user),
+  );
+  const blocker = useUnsavedChangesGuard(pending && !ended && !noAdvising);
 
   const submit = form.handleSubmit(async () => {
     try {
@@ -69,30 +72,34 @@ function TopicEditor({ initial }: { initial: ThesisTopic }) {
           )}
         </Stack>
       ) : (
-        !readOnly && (
+        !noAdvising && (
           <Alert severity="info">Você ainda não cadastrou o tema do TCC.</Alert>
         )
       )}
-      {readOnly ? (
-        <Alert severity="warning">
-          {ended ? ADVISING_ENDED_TOPIC_MESSAGE : NO_ADVISING_MESSAGE}
-        </Alert>
-      ) : (
+      {noAdvising && (
+        <Alert severity="warning">{NO_ADVISING_TOPIC_MESSAGE}</Alert>
+      )}
+      {ended && (
+        <Alert severity="warning">{ADVISING_ENDED_TOPIC_MESSAGE}</Alert>
+      )}
+      {!noAdvising && (
         <>
           <ThesisTopicField
             form={form}
             length={trimmed.length}
-            pending={pending}
-            disabled={form.formState.isSubmitting}
+            pending={pending && !ended}
+            disabled={form.formState.isSubmitting || ended}
           />
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={!canSave || form.formState.isSubmitting}
-            sx={{ alignSelf: 'flex-start' }}
-          >
-            {form.formState.isSubmitting ? 'Salvando…' : 'Salvar tema'}
-          </Button>
+          {!ended && (
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={!canSave || form.formState.isSubmitting}
+              sx={{ alignSelf: 'flex-start' }}
+            >
+              {form.formState.isSubmitting ? 'Salvando…' : 'Salvar tema'}
+            </Button>
+          )}
         </>
       )}
       <UnsavedChangesDialog blocker={blocker} />
