@@ -10,7 +10,7 @@ const TO_PARAM = 'ate';
 const STUDENT_PARAM = 'aluno';
 
 /** Só uma data real, no formato do campo (AAAA-MM-DD), vale; qualquer outra coisa é "sem data". */
-function dateFrom(value: string | null): string | null {
+function parseDateParam(value: string | null): string | null {
   if (value === null || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const parsed = new Date(`${value}T00:00:00Z`);
   return !Number.isNaN(parsed.getTime()) &&
@@ -32,8 +32,8 @@ export function useMeetingFilters(canFilterByStudent: boolean) {
     MEETING_SITUATIONS.find(
       (item) => item === searchParams.get(SITUATION_PARAM),
     ) ?? null;
-  const from = dateFrom(searchParams.get(FROM_PARAM));
-  const to = dateFrom(searchParams.get(TO_PARAM));
+  const from = parseDateParam(searchParams.get(FROM_PARAM));
+  const to = parseDateParam(searchParams.get(TO_PARAM));
   const studentId = canFilterByStudent
     ? positiveIntFrom(searchParams.get(STUDENT_PARAM))
     : null;

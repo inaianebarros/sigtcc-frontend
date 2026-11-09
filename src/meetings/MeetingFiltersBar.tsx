@@ -12,7 +12,8 @@ interface MeetingFiltersBarProps {
   dateTo: string | null;
   rangeError: string | null;
   /** O filtro de aluno só aparece para o professor. */
-  student: { id: number; name: string } | null | undefined;
+  showStudent: boolean;
+  student: { id: number; name: string } | null;
   onSituation: (value: MeetingSituation | null) => void;
   onDateFrom: (value: string) => void;
   onDateTo: (value: string) => void;
@@ -24,6 +25,7 @@ export function MeetingFiltersBar({
   dateFrom,
   dateTo,
   rangeError,
+  showStudent,
   student,
   onSituation,
   onDateFrom,
@@ -41,10 +43,10 @@ export function MeetingFiltersBar({
         label="Situação"
         value={situation ?? ALL}
         onChange={(event) =>
+          // Só uma das seis situações vale; qualquer outro valor é "Todas".
           onSituation(
-            event.target.value === ALL
-              ? null
-              : (event.target.value as MeetingSituation),
+            MEETING_SITUATIONS.find((value) => value === event.target.value) ??
+              null,
           )
         }
         sx={{ minWidth: 180 }}
@@ -72,7 +74,7 @@ export function MeetingFiltersBar({
         onChange={(event) => onDateTo(event.target.value)}
         slotProps={{ inputLabel: { shrink: true } }}
       />
-      {student !== undefined && (
+      {showStudent && (
         <Stack sx={{ minWidth: { md: 280 }, flex: { md: 1 } }}>
           <AdviseeSearchField
             label="Aluno"

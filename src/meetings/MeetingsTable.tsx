@@ -126,12 +126,12 @@ function MeetingCard({
     <Card component="article" aria-labelledby={titleId} variant="outlined">
       <CardContent>
         <Stack spacing={1}>
-          <Typography id={titleId} variant="h6" component="h2" sx={truncated}>
+          <Typography id={titleId} variant="h6" component="h2">
             {item.description}
           </Typography>
           <Typography>{formatDateTime(item.scheduledAt)}</Typography>
           <Typography color="text.secondary">
-            {item.counterpart.fullName}
+            Com: {item.counterpart.fullName}
           </Typography>
           <Stack spacing={0.5} sx={{ alignItems: 'flex-start' }}>
             <SituationChip situation={item.situation} />

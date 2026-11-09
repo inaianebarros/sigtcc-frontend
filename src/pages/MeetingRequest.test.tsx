@@ -316,7 +316,7 @@ describe('Solicitar reunião: alterações não salvas (RNF28)', () => {
 
     expect(
       await within(dialog).findByText(/Você tem alterações não salvas/),
-    ).toBeVisible();
+    ).toHaveTextContent('Clique em Solicitar para gravá-las.');
     await events.click(
       within(dialog).getByRole('button', { name: 'Cancelar' }),
     );
@@ -472,4 +472,41 @@ describe('Solicitar reunião: orientação encerrada com o diálogo aberto', () 
 
     expect(await within(dialog).findByText(ENDED)).toBeVisible();
   });
+
+  it.each([
+    ['o aluno com 404', 'student', 404],
+    ['o professor com 409', 'teacher', 409],
+  ] as const)(
+    '%s não é orientação encerrada: mostra o erro do servidor e deixa tentar de novo',
+    async (_name, user, status) => {
+      const { events } = setup(user, {
+        overrides: {
+          [CREATE]: { status, body: { detail: 'Não foi possível solicitar.' } },
+        },
+      });
+      const dialog = await openDialog(events);
+      await fill(events, dialog, {
+        date: '2099-12-31',
+        time: '14:30',
+        description: 'Pauta',
+      });
+      if (user === 'teacher') {
+        await events.click(
+          within(dialog).getByRole('combobox', { name: 'Aluno' }),
+        );
+        await events.click(
+          await screen.findByRole('option', { name: 'João Reis - Sem tema' }),
+        );
+      }
+
+      await events.click(submit(dialog));
+
+      expect(
+        await within(dialog).findByText('Não foi possível solicitar.'),
+      ).toBeVisible();
+      expect(within(dialog).queryByText(ENDED)).not.toBeInTheDocument();
+      expect(within(dialog).getByLabelText(/Descrição/)).toBeEnabled();
+      expect(submit(dialog)).toBeEnabled();
+    },
+  );
 });

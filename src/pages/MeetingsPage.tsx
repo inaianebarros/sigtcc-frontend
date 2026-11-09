@@ -74,9 +74,8 @@ export function MeetingsPage() {
       }
     }
   }
-  const student = !isTeacher
-    ? undefined
-    : filters.studentId === null
+  const student =
+    filters.studentId === null
       ? null
       : {
           id: filters.studentId,
@@ -103,6 +102,7 @@ export function MeetingsPage() {
         dateFrom={filters.dateFrom}
         dateTo={filters.dateTo}
         rangeError={filters.rangeError}
+        showStudent={isTeacher}
         student={student}
         onSituation={filters.setSituation}
         onDateFrom={filters.setDateFrom}
@@ -175,7 +175,7 @@ export function MeetingsPage() {
           key={dialog.slot.openCount}
           open={dialog.slot.open}
           isTeacher={isTeacher}
-          preselectedStudent={student ?? null}
+          preselectedStudent={student}
           onSaved={() => {
             dialog.hide();
             notify('Reunião solicitada.', 'success');

@@ -304,7 +304,11 @@ describe('MeetingsPage: estados', () => {
     expect(
       within(card).getByText(/Motivo da recusa: Sem horário\./),
     ).toBeVisible();
-    expect(within(card).getByText('Carlos Lima')).toBeVisible();
+    expect(within(card).getByText('Com: Carlos Lima')).toBeVisible();
+    // No cartão há espaço: a descrição quebra a linha, sem corte.
+    expect(within(card).getByText('No celular')).not.toHaveStyle({
+      textOverflow: 'ellipsis',
+    });
   });
 
   it('pede a primeira página de 20 e pagina com a página na URL', async () => {

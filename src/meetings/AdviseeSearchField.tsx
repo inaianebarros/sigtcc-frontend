@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { useAdviseeSearch } from './useAdviseeSearch';
 import type { AdviseeChoice } from './useAdviseeSearch';
 
-export const NO_TOPIC_LABEL = 'Sem tema';
+const NO_TOPIC_LABEL = 'Sem tema';
 
 interface AdviseeSearchFieldProps {
   label: string;

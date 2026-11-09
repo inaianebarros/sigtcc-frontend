@@ -16,7 +16,7 @@ import { Controller, useForm, useWatch } from 'react-hook-form';
 import { applyApiFieldErrors } from '../forms/applyApiFieldErrors';
 import { useDiscardGuard } from '../hooks/useDiscardGuard';
 import { PendingChangesNotice } from '../profile/PendingChangesNotice';
-import { isStateChangedError } from '../services/apiError';
+import { ApiError } from '../services/apiError';
 import { createMeeting } from '../services/meetingService';
 import { AdviseeSearchField } from './AdviseeSearchField';
 import {
@@ -116,8 +116,12 @@ export function MeetingRequestDialog({
       );
       onSaved();
     } catch (error) {
-      if (isStateChangedError(error)) {
-        // 409 para o aluno e 404 para o professor: a orientação já não está ativa.
+      // 409 para o aluno e 404 para o professor: a orientação já não está ativa. Qualquer outro
+      // 404 ou 409 não é esse caso, e não pode bloquear o envio com a mensagem errada.
+      if (
+        error instanceof ApiError &&
+        error.status === (isTeacher ? 404 : 409)
+      ) {
         setEnded(true);
         onEnded();
         return;
@@ -141,7 +145,10 @@ export function MeetingRequestDialog({
           <DialogTitle id={`${id}-title`}>Solicitar reunião</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
-              <PendingChangesNotice visible={pending && !ended} />
+              <PendingChangesNotice
+                visible={pending && !ended}
+                actionLabel="Solicitar"
+              />
               {ended && <Alert severity="warning">{ENDED_MESSAGE}</Alert>}
               {isTeacher && (
                 <Controller
