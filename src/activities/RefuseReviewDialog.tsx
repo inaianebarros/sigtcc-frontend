@@ -12,13 +12,15 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useId, useMemo, useState } from 'react';
+import { useId, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { applyApiFieldErrors } from '../forms/applyApiFieldErrors';
 import { useDiscardGuard } from '../hooks/useDiscardGuard';
 import { DESCRIPTION_MAX, reasonFormSchema } from '../meetings/meetingForm';
 import { PendingChangesNotice } from '../profile/PendingChangesNotice';
 import { ApiError, isStateChangedError } from '../services/apiError';
+
+const schema = reasonFormSchema('justificativa');
 
 interface RefuseReviewDialogProps {
   open: boolean;
@@ -45,7 +47,6 @@ export function RefuseReviewDialog({
   onExited,
 }: RefuseReviewDialogProps) {
   const id = useId();
-  const schema = useMemo(() => reasonFormSchema('justificativa'), []);
   const {
     control,
     register,

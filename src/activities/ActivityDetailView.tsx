@@ -237,9 +237,7 @@ export function ActivityDetailView({
             : `${activity.commentsCount} ${activity.commentsCount === 1 ? 'comentário' : 'comentários'}`}
         </Typography>
       </ExtensionPoint>
-      {review && activity.status === 'in_review' && (
-        <ReviewPanel onAccept={review.onAccept} onRefuse={review.onRefuse} />
-      )}
+      {review && activity.status === 'in_review' && <ReviewPanel {...review} />}
     </>
   );
 }
