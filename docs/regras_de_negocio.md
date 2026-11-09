@@ -77,3 +77,5 @@ RN37 - **Identificação de Atividades Atrasadas na Dashboard:** A identificaç�
 RN38 - **Priorização dos Orientandos que Precisam de Atenção:** Na Dashboard do professor, um orientando precisa de atenção quando possui ao menos uma atividade atrasada ou ao menos uma atividade em revisão. A lista prioriza quem tem mais atividades atrasadas; em caso de empate, quem tem mais atividades em revisão; persistindo o empate, o nome em ordem alfabética. A classificação é informativa e não altera o status das atividades nem das orientações.
 
 RN39 - **Edição de Reunião Aceita:** Quando o autor altera a data ou a hora de uma reunião aceita, ela volta ao status pendente e a outra parte precisa aceitá-la de novo, porque aceitou outro horário. Alterar apenas a descrição mantém o status. Só o autor edita (RN09).
+
+RN40 - **Justificativa de Recusa de Revisão:** A recusa de uma atividade em revisão deve ser obrigatoriamente acompanhada de uma justificativa, de 1 a 500 caracteres, que o aluno e o professor veem no histórico de revisões da atividade. O aceite não tem justificativa.
