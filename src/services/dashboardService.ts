@@ -76,6 +76,16 @@ interface ApiStudentDashboard {
   has_ended_advisings: boolean;
 }
 
+function activityFrom(activity: ApiActivity): DashboardActivity {
+  return {
+    id: activity.id,
+    title: activity.title,
+    deadline: activity.deadline,
+    status: activity.status,
+    overdue: activity.overdue,
+  };
+}
+
 function dashboardFrom(api: ApiStudentDashboard): StudentDashboard {
   return {
     hasActiveAdvising: api.has_active_advising,
@@ -96,7 +106,7 @@ function dashboardFrom(api: ApiStudentDashboard): StudentDashboard {
       progressPercent: api.activities.progress_percent,
     },
     nextActivities: api.next_activities && {
-      items: api.next_activities.items,
+      items: api.next_activities.items.map(activityFrom),
       hasMore: api.next_activities.has_more,
     },
     lastRequest: api.last_request && {

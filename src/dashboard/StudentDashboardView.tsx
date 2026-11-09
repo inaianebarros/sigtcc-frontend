@@ -7,6 +7,7 @@ import type {
   StudentDashboard,
 } from '../services/dashboardService';
 import { ActivityList } from './ActivityList';
+import { DashboardEmptyState } from './DashboardEmptyState';
 import { IndicatorCard } from './IndicatorCard';
 import { ProgressCard } from './ProgressCard';
 
@@ -74,18 +75,18 @@ function AdvisingCard({
 
 function ActiveAdvisingView({
   dashboard,
+  advising,
 }: {
-  dashboard: StudentDashboard & {
-    advising: NonNullable<StudentDashboard['advising']>;
-  };
+  dashboard: StudentDashboard;
+  advising: NonNullable<StudentDashboard['advising']>;
 }) {
   const { activities, nextActivities } = dashboard;
   const hasActivities = activities !== null && activities.total > 0;
   return (
     <>
-      <AdvisingCard advising={dashboard.advising} />
+      <AdvisingCard advising={advising} />
       {!hasActivities && (
-        <Typography color="text.secondary">{NO_ACTIVITIES_MESSAGE}</Typography>
+        <DashboardEmptyState>{NO_ACTIVITIES_MESSAGE}</DashboardEmptyState>
       )}
       {hasActivities && (
         <>
@@ -179,7 +180,7 @@ export function StudentDashboardView({
 }) {
   const { advising } = dashboard;
   if (dashboard.hasActiveAdvising && advising !== null) {
-    return <ActiveAdvisingView dashboard={{ ...dashboard, advising }} />;
+    return <ActiveAdvisingView dashboard={dashboard} advising={advising} />;
   }
   return <WithoutAdvisingView dashboard={dashboard} />;
 }

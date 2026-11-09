@@ -3,6 +3,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { StatusWithBadge } from '../activities/StatusWithBadge';
 import { formatDeadline } from '../formatters/dateTime';
 import type { DashboardActivity } from '../services/dashboardService';
+import { DashboardEmptyState } from './DashboardEmptyState';
 
 interface ActivityListProps {
   items: readonly DashboardActivity[];
@@ -26,7 +27,7 @@ export function ActivityList({
   emptyText,
 }: ActivityListProps) {
   if (items.length === 0) {
-    return <Typography color="text.secondary">{emptyText}</Typography>;
+    return <DashboardEmptyState>{emptyText}</DashboardEmptyState>;
   }
   return (
     <Stack spacing={1}>
