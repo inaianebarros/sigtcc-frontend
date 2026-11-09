@@ -67,8 +67,8 @@ describe('menu lateral por perfil', () => {
 
     const item = await screen.findByRole('button', { name: /Orientandos/ });
     expect(item).toHaveAttribute('aria-disabled', 'true');
-    // Orientandos e Atividades exigem o mesmo vínculo: o motivo aparece nos dois itens.
-    expect(screen.getAllByText('Requer orientando ativo')).toHaveLength(2);
+    // Orientandos, Atividades e Reuniões exigem o mesmo vínculo: o motivo aparece nos três itens.
+    expect(screen.getAllByText('Requer orientando ativo')).toHaveLength(3);
     expect(
       screen.queryByRole('link', { name: 'Orientandos' }),
     ).not.toBeInTheDocument();
@@ -85,7 +85,13 @@ describe('menu lateral por perfil', () => {
       within(menu)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['Solicitações', 'Orientandos', 'Atividades', 'Meu perfil']);
+    ).toEqual([
+      'Solicitações',
+      'Orientandos',
+      'Atividades',
+      'Reuniões',
+      'Meu perfil',
+    ]);
     expect(
       within(menu).getByRole('link', { name: 'Orientandos' }),
     ).toHaveAttribute('href', '/professor/orientandos');

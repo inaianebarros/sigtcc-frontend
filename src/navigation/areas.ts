@@ -27,6 +27,11 @@ export const areas: readonly Area[] = [
         requiresActiveAdvising: { reason: 'Requer orientação ativa' },
       },
       {
+        label: 'Reuniões',
+        path: '/aluno/reunioes',
+        requiresActiveAdvising: { reason: 'Requer orientação ativa' },
+      },
+      {
         label: 'Tema do TCC',
         path: '/aluno/tema',
         requiresActiveAdvising: { reason: 'Requer orientação ativa' },
@@ -50,6 +55,11 @@ export const areas: readonly Area[] = [
       {
         label: 'Atividades',
         path: '/professor/atividades',
+        requiresActiveAdvising: { reason: 'Requer orientando ativo' },
+      },
+      {
+        label: 'Reuniões',
+        path: '/professor/reunioes',
         requiresActiveAdvising: { reason: 'Requer orientando ativo' },
       },
       { label: 'Meu perfil', path: '/professor/perfil' },
