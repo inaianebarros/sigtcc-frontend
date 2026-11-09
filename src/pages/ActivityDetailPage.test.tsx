@@ -136,15 +136,16 @@ describe('ActivityDetailPage: o conteúdo', () => {
     expect(screen.getByText('Nenhum comentário')).toBeVisible();
   });
 
-  it('tem os pontos de encaixe de comentários e de revisão, ainda sem implementação', async () => {
+  it('tem o ponto de encaixe de comentários, ainda sem implementação, e a revisão só aparece ao orientador', async () => {
     setup([makeActivity(5)], 'student', '/aluno/atividades/5');
 
     await screen.findByRole('heading', { level: 1, name: 'Atividade 5' });
 
-    for (const name of ['Comentários', 'Revisão']) {
-      const slot = screen.getByRole('region', { name });
-      expect(within(slot).getByText('Disponível em breve')).toBeVisible();
-    }
+    const slot = screen.getByRole('region', { name: 'Comentários' });
+    expect(within(slot).getByText('Disponível em breve')).toBeVisible();
+    expect(
+      screen.queryByRole('region', { name: 'Revisão' }),
+    ).not.toBeInTheDocument();
   });
 
   it('a seção "Status e entrega" já é do aluno: com conteúdo e sem o aviso de em breve', async () => {

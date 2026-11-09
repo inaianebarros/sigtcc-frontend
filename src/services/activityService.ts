@@ -39,9 +39,13 @@ export interface Submission {
   files: SubmissionFile[];
 }
 
+export type ReviewDecision = 'accepted' | 'rejected';
+
 export interface Review {
   id: number;
-  decision: 'accepted' | 'rejected';
+  decision: ReviewDecision;
+  /** Só as recusas a têm (RN40); no aceite vem vazia. */
+  justification: string;
   decidedAt: string;
 }
 
@@ -93,7 +97,8 @@ interface ApiDetail extends ApiItem {
   }[];
   reviews: {
     id: number;
-    decision: 'accepted' | 'rejected';
+    decision: ReviewDecision;
+    justification: string;
     decided_at: string;
   }[];
   comments_count: number;
@@ -131,6 +136,7 @@ function detailFrom(detail: ApiDetail): ActivityDetail {
     reviews: detail.reviews.map((review) => ({
       id: review.id,
       decision: review.decision,
+      justification: review.justification,
       decidedAt: review.decided_at,
     })),
     commentsCount: detail.comments_count,
@@ -208,6 +214,18 @@ export async function changeActivityStatus(
   status: StudentRequestedStatus,
 ): Promise<void> {
   await httpClient.patch(`/atividades/${id}/status`, { status });
+}
+
+/**
+ * O orientador aceita (conclui, definitivo) ou recusa (devolve ao aluno) uma atividade em revisão
+ * (RF46). A recusa leva a justificativa de 1 a 500 caracteres (RN40); o aceite não leva nenhuma.
+ */
+export async function reviewActivity(
+  id: number,
+  review:
+    { decision: 'accepted' } | { decision: 'rejected'; justification: string },
+): Promise<void> {
+  await httpClient.post(`/atividades/${id}/revisar`, review);
 }
 
 /** Exclusão lógica (RF27): o servidor preserva entregas, revisões e comentários. */

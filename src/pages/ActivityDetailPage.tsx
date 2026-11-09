@@ -4,6 +4,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ActivityDetailView } from '../activities/ActivityDetailView';
 import { ActivityFormDialog } from '../activities/ActivityFormDialog';
 import { DeliveryDialog } from '../activities/DeliveryDialog';
+import { RefuseReviewDialog } from '../activities/RefuseReviewDialog';
 import { changesOf } from '../activities/activityForm';
 import type { ActivityFormValues } from '../activities/activityForm';
 import { useStateChangedNotice } from '../hooks/useStateChangedNotice';
@@ -20,6 +21,7 @@ import {
   changeActivityStatus,
   deleteActivity,
   getActivity,
+  reviewActivity,
   submitDelivery,
   updateActivity,
 } from '../services/activityService';
@@ -70,6 +72,7 @@ export function ActivityDetailPage() {
   }
   const dialog = useDialogSlot();
   const deliveryDialog = useDialogSlot();
+  const refuseDialog = useDialogSlot();
 
   const saveEdit = async (values: ActivityFormValues) => {
     if (id === null || lastLoaded === null) return;
@@ -126,6 +129,28 @@ export function ActivityDetailPage() {
     }
   };
 
+  const [confirmingAccept, setConfirmingAccept] = useState(false);
+  const [accepting, setAccepting] = useState(false);
+  const confirmAccept = async () => {
+    if (id === null || accepting) return;
+    setAccepting(true);
+    try {
+      await reviewActivity(id, { decision: 'accepted' });
+      setConfirmingAccept(false);
+      notify('Atividade concluída', 'success');
+      refresh();
+    } catch (error) {
+      setConfirmingAccept(false);
+      if (isStateChangedError(error)) {
+        refreshAfter(error);
+      } else {
+        notify(messageOf(error), 'error');
+      }
+    } finally {
+      setAccepting(false);
+    }
+  };
+
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -134,6 +159,7 @@ export function ActivityDetailPage() {
     notFoundMessage?: string,
   ) => {
     dialog.hide();
+    refuseDialog.hide();
     notifyStateChanged(error, notFoundMessage);
     refresh();
   };
@@ -185,6 +211,14 @@ export function ActivityDetailPage() {
                     onSendForReview: () => setConfirmingReview(true),
                   }
             }
+            review={
+              isTeacher
+                ? {
+                    onAccept: () => setConfirmingAccept(true),
+                    onRefuse: () => refuseDialog.show(),
+                  }
+                : undefined
+            }
             canManage={isTeacher}
             onEdit={() => dialog.show()}
             onDelete={() => setConfirmingDelete(true)}
@@ -227,6 +261,34 @@ export function ActivityDetailPage() {
           onExited={deliveryDialog.unmount}
         />
       )}
+      {refuseDialog.slot && id !== null && (
+        <RefuseReviewDialog
+          key={refuseDialog.slot.openCount}
+          open={refuseDialog.slot.open}
+          send={(justification) =>
+            reviewActivity(id, { decision: 'rejected', justification })
+          }
+          onSaved={() => {
+            refuseDialog.hide();
+            notify('Atividade devolvida ao aluno', 'success');
+            refresh();
+          }}
+          onStateChanged={refreshAfter}
+          onClose={refuseDialog.hide}
+          onExited={refuseDialog.unmount}
+        />
+      )}
+      <ConfirmDialog
+        open={confirmingAccept}
+        title="Aceitar a atividade?"
+        message="Aceitar concluirá a atividade de forma definitiva e não pode ser desfeito. Depois disso, ela não poderá mais ser editada nem excluída."
+        confirmLabel="Aceitar atividade"
+        confirmColor="primary"
+        busy={accepting}
+        busyLabel="Aceitando…"
+        onCancel={() => setConfirmingAccept(false)}
+        onConfirm={() => void confirmAccept()}
+      />
       <ConfirmDialog
         open={confirmingReview}
         title="Enviar para revisão?"
