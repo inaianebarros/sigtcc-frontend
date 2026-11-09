@@ -119,3 +119,33 @@ export async function createMeeting(
     ...(studentId === undefined ? {} : { student_id: studentId }),
   });
 }
+
+export type AnswerAction = 'accept' | 'reject';
+
+/**
+ * A outra parte aceita ou recusa uma solicitação (RF20). A recusa leva a justificativa (RN11); o
+ * servidor decide se a reunião ainda pode ser respondida.
+ */
+export async function answerMeeting(
+  id: number,
+  action: AnswerAction,
+  reason?: string,
+): Promise<void> {
+  await httpClient.post(`/reunioes/${id}/responder`, {
+    action,
+    ...(reason === undefined ? {} : { reason }),
+  });
+}
+
+/** Edição parcial pelo autor (RF21): só os campos que mudaram são enviados. */
+export async function updateMeeting(
+  id: number,
+  changes: Partial<MeetingInput>,
+): Promise<void> {
+  await httpClient.patch(`/reunioes/${id}`, changes);
+}
+
+/** O cancelamento, com motivo (RF22, RN10); é definitivo. */
+export async function cancelMeeting(id: number, reason: string): Promise<void> {
+  await httpClient.post(`/reunioes/${id}/cancelar`, { reason });
+}

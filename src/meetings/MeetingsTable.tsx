@@ -21,7 +21,7 @@ interface MeetingListProps {
   items: MeetingItem[];
   /** O id do usuário logado: quem solicitou é "Você" ou o nome da outra parte. */
   userId: number;
-  /** O ponto de encaixe das ações de uma reunião (responder, editar e cancelar, na #112). */
+  /** As ações de uma reunião (responder, editar e cancelar); sem elas a lista é só de leitura. */
   renderActions?: (item: MeetingItem) => ReactNode;
 }
 

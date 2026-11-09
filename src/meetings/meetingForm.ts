@@ -27,11 +27,23 @@ export function scheduledInstant(date: string, time: string): Date | null {
   return Number.isNaN(instant.getTime()) ? null : instant;
 }
 
+/** A data (AAAA-MM-DD) e a hora (HH:MM) de um instante, no horário de Santarém, como os campos nativos as pedem. */
+export function santaremParts(iso: string): { date: string; time: string } {
+  const instant = new Date(new Date(iso).getTime() - 3 * 60 * 60 * 1000);
+  const text = instant.toISOString();
+  return { date: text.slice(0, 10), time: text.slice(11, 16) };
+}
+
 /**
- * As regras do formulário de solicitar reunião (RF17 e RF18): data e hora informadas e no futuro,
- * descrição de 1 a 500 caracteres sem contar as pontas e, para o professor, o aluno escolhido.
+ * As regras do formulário de reunião (RF17, RF18 e RF21): data e hora informadas e no futuro,
+ * descrição de 1 a 500 caracteres sem contar as pontas e, quando `requireStudent`, o aluno
+ * escolhido. Na edição, `original` é o horário atual: o futuro só é exigido se ele mudar.
  */
-export function meetingFormSchema(isTeacher: boolean, now = () => new Date()) {
+export function meetingFormSchema(
+  requireStudent: boolean,
+  now = () => new Date(),
+  original?: { date: string; time: string },
+) {
   return z
     .object({
       student: z.object({ id: z.number(), name: z.string() }).nullable(),
@@ -47,7 +59,7 @@ export function meetingFormSchema(isTeacher: boolean, now = () => new Date()) {
         ),
     })
     .superRefine((values, context) => {
-      if (isTeacher && values.student === null) {
+      if (requireStudent && values.student === null) {
         context.addIssue({
           code: 'custom',
           path: ['student'],
@@ -55,7 +67,11 @@ export function meetingFormSchema(isTeacher: boolean, now = () => new Date()) {
         });
       }
       const instant = scheduledInstant(values.date, values.time);
-      if (instant !== null && instant <= now()) {
+      const unchanged =
+        original !== undefined &&
+        values.date === original.date &&
+        values.time === original.time;
+      if (!unchanged && instant !== null && instant <= now()) {
         context.addIssue({
           code: 'custom',
           path: ['time'],
@@ -63,4 +79,20 @@ export function meetingFormSchema(isTeacher: boolean, now = () => new Date()) {
         });
       }
     });
+}
+
+export type ReasonNoun = 'justificativa' | 'motivo';
+
+/** A justificativa da recusa (RN11) ou o motivo do cancelamento (RN10): de 1 a 500 caracteres sem as pontas. */
+export function reasonFormSchema(noun: ReasonNoun) {
+  return z.object({
+    reason: z
+      .string()
+      .trim()
+      .min(1, `Informe ${noun === 'motivo' ? 'o' : 'a'} ${noun}.`)
+      .max(
+        DESCRIPTION_MAX,
+        `${noun === 'motivo' ? 'O' : 'A'} ${noun} deve ter no máximo ${DESCRIPTION_MAX} caracteres.`,
+      ),
+  });
 }
