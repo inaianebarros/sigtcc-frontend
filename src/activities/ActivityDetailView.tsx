@@ -2,9 +2,13 @@ import { Box, Button, Stack, Typography } from '@mui/material';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
 import { formatDate, formatDeadline } from '../formatters/dateTime';
-import { formatFileSize } from '../formatters/fileSize';
 import { ReadOnlyFacts } from '../profile/ReadOnlyFacts';
-import type { ActivityDetail } from '../services/activityService';
+import type {
+  ActivityDetail,
+  StudentSettableStatus,
+} from '../services/activityService';
+import { StatusAndDelivery } from './StatusAndDelivery';
+import { SubmissionFileItem } from './SubmissionFileItem';
 import { StatusWithBadge } from './StatusWithBadge';
 
 export const COMPLETED_REASON = 'Atividade concluída não pode ser alterada';
@@ -86,8 +90,17 @@ function ActivityActions({
   );
 }
 
+/** O que só o aluno da atividade faz nela (RF28 e RF31); o professor não recebe nada disto. */
+export interface StudentActions {
+  statusBusy: boolean;
+  onChangeStatus: (status: StudentSettableStatus) => void;
+  onDeliver: () => void;
+  onSendForReview: () => void;
+}
+
 interface ActivityDetailViewProps {
   activity: ActivityDetail;
+  student?: StudentActions;
   /** O professor orientador pode editar e excluir; o aluno só lê. */
   canManage: boolean;
   onEdit: () => void;
@@ -96,6 +109,7 @@ interface ActivityDetailViewProps {
 
 export function ActivityDetailView({
   activity,
+  student,
   canManage,
   onEdit,
   onDelete,
@@ -140,12 +154,11 @@ export function ActivityDetailView({
             </Typography>
             <Box component="ul" sx={{ m: 0, pl: 3 }}>
               {submission.files.map((file) => (
-                <li key={file.id}>
-                  <Typography component="span">{file.fileName}</Typography>
-                  <Typography component="span" color="text.secondary">
-                    {` (${formatFileSize(file.sizeBytes)}, ${file.contentType})`}
-                  </Typography>
-                </li>
+                <SubmissionFileItem
+                  key={file.id}
+                  activityId={activity.id}
+                  file={file}
+                />
               ))}
             </Box>
           </Stack>
@@ -166,7 +179,18 @@ export function ActivityDetailView({
           </Box>
         )}
       </Section>
-      <ExtensionPoint title="Status e entrega" />
+      {student && (
+        <Section title="Status e entrega">
+          <StatusAndDelivery
+            status={activity.status}
+            statusBusy={student.statusBusy}
+            hasDelivery={activity.submissions.length > 0}
+            onChangeStatus={student.onChangeStatus}
+            onDeliver={student.onDeliver}
+            onSendForReview={student.onSendForReview}
+          />
+        </Section>
+      )}
       <ExtensionPoint title="Comentários">
         <Typography>
           {activity.commentsCount === 0

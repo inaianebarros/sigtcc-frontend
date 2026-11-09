@@ -26,15 +26,17 @@ export interface ActivityPage {
   count: number;
 }
 
+export interface SubmissionFile {
+  id: number;
+  fileName: string;
+  sizeBytes: number;
+  contentType: string;
+}
+
 export interface Submission {
   id: number;
   submittedAt: string;
-  files: {
-    id: number;
-    fileName: string;
-    sizeBytes: number;
-    contentType: string;
-  }[];
+  files: SubmissionFile[];
 }
 
 export interface Review {
@@ -170,6 +172,42 @@ export async function updateActivity(
   changes: Partial<ActivityInput>,
 ): Promise<void> {
   await httpClient.patch(`/atividades/${id}`, changes);
+}
+
+/** O conteúdo de um arquivo de uma Entrega, por requisição autenticada (RF31). */
+export function downloadSubmissionFile(
+  activityId: number,
+  fileId: number,
+): Promise<Blob> {
+  return httpClient.download(`/atividades/${activityId}/arquivos/${fileId}`);
+}
+
+/** A Entrega de 1 a 5 arquivos (RF31), com o progresso do envio de 0 a 100. */
+export async function submitDelivery(
+  activityId: number,
+  files: File[],
+  onProgress: (percent: number) => void,
+): Promise<void> {
+  const form = new FormData();
+  for (const file of files) form.append('files', file);
+  await httpClient.upload(
+    `/atividades/${activityId}/entregas`,
+    form,
+    onProgress,
+  );
+}
+
+/** O que o aluno pode deixar a atividade: alternar entre pendente e em andamento (RF28). */
+export type StudentSettableStatus = 'pending' | 'in_progress';
+/** Tudo o que o aluno pode pedir: os dois acima e enviar para revisão. */
+export type StudentRequestedStatus = StudentSettableStatus | 'in_review';
+
+/** O aluno alterna entre pendente e em andamento ou envia para revisão (RF28, RN15). */
+export async function changeActivityStatus(
+  id: number,
+  status: StudentRequestedStatus,
+): Promise<void> {
+  await httpClient.patch(`/atividades/${id}/status`, { status });
 }
 
 /** Exclusão lógica (RF27): o servidor preserva entregas, revisões e comentários. */

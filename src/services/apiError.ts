@@ -90,6 +90,11 @@ export function fieldErrorsFrom(detail: unknown[]): FieldErrors {
 export const SESSION_EXPIRED_MESSAGE =
   'Sua sessão expirou por inatividade. Faça login novamente.';
 
+/** A mensagem a mostrar para uma falha: a do `ApiError`, ou a de falta de conexão para o resto. */
+export function messageOf(error: unknown): string {
+  return error instanceof ApiError ? error.message : messageForStatus(0);
+}
+
 export function messageForStatus(status: number): string {
   if (status === 0) {
     return 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.';

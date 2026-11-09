@@ -169,6 +169,55 @@ export function activitiesServer(
       Object.assign(found, body);
       return { body: found };
     },
+    'PATCH /api/atividades/:id/status': (body, _url, params) => {
+      const found = state.find((item) => item.id === Number(params.id));
+      if (!found)
+        return { status: 404, body: { detail: 'Atividade não encontrada.' } };
+      const { status } = body as { status: FakeActivity['status'] };
+      if (found.status === 'in_review' || found.status === 'completed') {
+        return {
+          status: 409,
+          body: {
+            detail:
+              found.status === 'in_review'
+                ? 'Esta atividade está em revisão e só o orientador pode alterar o status.'
+                : 'Esta atividade já foi concluída e não pode ser alterada.',
+          },
+        };
+      }
+      if (status === 'in_review' && found.submissions.length === 0) {
+        return {
+          status: 409,
+          body: {
+            detail:
+              'Envie ao menos uma entrega antes de enviar a atividade para revisão.',
+          },
+        };
+      }
+      found.status = status;
+      return {
+        body: {
+          id: found.id,
+          title: found.title,
+          deadline: found.deadline,
+          status: found.status,
+          overdue: found.overdue,
+          student: found.student,
+        },
+      };
+    },
+    'GET /api/atividades/:id/arquivos/:fileId': (_body, _url, params) => {
+      const found = state.find((item) => item.id === Number(params.id));
+      const file = found?.submissions
+        .flatMap((submission) => submission.files)
+        .find((item) => item.id === Number(params.fileId));
+      return file
+        ? {
+            rawBody: `conteúdo de ${file.file_name}`,
+            headers: { 'Content-Type': file.content_type },
+          }
+        : { status: 404, body: { detail: 'Arquivo não encontrado.' } };
+    },
     'DELETE /api/atividades/:id': (_body, _url, params) => {
       const index = state.findIndex((item) => item.id === Number(params.id));
       if (index < 0)
