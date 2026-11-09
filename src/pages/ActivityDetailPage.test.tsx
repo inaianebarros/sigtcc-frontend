@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { tokenStore } from '../services/tokenStore';
 import { activitiesServer, makeActivity } from '../test/activitiesApi';
 import type { FakeActivity } from '../test/activitiesApi';
+import { commentsServer, makeComment } from '../test/commentsApi';
 import { mockApi } from '../test/mockApi';
 import { renderApp } from '../test/renderApp';
 import { DESKTOP_WIDTH, setViewportWidth } from '../test/viewport';
@@ -15,7 +16,15 @@ function setup(
   entries?: { pathname: string; search?: string; state?: unknown }[],
 ) {
   const server = activitiesServer(activities, { user });
-  const fetchMock = mockApi(server.routes);
+  const comments = commentsServer(
+    Array.from({ length: activities[0]?.comments_count ?? 0 }, (_, index) =>
+      makeComment(index + 1),
+    ),
+    user === 'student'
+      ? { id: 7, full_name: 'Ana Souza', type: 'student' }
+      : { id: 9, full_name: 'Carlos Lima', type: 'teacher' },
+  );
+  const fetchMock = mockApi({ ...server.routes, ...comments.routes });
   const events = userEvent.setup();
   renderApp(path, entries ? { entries } : undefined);
   return { fetchMock, events, server };
@@ -125,7 +134,7 @@ describe('ActivityDetailPage: o conteúdo', () => {
     expect(within(reviews).getByText(/Recusada/)).toBeVisible();
     expect(within(reviews).getByText(/6 de novembro de 2026/)).toBeVisible();
     expect(within(reviews).getByText(/Aceita/)).toBeVisible();
-    expect(screen.getByText('3 comentários')).toBeVisible();
+    expect(await screen.findByText('3 comentários')).toBeVisible();
   });
 
   it('diz que ainda não há entregas nem revisões, e que não há comentários', async () => {
@@ -133,16 +142,18 @@ describe('ActivityDetailPage: o conteúdo', () => {
 
     expect(await screen.findByText('Nenhuma entrega ainda.')).toBeVisible();
     expect(screen.getByText('Nenhuma revisão ainda.')).toBeVisible();
-    expect(screen.getByText('Nenhum comentário')).toBeVisible();
+    expect(await screen.findByText('Nenhum comentário')).toBeVisible();
   });
 
-  it('tem o ponto de encaixe de comentários, ainda sem implementação, e a revisão só aparece ao orientador', async () => {
+  it('tem a seção de comentários, já sem o aviso de em breve, e a revisão só aparece ao orientador', async () => {
     setup([makeActivity(5)], 'student', '/aluno/atividades/5');
 
     await screen.findByRole('heading', { level: 1, name: 'Atividade 5' });
 
     const slot = screen.getByRole('region', { name: 'Comentários' });
-    expect(within(slot).getByText('Disponível em breve')).toBeVisible();
+    expect(
+      within(slot).queryByText('Disponível em breve'),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('region', { name: 'Revisão' }),
     ).not.toBeInTheDocument();
