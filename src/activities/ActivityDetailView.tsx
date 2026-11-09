@@ -7,6 +7,8 @@ import type {
   ActivityDetail,
   StudentSettableStatus,
 } from '../services/activityService';
+import { CommentsSection } from './CommentsSection';
+import { Section } from './Section';
 import { StatusAndDelivery } from './StatusAndDelivery';
 import { SubmissionFileItem } from './SubmissionFileItem';
 import { StatusWithBadge } from './StatusWithBadge';
@@ -14,36 +16,6 @@ import { StatusWithBadge } from './StatusWithBadge';
 export const COMPLETED_REASON = 'Atividade concluída não pode ser alterada';
 
 const DECISION_LABELS = { accepted: 'Aceita', rejected: 'Recusada' } as const;
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  const id = useId();
-  return (
-    <Box component="section" aria-labelledby={id}>
-      <Stack spacing={1}>
-        <Typography id={id} variant="h6" component="h2">
-          {title}
-        </Typography>
-        {children}
-      </Stack>
-    </Box>
-  );
-}
-
-/** Um ponto de encaixe de uma funcionalidade que chega depois (os comentários). */
-function ExtensionPoint({
-  title,
-  children,
-}: {
-  title: string;
-  children?: ReactNode;
-}) {
-  return (
-    <Section title={title}>
-      {children}
-      <Typography color="text.secondary">Disponível em breve</Typography>
-    </Section>
-  );
-}
 
 interface ActivityActionsProps {
   completed: boolean;
@@ -127,11 +99,19 @@ function ReviewPanel({ onAccept, onRefuse }: ReviewActions) {
   );
 }
 
+export interface CommentsBinding {
+  currentUserId: number | null;
+  text: string;
+  onTextChange: (text: string) => void;
+}
+
 interface ActivityDetailViewProps {
   activity: ActivityDetail;
   student?: StudentActions;
   /** Só o professor orientador revisa, e só enquanto a atividade está em revisão. */
   review?: ReviewActions;
+  /** O que a seção de comentários recebe da tela: quem lê e o texto ainda não enviado (RNF28). */
+  comments: CommentsBinding;
   /** O professor orientador pode editar e excluir; o aluno só lê. */
   canManage: boolean;
   onEdit: () => void;
@@ -142,6 +122,7 @@ export function ActivityDetailView({
   activity,
   student,
   review,
+  comments,
   canManage,
   onEdit,
   onDelete,
@@ -230,13 +211,13 @@ export function ActivityDetailView({
           />
         </Section>
       )}
-      <ExtensionPoint title="Comentários">
-        <Typography>
-          {activity.commentsCount === 0
-            ? 'Nenhum comentário'
-            : `${activity.commentsCount} ${activity.commentsCount === 1 ? 'comentário' : 'comentários'}`}
-        </Typography>
-      </ExtensionPoint>
+      <CommentsSection
+        activityId={activity.id}
+        currentUserId={comments.currentUserId}
+        completed={activity.status === 'completed'}
+        text={comments.text}
+        onTextChange={comments.onTextChange}
+      />
       {review && activity.status === 'in_review' && <ReviewPanel {...review} />}
     </>
   );

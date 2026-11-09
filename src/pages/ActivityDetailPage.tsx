@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { UnsavedChangesDialog } from '../components/UnsavedChangesDialog';
+import { useUnsavedChangesGuard } from '../hooks/useUnsavedChangesGuard';
 import { ActivityDetailView } from '../activities/ActivityDetailView';
 import { ActivityFormDialog } from '../activities/ActivityFormDialog';
 import { DeliveryDialog } from '../activities/DeliveryDialog';
@@ -70,6 +72,10 @@ export function ActivityDetailPage() {
   ) {
     setLastLoaded(activity.data);
   }
+  // O comentário ainda não enviado vive aqui, e não na seção: a recarga do detalhe a desmonta
+  // (esqueleto), e o texto digitado não pode se perder (RNF28).
+  const [commentText, setCommentText] = useState('');
+  const unsavedComment = useUnsavedChangesGuard(commentText.trim() !== '');
   const dialog = useDialogSlot();
   const deliveryDialog = useDialogSlot();
   const refuseDialog = useDialogSlot();
@@ -219,6 +225,11 @@ export function ActivityDetailPage() {
                   }
                 : undefined
             }
+            comments={{
+              currentUserId: user?.id ?? null,
+              text: commentText,
+              onTextChange: setCommentText,
+            }}
             canManage={isTeacher}
             onEdit={() => dialog.show()}
             onDelete={() => setConfirmingDelete(true)}
@@ -261,6 +272,7 @@ export function ActivityDetailPage() {
           onExited={deliveryDialog.unmount}
         />
       )}
+      <UnsavedChangesDialog blocker={unsavedComment} />
       {refuseDialog.slot && id !== null && (
         <RefuseReviewDialog
           key={refuseDialog.slot.openCount}
