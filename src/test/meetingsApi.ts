@@ -149,6 +149,60 @@ export function meetingsServer(
       state.unshift(created);
       return { status: 201, body: created };
     },
+    'POST /api/reunioes/:id/responder': (body, _url, params) => {
+      const found = state.find((item) => item.id === Number(params.id));
+      if (!found)
+        return { status: 404, body: { detail: 'Reunião não encontrada.' } };
+      const input = body as { action: 'accept' | 'reject'; reason?: string };
+      found.can_answer = false;
+      if (input.action === 'accept') {
+        found.status = 'accepted';
+        found.situation = 'accepted';
+        found.can_cancel = true;
+      } else {
+        found.status = 'rejected';
+        found.situation = 'rejected';
+        found.rejection_reason = input.reason ?? '';
+        found.can_edit = false;
+        found.can_cancel = false;
+      }
+      return { body: found };
+    },
+    'PATCH /api/reunioes/:id': (body, _url, params) => {
+      const found = state.find((item) => item.id === Number(params.id));
+      if (!found)
+        return { status: 404, body: { detail: 'Reunião não encontrada.' } };
+      const input = body as {
+        date?: string;
+        time?: string;
+        description?: string;
+      };
+      if (input.date !== undefined || input.time !== undefined) {
+        const day = input.date ?? found.scheduled_at.slice(0, 10);
+        const hour = input.time ?? found.scheduled_at.slice(11, 16);
+        found.scheduled_at = `${day}T${hour}:00-03:00`;
+        // RN39: mudar a data ou a hora de uma reunião aceita a devolve para pendente.
+        if (found.situation === 'accepted') {
+          found.status = 'pending';
+          found.situation = 'pending';
+        }
+      }
+      if (input.description !== undefined)
+        found.description = input.description;
+      return { body: found };
+    },
+    'POST /api/reunioes/:id/cancelar': (body, _url, params) => {
+      const found = state.find((item) => item.id === Number(params.id));
+      if (!found)
+        return { status: 404, body: { detail: 'Reunião não encontrada.' } };
+      found.status = 'cancelled';
+      found.situation = 'cancelled';
+      found.cancellation_reason = (body as { reason: string }).reason;
+      found.can_answer = false;
+      found.can_edit = false;
+      found.can_cancel = false;
+      return { body: found };
+    },
     'GET /api/orientacao/orientandos': (_body, url) => {
       const search = plain(url.searchParams.get('search') ?? '');
       const limit = Number(url.searchParams.get('limit') ?? 20);

@@ -15,12 +15,25 @@ import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
 import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
+import { MeetingActions } from '../meetings/MeetingActions';
+import { REASON_ACTIONS } from '../meetings/reasonActions';
+import { MeetingReasonDialog } from '../meetings/MeetingReasonDialog';
 import { MeetingFiltersBar } from '../meetings/MeetingFiltersBar';
 import { MeetingRequestDialog } from '../meetings/MeetingRequestDialog';
 import { MeetingCards, MeetingsTable } from '../meetings/MeetingsTable';
 import { useMeetingFilters } from '../meetings/useMeetingFilters';
 import { hasActiveAdvisingOf } from '../navigation/advisingState';
-import { listMeetings, MEETINGS_PAGE_SIZE } from '../services/meetingService';
+import {
+  ApiError,
+  isStateChangedError,
+  messageForStatus,
+} from '../services/apiError';
+import {
+  answerMeeting,
+  listMeetings,
+  MEETINGS_PAGE_SIZE,
+} from '../services/meetingService';
+import type { MeetingItem } from '../services/meetingService';
 
 function foundText(count: number): string {
   return `${count} ${count === 1 ? 'reunião encontrada' : 'reuniões encontradas'}`;
@@ -30,11 +43,19 @@ function foundText(count: number): string {
 export function MeetingsPage() {
   const { user, refreshUser } = useSession();
   const { notify } = useFeedback();
-  const dialog = useDialogSlot();
+  // Sem payload o diálogo solicita uma reunião; com a reunião, a edita (RF21).
+  const dialog = useDialogSlot<MeetingItem | undefined>();
+  // Recusar e cancelar pedem um motivo: a reunião escolhida fica guardada para o diálogo sair com ela.
+  const reasonDialog = useDialogSlot<{
+    kind: 'reject' | 'cancel';
+    item: MeetingItem;
+  }>();
   const isTeacher = user?.type === 'teacher';
   const filters = useMeetingFilters(isTeacher);
   const [page, setPage] = useUrlPage();
   const [reload, setReload] = useState(0);
+  // A reunião com um pedido em curso: as ações de todas as linhas esperam por ele.
+  const [acting, setActing] = useState<number | null>(null);
   const listTop = useRef<HTMLDivElement>(null);
   const isNarrow = useMediaQuery((theme: Theme) =>
     theme.breakpoints.down('md'),
@@ -81,6 +102,49 @@ export function MeetingsPage() {
           id: filters.studentId,
           name: studentNames[filters.studentId] ?? 'Aluno selecionado',
         };
+
+  const refresh = () => setReload((current) => current + 1);
+  // 404 ou 409: a reunião mudou, expirou ou a orientação encerrou. Mostra a mensagem do servidor e
+  // lê de novo a lista e a sessão, para o menu refletir o fim da orientação.
+  const handleStateChanged = (message: string) => {
+    notify(message, 'error');
+    refresh();
+    void refreshUser();
+  };
+  const reasonSlot = reasonDialog.slot;
+  const reasonAction = reasonSlot && REASON_ACTIONS[reasonSlot.payload.kind];
+
+  const accept = async (item: MeetingItem) => {
+    if (acting !== null) return;
+    setActing(item.id);
+    try {
+      await answerMeeting(item.id, 'accept');
+      notify('Reunião aceita.', 'success');
+      refresh();
+    } catch (error) {
+      if (isStateChangedError(error)) {
+        handleStateChanged(error.message);
+      } else {
+        notify(
+          error instanceof ApiError ? error.message : messageForStatus(0),
+          'error',
+        );
+      }
+    } finally {
+      setActing(null);
+    }
+  };
+
+  const renderActions = (item: MeetingItem) => (
+    <MeetingActions
+      item={item}
+      busy={acting !== null}
+      onAccept={(target) => void accept(target)}
+      onReject={(target) => reasonDialog.show({ kind: 'reject', item: target })}
+      onEdit={(target) => dialog.show(target)}
+      onCancel={(target) => reasonDialog.show({ kind: 'cancel', item: target })}
+    />
+  );
 
   return (
     <Stack spacing={3}>
@@ -152,9 +216,17 @@ export function MeetingsPage() {
         {list.status === 'ready' && list.data.items.length > 0 && (
           <>
             {isNarrow ? (
-              <MeetingCards items={list.data.items} userId={user?.id ?? 0} />
+              <MeetingCards
+                items={list.data.items}
+                userId={user?.id ?? 0}
+                renderActions={renderActions}
+              />
             ) : (
-              <MeetingsTable items={list.data.items} userId={user?.id ?? 0} />
+              <MeetingsTable
+                items={list.data.items}
+                userId={user?.id ?? 0}
+                renderActions={renderActions}
+              />
             )}
           </>
         )}
@@ -170,21 +242,60 @@ export function MeetingsPage() {
           listTop.current?.scrollIntoView?.({ block: 'start' });
         }}
       />
+      {reasonSlot && reasonAction && (
+        <MeetingReasonDialog
+          key={reasonSlot.openCount}
+          open={reasonSlot.open}
+          title={reasonAction.title}
+          intro={reasonAction.intro}
+          noun={reasonAction.noun}
+          confirmLabel={reasonAction.confirmLabel}
+          sendingLabel={reasonAction.sendingLabel}
+          send={(reason) =>
+            reasonAction.send(reasonSlot.payload.item.id, reason)
+          }
+          onSaved={() => {
+            reasonDialog.hide();
+            notify(reasonAction.successMessage, 'success');
+            refresh();
+          }}
+          onStateChanged={(message) => {
+            reasonDialog.hide();
+            handleStateChanged(message);
+          }}
+          onClose={reasonDialog.hide}
+          onExited={reasonDialog.unmount}
+        />
+      )}
       {dialog.slot && (
         <MeetingRequestDialog
           key={dialog.slot.openCount}
           open={dialog.slot.open}
           isTeacher={isTeacher}
           preselectedStudent={student}
+          meeting={dialog.slot.payload}
           onSaved={() => {
             dialog.hide();
-            notify('Reunião solicitada.', 'success');
-            setReload((current) => current + 1);
+            notify(
+              dialog.slot?.payload
+                ? 'Reunião atualizada.'
+                : 'Reunião solicitada.',
+              'success',
+            );
+            refresh();
+          }}
+          onNoChanges={() => {
+            dialog.hide();
+            notify('Nenhuma alteração para salvar.', 'info');
+          }}
+          onStateChanged={(message) => {
+            dialog.hide();
+            handleStateChanged(message);
           }}
           onEnded={() => {
             // O diálogo fica aberto, com o aviso: a sessão e a lista é que se atualizam.
             void refreshUser();
-            setReload((current) => current + 1);
+            refresh();
           }}
           onClose={dialog.hide}
           onExited={dialog.unmount}
