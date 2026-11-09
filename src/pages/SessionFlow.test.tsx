@@ -47,7 +47,7 @@ describe('sessão', () => {
     renderApp('/admin');
 
     expect(
-      await screen.findByRole('heading', { name: 'Solicitações' }),
+      await screen.findByRole('heading', { name: 'Dashboard' }),
     ).toBeInTheDocument();
   });
 

@@ -43,20 +43,20 @@ describe('menu lateral por perfil', () => {
     );
   });
 
-  it('mostra ao professor os itens Solicitações e Meu perfil e abre em Solicitações', async () => {
+  it('mostra ao professor os itens Dashboard, Solicitações e Meu perfil e abre no Dashboard', async () => {
     mockApi(sessionOf('teacher', { active_advisees_count: 0 }));
 
     renderApp('/login');
 
-    await screen.findByRole('heading', { name: 'Solicitações' });
+    await screen.findByRole('heading', { name: 'Dashboard' });
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
     expect(
       within(menu)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['Solicitações', 'Meu perfil']);
+    ).toEqual(['Dashboard', 'Solicitações', 'Meu perfil']);
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '/professor/solicitacoes',
+      '/professor/dashboard',
     );
   });
 
@@ -79,13 +79,14 @@ describe('menu lateral por perfil', () => {
 
     renderApp('/login');
 
-    await screen.findByRole('heading', { name: 'Solicitações' });
+    await screen.findByRole('heading', { name: 'Dashboard' });
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
     expect(
       within(menu)
         .getAllByRole('link')
         .map((link) => link.textContent),
     ).toEqual([
+      'Dashboard',
       'Solicitações',
       'Orientandos',
       'Atividades',

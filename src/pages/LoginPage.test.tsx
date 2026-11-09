@@ -59,7 +59,7 @@ describe('LoginPage', () => {
 
   it.each([
     ['student', 'Dashboard'],
-    ['teacher', 'Solicitações'],
+    ['teacher', 'Dashboard'],
     ['admin', 'Área do Administrador'],
   ] as const)(
     'leva o usuário do tipo %s para a sua área depois do login',

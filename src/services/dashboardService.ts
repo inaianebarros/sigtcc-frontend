@@ -9,6 +9,8 @@ export interface DashboardActivity {
   deadline: string;
   status: ActivityStatus;
   overdue: boolean;
+  /** O orientando da atividade, nas listas do professor. */
+  student?: { id: number; fullName: string };
 }
 
 /** Os números das atividades da orientação ativa (RN35). O percentual é `null` sem atividades. */
@@ -49,6 +51,17 @@ interface ApiActivity {
   deadline: string;
   status: ActivityStatus;
   overdue: boolean;
+  student?: { id: number; full_name: string };
+}
+
+interface ApiIndicators {
+  total: number;
+  pending: number;
+  in_progress: number;
+  in_review: number;
+  completed: number;
+  overdue: number;
+  progress_percent: number | null;
 }
 
 interface ApiStudentDashboard {
@@ -57,15 +70,7 @@ interface ApiStudentDashboard {
     teacher: { id: number; full_name: string };
     thesis_topic: string | null;
   } | null;
-  activities: {
-    total: number;
-    pending: number;
-    in_progress: number;
-    in_review: number;
-    completed: number;
-    overdue: number;
-    progress_percent: number | null;
-  } | null;
+  activities: ApiIndicators | null;
   next_activities: { items: ApiActivity[]; has_more: boolean } | null;
   last_request: {
     id: number;
@@ -76,6 +81,18 @@ interface ApiStudentDashboard {
   has_ended_advisings: boolean;
 }
 
+function indicatorsFrom(api: ApiIndicators): ActivityIndicators {
+  return {
+    total: api.total,
+    pending: api.pending,
+    inProgress: api.in_progress,
+    inReview: api.in_review,
+    completed: api.completed,
+    overdue: api.overdue,
+    progressPercent: api.progress_percent,
+  };
+}
+
 function activityFrom(activity: ApiActivity): DashboardActivity {
   return {
     id: activity.id,
@@ -83,6 +100,12 @@ function activityFrom(activity: ApiActivity): DashboardActivity {
     deadline: activity.deadline,
     status: activity.status,
     overdue: activity.overdue,
+    ...(activity.student && {
+      student: {
+        id: activity.student.id,
+        fullName: activity.student.full_name,
+      },
+    }),
   };
 }
 
@@ -96,15 +119,7 @@ function dashboardFrom(api: ApiStudentDashboard): StudentDashboard {
       },
       thesisTopic: api.advising.thesis_topic,
     },
-    activities: api.activities && {
-      total: api.activities.total,
-      pending: api.activities.pending,
-      inProgress: api.activities.in_progress,
-      inReview: api.activities.in_review,
-      completed: api.activities.completed,
-      overdue: api.activities.overdue,
-      progressPercent: api.activities.progress_percent,
-    },
+    activities: api.activities && indicatorsFrom(api.activities),
     nextActivities: api.next_activities && {
       items: api.next_activities.items.map(activityFrom),
       hasMore: api.next_activities.has_more,
@@ -126,5 +141,67 @@ function dashboardFrom(api: ApiStudentDashboard): StudentDashboard {
 export async function getStudentDashboard(): Promise<StudentDashboard> {
   return dashboardFrom(
     await httpClient.get<ApiStudentDashboard>('/painel/aluno'),
+  );
+}
+
+/** Um orientando que precisa de atenção (RN38), na ordem em que o servidor o classificou. */
+export interface AttentionAdvisee {
+  id: number;
+  fullName: string;
+  /** `null` enquanto o tema não foi cadastrado (RN12). */
+  thesisTopic: string | null;
+  overdueCount: number;
+  inReviewCount: number;
+}
+
+export interface TeacherDashboard {
+  adviseesCount: number;
+  /** `null` sem orientações ativas: a resposta vazia, sem indicadores. */
+  activities: ActivityIndicators | null;
+  attentionAdvisees: { items: AttentionAdvisee[]; hasMore: boolean } | null;
+  nextDeadlines: { items: DashboardActivity[]; hasMore: boolean } | null;
+}
+
+interface ApiTeacherDashboard {
+  advisees_count: number;
+  activities: ApiIndicators | null;
+  attention_advisees: {
+    items: {
+      id: number;
+      full_name: string;
+      thesis_topic: string | null;
+      overdue_count: number;
+      in_review_count: number;
+    }[];
+    has_more: boolean;
+  } | null;
+  next_deadlines: { items: ApiActivity[]; has_more: boolean } | null;
+}
+
+function teacherDashboardFrom(api: ApiTeacherDashboard): TeacherDashboard {
+  return {
+    adviseesCount: api.advisees_count,
+    activities: api.activities && indicatorsFrom(api.activities),
+    attentionAdvisees: api.attention_advisees && {
+      items: api.attention_advisees.items.map((item) => ({
+        id: item.id,
+        fullName: item.full_name,
+        thesisTopic: item.thesis_topic,
+        overdueCount: item.overdue_count,
+        inReviewCount: item.in_review_count,
+      })),
+      hasMore: api.attention_advisees.has_more,
+    },
+    nextDeadlines: api.next_deadlines && {
+      items: api.next_deadlines.items.map(activityFrom),
+      hasMore: api.next_deadlines.has_more,
+    },
+  };
+}
+
+/** A Dashboard do professor (RF51): tudo vem calculado do servidor, a tela só mostra. */
+export async function getTeacherDashboard(): Promise<TeacherDashboard> {
+  return teacherDashboardFrom(
+    await httpClient.get<ApiTeacherDashboard>('/painel/professor'),
   );
 }
