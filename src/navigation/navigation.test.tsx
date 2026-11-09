@@ -26,20 +26,20 @@ describe('menu lateral por perfil', () => {
     setViewportWidth(DESKTOP_WIDTH);
   });
 
-  it('mostra ao aluno os itens Orientadores, Minha solicitação e Meu perfil e abre em Orientadores', async () => {
+  it('mostra ao aluno os itens Dashboard, Orientadores, Minha solicitação e Meu perfil e abre no Dashboard', async () => {
     mockApi(sessionOf('student', { has_active_advising: false }));
 
     renderApp('/login');
 
-    await screen.findByRole('heading', { name: 'Orientadores' });
+    await screen.findByRole('heading', { name: 'Dashboard' });
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
     expect(
       within(menu)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['Orientadores', 'Minha solicitação', 'Meu perfil']);
+    ).toEqual(['Dashboard', 'Orientadores', 'Minha solicitação', 'Meu perfil']);
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '/aluno/orientadores',
+      '/aluno/dashboard',
     );
   });
 
@@ -116,10 +116,10 @@ describe('menu lateral por perfil', () => {
     renderApp('/aluno');
 
     expect(
-      await screen.findByRole('heading', { name: 'Orientadores' }),
+      await screen.findByRole('heading', { name: 'Dashboard' }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '/aluno/orientadores',
+      '/aluno/dashboard',
     );
   });
 

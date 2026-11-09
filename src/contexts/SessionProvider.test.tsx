@@ -160,7 +160,7 @@ describe('SessionProvider: estado da orientação', () => {
     await user.type(screen.getByLabelText('Senha'), 'Senha-Segura-2026');
     await user.click(screen.getByRole('button', { name: 'Entrar' }));
 
-    await screen.findByRole('heading', { name: 'Orientadores' });
+    await screen.findByRole('heading', { name: 'Dashboard' });
     await waitFor(() => expect(requestsTo(fetchMock, ME)).toHaveLength(1));
   });
 });

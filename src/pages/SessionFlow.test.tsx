@@ -26,7 +26,7 @@ describe('sessão', () => {
     renderApp('/login');
 
     expect(
-      await screen.findByRole('heading', { name: 'Orientadores' }),
+      await screen.findByRole('heading', { name: 'Dashboard' }),
     ).toBeInTheDocument();
     expect(screen.getByText('Ana Souza')).toBeInTheDocument();
   });
@@ -58,7 +58,7 @@ describe('sessão', () => {
     });
     const user = userEvent.setup();
     renderApp('/aluno');
-    await screen.findByRole('heading', { name: 'Orientadores' });
+    await screen.findByRole('heading', { name: 'Dashboard' });
 
     await user.click(screen.getByRole('button', { name: 'Sair' }));
 
@@ -84,7 +84,7 @@ describe('sessão', () => {
       'GET /api/qualquer-chamada': { status: 401, body: {} },
     });
     renderApp('/aluno');
-    await screen.findByRole('heading', { name: 'Orientadores' });
+    await screen.findByRole('heading', { name: 'Dashboard' });
 
     await act(async () => {
       await httpClient.get('/qualquer-chamada').catch(() => undefined);
@@ -103,7 +103,7 @@ describe('sessão', () => {
 
     renderApp('/aluno', { strict: true });
 
-    await screen.findByRole('heading', { name: 'Orientadores' });
+    await screen.findByRole('heading', { name: 'Dashboard' });
     expect(requestsTo(fetchMock, 'POST /api/auth/refresh')).toHaveLength(1);
   });
 
@@ -130,7 +130,7 @@ describe('sessão', () => {
     });
     const user = userEvent.setup();
     renderApp('/aluno');
-    await screen.findByRole('heading', { name: 'Orientadores' });
+    await screen.findByRole('heading', { name: 'Dashboard' });
 
     await user.click(screen.getByRole('button', { name: 'Sair' }));
 
