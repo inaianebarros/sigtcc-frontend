@@ -42,11 +42,16 @@ interface ApiAdvisee {
   };
 }
 
-export async function listAdvisees(page: number): Promise<AdviseePage> {
+/** `search` filtra pelo nome do aluno no servidor, sem diferenciar acentos nem maiúsculas. */
+export async function listAdvisees(
+  page: number,
+  search?: string,
+): Promise<AdviseePage> {
   const params = new URLSearchParams({
     limit: String(ADVISEES_PAGE_SIZE),
     offset: String((page - 1) * ADVISEES_PAGE_SIZE),
   });
+  if (search) params.set('search', search);
   const response = await httpClient.get<{ items: ApiAdvisee[]; count: number }>(
     `/orientacao/orientandos?${params}`,
   );

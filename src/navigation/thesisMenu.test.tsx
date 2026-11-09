@@ -34,8 +34,8 @@ describe('item Tema do TCC do menu lateral do aluno', () => {
 
     const item = await screen.findByRole('button', { name: /Tema do TCC/ });
     expect(item).toHaveAttribute('aria-disabled', 'true');
-    // Atividades e Tema do TCC exigem o mesmo vínculo: o motivo aparece nos dois itens.
-    expect(screen.getAllByText('Requer orientação ativa')).toHaveLength(2);
+    // Atividades, Reuniões e Tema do TCC exigem o mesmo vínculo: o motivo aparece nos três itens.
+    expect(screen.getAllByText('Requer orientação ativa')).toHaveLength(3);
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
     expect(
       within(menu).queryByRole('link', { name: 'Tema do TCC' }),
@@ -58,6 +58,7 @@ describe('item Tema do TCC do menu lateral do aluno', () => {
       'Orientadores',
       'Minha solicitação',
       'Atividades',
+      'Reuniões',
       'Tema do TCC',
       'Meu perfil',
     ]);

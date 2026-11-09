@@ -19,6 +19,8 @@ export const paths = {
   studentAdvisor: '/aluno/orientadores/:teacherId',
   studentActivities: '/aluno/atividades',
   studentThesis: '/aluno/tema',
+  studentMeetings: '/aluno/reunioes',
+  teacherMeetings: '/professor/reunioes',
   teacherActivities: '/professor/atividades',
   studentActivity: '/aluno/atividades/:activityId',
   teacherActivity: '/professor/atividades/:activityId',

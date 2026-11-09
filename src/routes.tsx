@@ -14,6 +14,7 @@ import { ComingSoonPage } from './pages/ComingSoonPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
+import { MeetingsPage } from './pages/MeetingsPage';
 import { TeacherAdviseesPage } from './pages/TeacherAdviseesPage';
 import { StudentProfilePage } from './pages/StudentProfilePage';
 import { StudentProfileViewPage } from './pages/StudentProfileViewPage';
@@ -29,11 +30,13 @@ import { NotFoundPage } from './pages/NotFoundPage';
 // Telas já implementadas; os itens do menu sem tela mostram a página "em breve".
 const screens: Record<string, ReactElement> = {
   '/aluno/atividades': <ActivitiesPage />,
+  '/aluno/reunioes': <MeetingsPage />,
   '/aluno/orientadores': <AdvisorsPage />,
   '/aluno/perfil': <StudentProfilePage />,
   '/aluno/solicitacao': <StudentRequestPage />,
   '/aluno/tema': <StudentThesisPage />,
   '/professor/atividades': <ActivitiesPage />,
+  '/professor/reunioes': <MeetingsPage />,
   '/professor/orientandos': <TeacherAdviseesPage />,
   '/professor/perfil': <TeacherProfilePage />,
   '/professor/solicitacoes': <TeacherRequestsPage />,
