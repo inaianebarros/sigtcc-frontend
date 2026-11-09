@@ -79,7 +79,11 @@ export function useComments(activityId: number) {
       if (current.status !== 'ready' || fresh.start <= current.start) {
         return { status: 'ready', ...fresh };
       }
-      const kept = current.items.slice(0, fresh.start - current.start);
+      // Os anteriores já carregados ficam, sem repetir o que a leitura nova já trouxe.
+      const fresher = new Set(fresh.items.map((item) => item.id));
+      const kept = current.items
+        .slice(0, fresh.start - current.start)
+        .filter((item) => !fresher.has(item.id));
       return {
         status: 'ready',
         items: [...kept, ...fresh.items],
@@ -114,8 +118,9 @@ export function useComments(activityId: number) {
         limit: start - offset,
         offset,
       });
+      // Só se a janela ainda é a que pediu: uma releitura no meio a trocou, e a fatia não encaixa.
       setState((now) =>
-        now.status === 'ready'
+        now.status === 'ready' && now.start === start
           ? {
               ...now,
               items: [...older.items, ...now.items],

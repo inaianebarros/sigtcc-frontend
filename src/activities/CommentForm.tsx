@@ -47,7 +47,7 @@ export function CommentForm({
       }}
     >
       <PendingChangesNotice
-        visible={trimmedLength > 0 && !closed}
+        visible={trimmedLength > 0}
         actionLabel="Comentar"
       />
       {notice && <Alert severity="error">{notice}</Alert>}

@@ -502,6 +502,8 @@ describe('Comentários: estados da atividade e erros', () => {
     const input = (await field()) as HTMLTextAreaElement;
     expect(input).toBeDisabled();
     expect(input).toHaveValue('Tarde demais');
+    // O texto mantido ainda pede confirmação ao sair, então o aviso do topo continua à vista.
+    expect(screen.getByText(/Você tem alterações não salvas/)).toBeVisible();
   });
 
   it('um 404 ao enviar avisa que a orientação foi encerrada, atualiza a sessão e mantém o texto', async () => {
