@@ -13,9 +13,9 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useNotificationCount } from '../hooks/useNotificationCount';
 import { useSession } from '../hooks/useSession';
 import { notificationsPathFor } from '../navigation/paths';
+import { PANEL_SIZE } from '../services/notificationService';
 import { NotificationList } from './NotificationList';
 import { useNotificationFeed } from './useNotificationFeed';
-import { PANEL_SIZE } from '../services/notificationService';
 
 const BADGE_MAX = 99;
 
@@ -32,10 +32,9 @@ function NotificationPanel({ onClose }: { onClose: () => void }) {
     offset: 0,
     onlyUnread: false,
   });
-  const allPath =
-    user?.type === 'teacher'
-      ? notificationsPathFor('teacher')
-      : notificationsPathFor('student');
+  const allPath = notificationsPathFor(
+    user?.type === 'teacher' ? 'teacher' : 'student',
+  );
   return (
     <Stack spacing={1.5} sx={{ p: 2 }}>
       <Stack

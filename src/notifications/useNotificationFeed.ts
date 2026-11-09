@@ -99,3 +99,6 @@ export function useNotificationFeed({ limit, offset, onlyUnread }: FeedQuery) {
 
   return { state: shown, isRead, markRead, markAllRead, reload };
 }
+
+/** O que a lista de notificações recebe do hook: o estado, a leitura otimista e a releitura. */
+export type NotificationFeed = ReturnType<typeof useNotificationFeed>;

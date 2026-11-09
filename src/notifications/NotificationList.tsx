@@ -4,10 +4,10 @@ import { VisuallyHidden } from '../components/VisuallyHidden';
 import { useSession } from '../hooks/useSession';
 import { NotificationItem } from './NotificationItem';
 import { destinationOf } from './notificationKinds';
-import type { useNotificationFeed } from './useNotificationFeed';
+import type { NotificationFeed } from './useNotificationFeed';
 
 interface NotificationListProps {
-  feed: ReturnType<typeof useNotificationFeed>;
+  feed: NotificationFeed;
   /** O estado vazio muda com o filtro: "Você não tem notificações" ou "Nenhuma notificação não lida". */
   emptyText: string;
   /** Chamado ao navegar para o destino de uma notificação, como o painel do sino se fechar. */
