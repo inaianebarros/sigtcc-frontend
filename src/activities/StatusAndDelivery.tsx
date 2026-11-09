@@ -1,8 +1,10 @@
 import { Button, Stack, Typography } from '@mui/material';
 import { useId } from 'react';
-import type { ActivityStatus } from '../services/activityService';
+import type {
+  ActivityStatus,
+  StudentSettableStatus,
+} from '../services/activityService';
 import { StatusControl } from './StatusControl';
-import type { StudentSettableStatus } from './StatusControl';
 
 export const AWAITING_REVIEW_MESSAGE =
   'Aguardando a revisão do orientador: você não altera o status agora';

@@ -5,7 +5,7 @@ import { formatFileSize } from '../formatters/fileSize';
 import { useFeedback } from '../hooks/useFeedback';
 import { downloadSubmissionFile } from '../services/activityService';
 import type { SubmissionFile } from '../services/activityService';
-import { ApiError, messageForStatus } from '../services/apiError';
+import { ApiError, messageOf } from '../services/apiError';
 import { saveFile } from './saveFile';
 
 export const FILE_NOT_FOUND_MESSAGE = 'O arquivo não foi encontrado.';
@@ -35,10 +35,7 @@ export function SubmissionFileItem({
       if (error instanceof ApiError && error.status === 404) {
         notify(FILE_NOT_FOUND_MESSAGE, 'error');
       } else {
-        notify(
-          error instanceof ApiError ? error.message : messageForStatus(0),
-          'error',
-        );
+        notify(messageOf(error), 'error');
       }
     } finally {
       setDownloading(false);

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { rateLimitMessage, waitTimeText } from './apiError';
+import {
+  ApiError,
+  messageForStatus,
+  messageOf,
+  rateLimitMessage,
+  waitTimeText,
+} from './apiError';
 
 describe('waitTimeText', () => {
   it.each([
@@ -32,6 +38,21 @@ describe('rateLimitMessage', () => {
       expect(rateLimitMessage(seconds)).toBe(
         'Muitas tentativas. Aguarde um pouco antes de tentar novamente.',
       );
+    },
+  );
+});
+
+describe('messageOf', () => {
+  it('usa a mensagem do ApiError, que já vem do servidor ou do status', () => {
+    expect(messageOf(new ApiError(409, 'Esta atividade foi concluída.'))).toBe(
+      'Esta atividade foi concluída.',
+    );
+  });
+
+  it.each([new Error('falha interna'), 'texto', undefined, null])(
+    'trata qualquer outra falha como falta de conexão, sem expor o detalhe (%s)',
+    (failure) => {
+      expect(messageOf(failure)).toBe(messageForStatus(0));
     },
   );
 });

@@ -197,7 +197,10 @@ export async function submitDelivery(
   );
 }
 
-export type StudentRequestedStatus = 'pending' | 'in_progress' | 'in_review';
+/** O que o aluno pode deixar a atividade: alternar entre pendente e em andamento (RF28). */
+export type StudentSettableStatus = 'pending' | 'in_progress';
+/** Tudo o que o aluno pode pedir: os dois acima e enviar para revisão. */
+export type StudentRequestedStatus = StudentSettableStatus | 'in_review';
 
 /** O aluno alterna entre pendente e em andamento ou envia para revisão (RF28, RN15). */
 export async function changeActivityStatus(

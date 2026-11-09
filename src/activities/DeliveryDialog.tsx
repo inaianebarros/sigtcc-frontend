@@ -17,14 +17,11 @@ import type { ChangeEvent, DragEvent } from 'react';
 import { formatFileSize } from '../formatters/fileSize';
 import { useDiscardGuard } from '../hooks/useDiscardGuard';
 import { PendingChangesNotice } from '../profile/PendingChangesNotice';
-import {
-  ApiError,
-  isStateChangedError,
-  messageForStatus,
-} from '../services/apiError';
+import { ApiError, isStateChangedError, messageOf } from '../services/apiError';
 import {
   ACCEPTED_EXTENSIONS,
   COUNT_MESSAGE,
+  MAX_FILE_MEGABYTES,
   MAX_FILES,
   contentTypeOf,
   problemWith,
@@ -128,7 +125,7 @@ export function DeliveryDialog({
         return;
       }
       if (!(error instanceof ApiError)) {
-        setFailure(messageForStatus(0));
+        setFailure(messageOf(error));
         return;
       }
       const byFile: Record<number, string> = {};
@@ -179,8 +176,8 @@ export function DeliveryDialog({
               <Stack spacing={1} sx={{ alignItems: 'center' }}>
                 <Typography color="text.secondary">
                   Arraste os arquivos até aqui ou escolha no computador. De 1 a{' '}
-                  {MAX_FILES} arquivos de até 10 MB: PDF, DOC, DOCX, ZIP, PNG ou
-                  JPG.
+                  {MAX_FILES} arquivos de até {MAX_FILE_MEGABYTES} MB: PDF, DOC,
+                  DOCX, ZIP, PNG ou JPG.
                 </Typography>
                 <Button component="label" variant="outlined" disabled={sending}>
                   Escolher arquivos

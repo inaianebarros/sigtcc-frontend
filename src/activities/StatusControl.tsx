@@ -1,7 +1,8 @@
 import { ToggleButton, ToggleButtonGroup } from '@mui/material';
-import type { ActivityStatus } from '../services/activityService';
-
-export type StudentSettableStatus = 'pending' | 'in_progress';
+import type {
+  ActivityStatus,
+  StudentSettableStatus,
+} from '../services/activityService';
 
 interface StatusControlProps {
   status: ActivityStatus;

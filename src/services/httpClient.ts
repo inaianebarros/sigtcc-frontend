@@ -102,10 +102,14 @@ const send: Sender = async (path, init) => {
 };
 
 /**
- * O envio de um formulário com o progresso do upload, que o `fetch` não informa. O navegador
- * acrescenta o Content-Type do multipart, com o limite das partes: por isso ele não é fixado.
+ * O envio de um formulário com o progresso do upload, que o `fetch` não informa (ADR frontend
+ * 0003). O navegador acrescenta o Content-Type do multipart, com o limite das partes: por isso
+ * ele não é fixado.
  */
-function sendWithProgress(onProgress: (percent: number) => void): Sender {
+function sendWithProgress(
+  body: FormData,
+  onProgress: (percent: number) => void,
+): Sender {
   return (path, init) =>
     new Promise<Response>((resolve, reject) => {
       const request = new XMLHttpRequest();
@@ -131,7 +135,7 @@ function sendWithProgress(onProgress: (percent: number) => void): Sender {
         );
       };
       request.onerror = () => reject(new ApiError(0, messageForStatus(0)));
-      request.send(init.body as XMLHttpRequestBodyInit);
+      request.send(body);
     });
 }
 
@@ -247,7 +251,7 @@ export const httpClient = {
   ) =>
     jsonBodyOf<T>(
       await execute(
-        sendWithProgress(onProgress),
+        sendWithProgress(body, onProgress),
         path,
         { method: 'POST', body },
         true,

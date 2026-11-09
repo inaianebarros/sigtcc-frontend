@@ -23,12 +23,13 @@ import {
   submitDelivery,
   updateActivity,
 } from '../services/activityService';
-import type { ActivityDetail } from '../services/activityService';
-import type { StudentSettableStatus } from '../activities/StatusControl';
+import type {
+  ActivityDetail,
+  StudentSettableStatus,
+} from '../services/activityService';
 import {
-  ApiError,
   isStateChangedError,
-  messageForStatus,
+  messageOf,
   nullOnNotFound,
 } from '../services/apiError';
 
@@ -52,6 +53,7 @@ export function ActivityDetailPage() {
   const backPath = origin?.split('?')[0] === listPath ? origin : listPath;
   const id = positiveIntFrom(activityId);
   const [reload, setReload] = useState(0);
+  const refresh = () => setReload((current) => current + 1);
   const activity = useLoad(
     () =>
       id === null ? Promise.resolve(null) : nullOnNotFound(getActivity(id)),
@@ -80,7 +82,7 @@ export function ActivityDetailPage() {
     await updateActivity(id, changes);
     dialog.hide();
     notify('Atividade atualizada.', 'success');
-    setReload((current) => current + 1);
+    refresh();
   };
 
   const [changingStatus, setChangingStatus] = useState(false);
@@ -90,15 +92,12 @@ export function ActivityDetailPage() {
     try {
       await changeActivityStatus(id, next);
       notify('Status atualizado.', 'success');
-      setReload((current) => current + 1);
+      refresh();
     } catch (error) {
       if (isStateChangedError(error)) {
         refreshAfter(error);
       } else {
-        notify(
-          error instanceof ApiError ? error.message : messageForStatus(0),
-          'error',
-        );
+        notify(messageOf(error), 'error');
       }
     } finally {
       setChangingStatus(false);
@@ -114,16 +113,13 @@ export function ActivityDetailPage() {
       await changeActivityStatus(id, 'in_review');
       setConfirmingReview(false);
       notify('Atividade enviada para revisão.', 'success');
-      setReload((current) => current + 1);
+      refresh();
     } catch (error) {
       setConfirmingReview(false);
       if (isStateChangedError(error)) {
         refreshAfter(error);
       } else {
-        notify(
-          error instanceof ApiError ? error.message : messageForStatus(0),
-          'error',
-        );
+        notify(messageOf(error), 'error');
       }
     } finally {
       setSendingReview(false);
@@ -139,7 +135,7 @@ export function ActivityDetailPage() {
   ) => {
     dialog.hide();
     notifyStateChanged(error, notFoundMessage);
-    setReload((current) => current + 1);
+    refresh();
   };
 
   const confirmDelete = async () => {
@@ -157,10 +153,7 @@ export function ActivityDetailPage() {
         // Um 404 aqui também pode ser uma atividade que já foi removida.
         refreshAfter(error, DELETE_NOT_FOUND_MESSAGE);
       } else {
-        notify(
-          error instanceof ApiError ? error.message : messageForStatus(0),
-          'error',
-        );
+        notify(messageOf(error), 'error');
       }
     } finally {
       setDeleting(false);
@@ -176,7 +169,7 @@ export function ActivityDetailPage() {
         skeletonTestId="activity-skeleton"
         invalidId={id === null}
         profile={activity}
-        onRetry={() => setReload((current) => current + 1)}
+        onRetry={refresh}
         title={(data) => data.title}
       >
         {(data) => (
@@ -223,12 +216,12 @@ export function ActivityDetailPage() {
           onSaved={() => {
             deliveryDialog.hide();
             notify('Entrega enviada.', 'success');
-            setReload((current) => current + 1);
+            refresh();
           }}
           onStateChanged={(error) => {
             deliveryDialog.hide();
             notifyStateChanged(error);
-            setReload((current) => current + 1);
+            refresh();
           }}
           onClose={deliveryDialog.hide}
           onExited={deliveryDialog.unmount}

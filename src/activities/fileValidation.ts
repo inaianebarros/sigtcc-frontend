@@ -1,9 +1,10 @@
 export const MAX_FILES = 5;
-export const MAX_FILE_BYTES = 10 * 1024 * 1024;
+export const MAX_FILE_MEGABYTES = 10;
+export const MAX_FILE_BYTES = MAX_FILE_MEGABYTES * 1024 * 1024;
 
 export const COUNT_MESSAGE = `Envie no máximo ${MAX_FILES} arquivos por entrega.`;
 const EMPTY_MESSAGE = 'O arquivo está vazio.';
-const TOO_BIG_MESSAGE = `O arquivo excede o limite de ${MAX_FILE_BYTES / (1024 * 1024)} MB.`;
+const TOO_BIG_MESSAGE = `O arquivo excede o limite de ${MAX_FILE_MEGABYTES} MB.`;
 const NOT_ALLOWED_MESSAGE =
   'Tipo de arquivo não permitido. Envie PDF, DOC, DOCX, ZIP, PNG ou JPG.';
 

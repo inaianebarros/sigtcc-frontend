@@ -3,10 +3,12 @@ import { useId } from 'react';
 import type { ReactNode } from 'react';
 import { formatDate, formatDeadline } from '../formatters/dateTime';
 import { ReadOnlyFacts } from '../profile/ReadOnlyFacts';
-import type { ActivityDetail } from '../services/activityService';
+import type {
+  ActivityDetail,
+  StudentSettableStatus,
+} from '../services/activityService';
 import { StatusAndDelivery } from './StatusAndDelivery';
 import { SubmissionFileItem } from './SubmissionFileItem';
-import type { StudentSettableStatus } from './StatusControl';
 import { StatusWithBadge } from './StatusWithBadge';
 
 export const COMPLETED_REASON = 'Atividade concluída não pode ser alterada';

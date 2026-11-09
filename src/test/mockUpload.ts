@@ -22,7 +22,7 @@ type UploadHandler = (
   context: UploadContext,
 ) => MockResponse | Promise<MockResponse>;
 
-interface ProgressEvent {
+interface UploadProgressEvent {
   lengthComputable: boolean;
   loaded: number;
   total: number;
@@ -30,7 +30,7 @@ interface ProgressEvent {
 
 /**
  * Troca `XMLHttpRequest` por um simulador dirigido por rotas, como o `mockApi` faz com `fetch`:
- * o jsdom não tem rede, e o envio com progresso (ADR do cliente HTTP) não passa por `fetch`.
+ * o jsdom não tem rede, e o envio com progresso (ADR frontend 0003) não passa por `fetch`.
  */
 export function mockUploads(
   routes: Record<string, MockResponse | UploadHandler>,
@@ -38,7 +38,7 @@ export function mockUploads(
   const requests: UploadRequest[] = [];
 
   class FakeXhr {
-    upload: { onprogress: ((event: ProgressEvent) => void) | null } = {
+    upload: { onprogress: ((event: UploadProgressEvent) => void) | null } = {
       onprogress: null,
     };
     onload: (() => void) | null = null;
