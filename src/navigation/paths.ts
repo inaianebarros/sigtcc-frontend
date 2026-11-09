@@ -9,6 +9,8 @@ export const paths = {
   registerStudent: '/cadastro/aluno',
   registerTeacher: '/cadastro/professor',
   studentDashboard: '/aluno/dashboard',
+  teacherDashboard: '/professor/dashboard',
+  teacherAdvisees: '/professor/orientandos',
   studentAdvisingHistory: '/aluno/historico',
   studentAdvisors: '/aluno/orientadores',
   studentRequest: '/aluno/solicitacao',
@@ -30,6 +32,10 @@ export const paths = {
 
 export function teacherStudentPath(studentId: number): string {
   return paths.teacherStudent.replace(':studentId', String(studentId));
+}
+
+export function teacherActivitiesOfStudentPath(studentId: number): string {
+  return `${paths.teacherActivities}?aluno=${studentId}`;
 }
 
 export function studentAdvisorPath(teacherId: number): string {

@@ -433,7 +433,7 @@ describe('AdvisorProfilePage: acesso e celular', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent(
-        '/professor/solicitacoes',
+        '/professor/dashboard',
       ),
     );
   });

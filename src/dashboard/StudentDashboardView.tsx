@@ -9,6 +9,7 @@ import type {
 import { ActivityList } from './ActivityList';
 import { DashboardEmptyState } from './DashboardEmptyState';
 import { IndicatorCard } from './IndicatorCard';
+import { IndicatorGrid } from './IndicatorGrid';
 import { ProgressCard } from './ProgressCard';
 
 const REQUEST_TEXTS: Record<
@@ -22,15 +23,6 @@ const REQUEST_TEXTS: Record<
 };
 
 const NO_ACTIVITIES_MESSAGE = 'Você ainda não possui atividades cadastradas.';
-
-const INDICATOR_GRID = {
-  display: 'grid',
-  gap: 2,
-  gridTemplateColumns: {
-    xs: 'repeat(2, minmax(0, 1fr))',
-    md: 'repeat(3, minmax(0, 1fr))',
-  },
-} as const;
 
 function AdvisingCard({
   advising,
@@ -91,7 +83,7 @@ function ActiveAdvisingView({
       {hasActivities && (
         <>
           <Section title="Indicadores das atividades">
-            <Box sx={INDICATOR_GRID}>
+            <IndicatorGrid>
               <IndicatorCard
                 label="Total de atividades"
                 value={activities.total}
@@ -108,7 +100,7 @@ function ActiveAdvisingView({
                 value={activities.overdue}
                 alert
               />
-            </Box>
+            </IndicatorGrid>
           </Section>
           {activities.progressPercent !== null && (
             <ProgressCard percent={activities.progressPercent} />

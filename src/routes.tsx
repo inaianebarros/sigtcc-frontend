@@ -16,6 +16,7 @@ import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { MeetingsPage } from './pages/MeetingsPage';
 import { TeacherAdviseesPage } from './pages/TeacherAdviseesPage';
+import { TeacherDashboardPage } from './pages/TeacherDashboardPage';
 import { StudentDashboardPage } from './pages/StudentDashboardPage';
 import { StudentProfilePage } from './pages/StudentProfilePage';
 import { StudentProfileViewPage } from './pages/StudentProfileViewPage';
@@ -37,6 +38,7 @@ const screens: Record<string, ReactElement> = {
   '/aluno/perfil': <StudentProfilePage />,
   '/aluno/solicitacao': <StudentRequestPage />,
   '/aluno/tema': <StudentThesisPage />,
+  '/professor/dashboard': <TeacherDashboardPage />,
   '/professor/atividades': <ActivitiesPage />,
   '/professor/reunioes': <MeetingsPage />,
   '/professor/orientandos': <TeacherAdviseesPage />,

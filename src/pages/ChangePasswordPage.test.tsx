@@ -108,7 +108,7 @@ describe('ChangePasswordPage: o formulário', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent(
-        '/professor/solicitacoes',
+        '/professor/dashboard',
       ),
     );
   });

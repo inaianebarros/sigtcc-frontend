@@ -127,3 +127,133 @@ export function studentDashboardRoutes(
     ...overrides,
   };
 }
+
+export interface FakeAttentionAdvisee {
+  id: number;
+  full_name: string;
+  thesis_topic: string | null;
+  overdue_count: number;
+  in_review_count: number;
+}
+
+export interface FakeDeadline extends FakeDashboardActivity {
+  student: { id: number; full_name: string };
+}
+
+export interface FakeTeacherDashboard {
+  advisees_count: number;
+  activities: NonNullable<FakeStudentDashboard['activities']> | null;
+  attention_advisees: {
+    items: FakeAttentionAdvisee[];
+    has_more: boolean;
+  } | null;
+  next_deadlines: { items: FakeDeadline[]; has_more: boolean } | null;
+}
+
+export function makeAttentionAdvisee(
+  id: number,
+  overrides: Partial<FakeAttentionAdvisee> = {},
+): FakeAttentionAdvisee {
+  return {
+    id,
+    full_name: `Orientando ${id}`,
+    thesis_topic: `Tema ${id}`,
+    overdue_count: 1,
+    in_review_count: 0,
+    ...overrides,
+  };
+}
+
+export function makeDeadline(
+  id: number,
+  overrides: Partial<FakeDeadline> = {},
+): FakeDeadline {
+  return {
+    ...makeDashboardActivity(id),
+    student: { id: 101, full_name: 'Maria Lima' },
+    ...overrides,
+  };
+}
+
+/** Uma Dashboard de professor com 2 orientandos e 10 atividades, 3 concluídas (30%). */
+export function makeTeacherDashboard(
+  overrides: Partial<FakeTeacherDashboard> = {},
+): FakeTeacherDashboard {
+  return {
+    advisees_count: 2,
+    activities: {
+      total: 10,
+      pending: 3,
+      in_progress: 2,
+      in_review: 2,
+      completed: 3,
+      overdue: 2,
+      progress_percent: 30,
+    },
+    attention_advisees: {
+      items: [
+        makeAttentionAdvisee(101, {
+          full_name: 'Maria Lima',
+          thesis_topic: 'Redes neurais em saúde',
+          overdue_count: 2,
+          in_review_count: 1,
+        }),
+        makeAttentionAdvisee(102, {
+          full_name: 'João Souza',
+          thesis_topic: null,
+          overdue_count: 0,
+          in_review_count: 1,
+        }),
+      ],
+      has_more: false,
+    },
+    next_deadlines: {
+      items: [
+        makeDeadline(21, {
+          title: 'Capítulo 1',
+          deadline: '2026-11-01',
+          status: 'in_progress',
+          overdue: true,
+        }),
+        makeDeadline(22, {
+          title: 'Capítulo 2',
+          deadline: '2026-12-15',
+          student: { id: 102, full_name: 'João Souza' },
+        }),
+      ],
+      has_more: false,
+    },
+    ...overrides,
+  };
+}
+
+/** Um professor sem orientações ativas: a resposta vazia da API. */
+export function makeEmptyTeacherDashboard(): FakeTeacherDashboard {
+  return {
+    advisees_count: 0,
+    activities: null,
+    attention_advisees: null,
+    next_deadlines: null,
+  };
+}
+
+export const TEACHER_ME = {
+  id: 9,
+  full_name: 'Carlos Lima',
+  email: 'carlos@example.com',
+  type: 'teacher',
+  active_advisees_count: 2,
+} as const;
+
+export function teacherDashboardRoutes(
+  dashboard: () => FakeTeacherDashboard,
+  me: Record<string, unknown> = TEACHER_ME,
+  overrides: Record<string, MockResponse | Handler> = {},
+): Record<string, MockResponse | Handler> {
+  return {
+    'POST /api/auth/refresh': { body: { access_token: 't' } },
+    'GET /api/auth/me': { body: me },
+    'GET /api/painel/professor': () => ({ body: dashboard() }),
+    ...overrides,
+  };
+}

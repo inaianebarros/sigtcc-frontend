@@ -1,4 +1,4 @@
-import { Box, Link, Paper, Stack, Typography } from '@mui/material';
+import { Link, Paper, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { StatusWithBadge } from '../activities/StatusWithBadge';
 import { formatDeadline } from '../formatters/dateTime';
@@ -47,11 +47,14 @@ export function ActivityList({
               >
                 {item.title}
               </Link>
-              <Box sx={{ color: 'text.secondary' }}>
-                <Typography variant="body2">
-                  Prazo: {formatDeadline(item.deadline)}
+              {item.student && (
+                <Typography variant="body2" color="text.secondary">
+                  Orientando: {item.student.fullName}
                 </Typography>
-              </Box>
+              )}
+              <Typography variant="body2" color="text.secondary">
+                Prazo: {formatDeadline(item.deadline)}
+              </Typography>
               <StatusWithBadge status={item.status} overdue={item.overdue} />
             </Stack>
           </Paper>
