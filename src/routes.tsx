@@ -28,6 +28,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { StudentRegistrationPage } from './pages/StudentRegistrationPage';
 import { TeacherRegistrationPage } from './pages/TeacherRegistrationPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { NotificationsPage } from './pages/NotificationsPage';
 
 // Telas já implementadas; os itens do menu sem tela mostram a página "em breve".
 const screens: Record<string, ReactElement> = {
@@ -58,6 +59,8 @@ const subScreens: Record<string, ReactElement> = {
   [paths.teacherActivity]: <ActivityDetailPage />,
   [paths.teacherStudent]: <StudentProfileViewPage />,
   [paths.studentAdvisor]: <AdvisorProfilePage />,
+  [paths.studentNotifications]: <NotificationsPage />,
+  [paths.teacherNotifications]: <NotificationsPage />,
   [paths.studentAdvisingHistory]: (
     <ComingSoonPage title="Histórico de orientações" />
   ),

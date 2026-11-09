@@ -10,6 +10,8 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
+import { NotificationsProvider } from '../contexts/NotificationsProvider';
+import { NotificationBell } from '../notifications/NotificationBell';
 import { SideMenu } from './SideMenu';
 import { useSession } from '../hooks/useSession';
 import { hasActiveAdvisingOf } from '../navigation/advisingState';
@@ -36,55 +38,60 @@ export function Layout() {
   };
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <AppBar position="static">
-        <Toolbar sx={{ gap: 2 }}>
-          {menuItems.length > 0 && !isDesktop && (
-            <Button
-              color="inherit"
-              aria-label="Abrir menu"
-              aria-expanded={menuOpen}
-              onClick={() => setMenuOpen(true)}
-            >
-              Menu
-            </Button>
-          )}
-          <Typography variant="h6" component="span" sx={{ flexGrow: 1 }}>
-            SIGTCC
-          </Typography>
-          {status === 'authenticated' && user && (
-            <>
-              <Typography component="span">{user.fullName}</Typography>
-              <Button color="inherit" onClick={handleSignOut}>
-                Sair
+    <NotificationsProvider>
+      <Box
+        sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
+      >
+        <AppBar position="static">
+          <Toolbar sx={{ gap: 2 }}>
+            {menuItems.length > 0 && !isDesktop && (
+              <Button
+                color="inherit"
+                aria-label="Abrir menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen(true)}
+              >
+                Menu
               </Button>
-            </>
+            )}
+            <Typography variant="h6" component="span" sx={{ flexGrow: 1 }}>
+              SIGTCC
+            </Typography>
+            {status === 'authenticated' && user && (
+              <>
+                {user.type !== 'admin' && <NotificationBell />}
+                <Typography component="span">{user.fullName}</Typography>
+                <Button color="inherit" onClick={handleSignOut}>
+                  Sair
+                </Button>
+              </>
+            )}
+          </Toolbar>
+        </AppBar>
+        <Box sx={{ display: 'flex', flexGrow: 1 }}>
+          {menuItems.length > 0 && (
+            <SideMenu
+              items={menuItems}
+              hasActiveAdvising={user ? hasActiveAdvisingOf(user) : false}
+              variant={isDesktop ? 'permanent' : 'temporary'}
+              open={isDesktop || menuOpen}
+              onClose={() => setMenuOpen(false)}
+            />
           )}
-        </Toolbar>
-      </AppBar>
-      <Box sx={{ display: 'flex', flexGrow: 1 }}>
-        {menuItems.length > 0 && (
-          <SideMenu
-            items={menuItems}
-            hasActiveAdvising={user ? hasActiveAdvisingOf(user) : false}
-            variant={isDesktop ? 'permanent' : 'temporary'}
-            open={isDesktop || menuOpen}
-            onClose={() => setMenuOpen(false)}
-          />
-        )}
-        <Container
-          component="main"
-          maxWidth="lg"
-          sx={{
-            flexGrow: 1,
-            minWidth: 0,
-            py: { xs: 2, md: 4 },
-            px: { xs: 2, sm: 3 },
-          }}
-        >
-          <Outlet />
-        </Container>
+          <Container
+            component="main"
+            maxWidth="lg"
+            sx={{
+              flexGrow: 1,
+              minWidth: 0,
+              py: { xs: 2, md: 4 },
+              px: { xs: 2, sm: 3 },
+            }}
+          >
+            <Outlet />
+          </Container>
+        </Box>
       </Box>
-    </Box>
+    </NotificationsProvider>
   );
 }
