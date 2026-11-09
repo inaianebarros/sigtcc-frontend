@@ -58,7 +58,7 @@ describe('LoginPage', () => {
   });
 
   it.each([
-    ['student', 'Orientadores'],
+    ['student', 'Dashboard'],
     ['teacher', 'Solicitações'],
     ['admin', 'Área do Administrador'],
   ] as const)(

@@ -63,7 +63,7 @@ describe('menu lateral recolhível', () => {
       within(menu)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['Orientadores', 'Minha solicitação', 'Meu perfil']);
+    ).toEqual(['Dashboard', 'Orientadores', 'Minha solicitação', 'Meu perfil']);
   });
 
   it('fecha o menu pelo botão Fechar menu', async () => {

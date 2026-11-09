@@ -55,6 +55,7 @@ describe('item Tema do TCC do menu lateral do aluno', () => {
         .getAllByRole('link')
         .map((item) => item.textContent),
     ).toEqual([
+      'Dashboard',
       'Orientadores',
       'Minha solicitação',
       'Atividades',

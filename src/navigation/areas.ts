@@ -19,6 +19,7 @@ export const areas: readonly Area[] = [
     path: '/aluno',
     title: 'Área do Aluno',
     items: [
+      { label: 'Dashboard', path: '/aluno/dashboard' },
       { label: 'Orientadores', path: '/aluno/orientadores' },
       { label: 'Minha solicitação', path: '/aluno/solicitacao' },
       {

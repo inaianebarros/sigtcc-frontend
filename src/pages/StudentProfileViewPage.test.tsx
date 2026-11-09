@@ -269,7 +269,7 @@ describe('StudentProfileViewPage: acesso e celular', () => {
 
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent(
-        '/aluno/orientadores',
+        '/aluno/dashboard',
       ),
     );
   });
