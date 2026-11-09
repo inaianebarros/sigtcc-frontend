@@ -29,7 +29,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-/** Um ponto de encaixe de uma funcionalidade que chega depois (status, comentários e revisão). */
+/** Um ponto de encaixe de uma funcionalidade que chega depois (os comentários). */
 function ExtensionPoint({
   title,
   children,
@@ -98,9 +98,40 @@ export interface StudentActions {
   onSendForReview: () => void;
 }
 
+/** O que só o orientador faz com uma atividade em revisão (RF46): aceitar ou recusar. */
+export interface ReviewActions {
+  onAccept: () => void;
+  onRefuse: () => void;
+}
+
+/** O painel da revisão: a decisão do orientador, com o material já na seção Entregas. */
+function ReviewPanel({ onAccept, onRefuse }: ReviewActions) {
+  return (
+    <Section title="Revisão">
+      <Typography sx={{ fontWeight: 'medium' }}>
+        Aguardando a sua revisão
+      </Typography>
+      <Typography color="text.secondary">
+        Abra os arquivos na seção Entregas e decida: aceitar conclui a
+        atividade; recusar a devolve ao aluno com uma justificativa.
+      </Typography>
+      <Stack direction="row" useFlexGap sx={{ gap: 1, flexWrap: 'wrap' }}>
+        <Button variant="contained" onClick={onAccept}>
+          Aceitar
+        </Button>
+        <Button variant="outlined" color="error" onClick={onRefuse}>
+          Recusar
+        </Button>
+      </Stack>
+    </Section>
+  );
+}
+
 interface ActivityDetailViewProps {
   activity: ActivityDetail;
   student?: StudentActions;
+  /** Só o professor orientador revisa, e só enquanto a atividade está em revisão. */
+  review?: ReviewActions;
   /** O professor orientador pode editar e excluir; o aluno só lê. */
   canManage: boolean;
   onEdit: () => void;
@@ -110,6 +141,7 @@ interface ActivityDetailViewProps {
 export function ActivityDetailView({
   activity,
   student,
+  review,
   canManage,
   onEdit,
   onDelete,
@@ -170,10 +202,17 @@ export function ActivityDetailView({
         )}
         {activity.reviews.length > 0 && (
           <Box component="ul" sx={{ m: 0, pl: 3 }}>
-            {activity.reviews.map((review) => (
-              <li key={review.id}>
-                {DECISION_LABELS[review.decision]} em{' '}
-                {formatDate(review.decidedAt)}
+            {activity.reviews.map((item) => (
+              <li key={item.id}>
+                {DECISION_LABELS[item.decision]} em {formatDate(item.decidedAt)}
+                {item.justification && (
+                  <Typography
+                    component="p"
+                    sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
+                  >
+                    {item.justification}
+                  </Typography>
+                )}
               </li>
             ))}
           </Box>
@@ -198,7 +237,9 @@ export function ActivityDetailView({
             : `${activity.commentsCount} ${activity.commentsCount === 1 ? 'comentário' : 'comentários'}`}
         </Typography>
       </ExtensionPoint>
-      <ExtensionPoint title="Revisão" />
+      {review && activity.status === 'in_review' && (
+        <ReviewPanel onAccept={review.onAccept} onRefuse={review.onRefuse} />
+      )}
     </>
   );
 }

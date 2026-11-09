@@ -24,6 +24,8 @@ export interface FakeActivity {
   reviews: {
     id: number;
     decision: 'accepted' | 'rejected';
+    /** Vazia no aceite (RN40); os testes antigos a omitem. */
+    justification?: string;
     decided_at: string;
   }[];
   comments_count: number;
@@ -195,6 +197,38 @@ export function activitiesServer(
         };
       }
       found.status = status;
+      return {
+        body: {
+          id: found.id,
+          title: found.title,
+          deadline: found.deadline,
+          status: found.status,
+          overdue: found.overdue,
+          student: found.student,
+        },
+      };
+    },
+    'POST /api/atividades/:id/revisar': (body, _url, params) => {
+      const found = state.find((item) => item.id === Number(params.id));
+      if (!found)
+        return { status: 404, body: { detail: 'Atividade não encontrada.' } };
+      if (found.status !== 'in_review') {
+        return {
+          status: 409,
+          body: { detail: 'Só uma atividade em revisão pode ser revisada.' },
+        };
+      }
+      const { decision, justification = '' } = body as {
+        decision: 'accepted' | 'rejected';
+        justification?: string;
+      };
+      found.reviews.push({
+        id: found.reviews.length + 1,
+        decision,
+        justification,
+        decided_at: '2026-11-09T12:00:00Z',
+      });
+      found.status = decision === 'accepted' ? 'completed' : 'pending';
       return {
         body: {
           id: found.id,
