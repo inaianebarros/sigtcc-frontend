@@ -3,6 +3,8 @@ import { vi } from 'vitest';
 export interface MockResponse {
   status?: number;
   body?: unknown;
+  /** Um corpo que não é JSON, como o conteúdo de um arquivo baixado. */
+  rawBody?: string;
   headers?: Record<string, string>;
 }
 
@@ -42,12 +44,11 @@ function findRoute<T>(
 export function jsonResponse({
   status = 200,
   body,
+  rawBody,
   headers,
 }: MockResponse): Response {
-  return new Response(body === undefined ? null : JSON.stringify(body), {
-    status,
-    headers,
-  });
+  const content = rawBody ?? (body === undefined ? null : JSON.stringify(body));
+  return new Response(content, { status, headers });
 }
 
 export function mockApi(routes: Record<string, MockResponse | Handler>) {

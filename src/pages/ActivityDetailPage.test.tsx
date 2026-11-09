@@ -136,15 +136,30 @@ describe('ActivityDetailPage: o conteúdo', () => {
     expect(screen.getByText('Nenhum comentário')).toBeVisible();
   });
 
-  it('tem os três pontos de encaixe rotulados, ainda sem implementação', async () => {
+  it('tem os pontos de encaixe de comentários e de revisão, ainda sem implementação', async () => {
     setup([makeActivity(5)], 'student', '/aluno/atividades/5');
 
     await screen.findByRole('heading', { level: 1, name: 'Atividade 5' });
 
-    for (const name of ['Status e entrega', 'Comentários', 'Revisão']) {
+    for (const name of ['Comentários', 'Revisão']) {
       const slot = screen.getByRole('region', { name });
       expect(within(slot).getByText('Disponível em breve')).toBeVisible();
     }
+  });
+
+  it('a seção "Status e entrega" já é do aluno: com conteúdo e sem o aviso de em breve', async () => {
+    setup([makeActivity(5)], 'student', '/aluno/atividades/5');
+
+    const section = await screen.findByRole('region', {
+      name: 'Status e entrega',
+    });
+
+    expect(
+      within(section).queryByText('Disponível em breve'),
+    ).not.toBeInTheDocument();
+    expect(
+      within(section).getByRole('group', { name: 'Status da atividade' }),
+    ).toBeVisible();
   });
 });
 

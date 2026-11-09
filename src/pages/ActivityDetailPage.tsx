@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { ActivityDetailView } from '../activities/ActivityDetailView';
 import { ActivityFormDialog } from '../activities/ActivityFormDialog';
+import { DeliveryDialog } from '../activities/DeliveryDialog';
 import { changesOf } from '../activities/activityForm';
 import type { ActivityFormValues } from '../activities/activityForm';
 import { useStateChangedNotice } from '../hooks/useStateChangedNotice';
@@ -16,11 +17,14 @@ import { paths } from '../navigation/paths';
 import { positiveIntFrom } from '../navigation/positiveInt';
 import { ProfileView } from '../profile/ProfileView';
 import {
+  changeActivityStatus,
   deleteActivity,
   getActivity,
+  submitDelivery,
   updateActivity,
 } from '../services/activityService';
 import type { ActivityDetail } from '../services/activityService';
+import type { StudentSettableStatus } from '../activities/StatusControl';
 import {
   ApiError,
   isStateChangedError,
@@ -63,6 +67,7 @@ export function ActivityDetailPage() {
     setLastLoaded(activity.data);
   }
   const dialog = useDialogSlot();
+  const deliveryDialog = useDialogSlot();
 
   const saveEdit = async (values: ActivityFormValues) => {
     if (id === null || lastLoaded === null) return;
@@ -76,6 +81,53 @@ export function ActivityDetailPage() {
     dialog.hide();
     notify('Atividade atualizada.', 'success');
     setReload((current) => current + 1);
+  };
+
+  const [changingStatus, setChangingStatus] = useState(false);
+  const changeStatus = async (next: StudentSettableStatus) => {
+    if (id === null || changingStatus) return;
+    setChangingStatus(true);
+    try {
+      await changeActivityStatus(id, next);
+      notify('Status atualizado.', 'success');
+      setReload((current) => current + 1);
+    } catch (error) {
+      if (isStateChangedError(error)) {
+        refreshAfter(error);
+      } else {
+        notify(
+          error instanceof ApiError ? error.message : messageForStatus(0),
+          'error',
+        );
+      }
+    } finally {
+      setChangingStatus(false);
+    }
+  };
+
+  const [confirmingReview, setConfirmingReview] = useState(false);
+  const [sendingReview, setSendingReview] = useState(false);
+  const confirmReview = async () => {
+    if (id === null || sendingReview) return;
+    setSendingReview(true);
+    try {
+      await changeActivityStatus(id, 'in_review');
+      setConfirmingReview(false);
+      notify('Atividade enviada para revisão.', 'success');
+      setReload((current) => current + 1);
+    } catch (error) {
+      setConfirmingReview(false);
+      if (isStateChangedError(error)) {
+        refreshAfter(error);
+      } else {
+        notify(
+          error instanceof ApiError ? error.message : messageForStatus(0),
+          'error',
+        );
+      }
+    } finally {
+      setSendingReview(false);
+    }
   };
 
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -130,6 +182,16 @@ export function ActivityDetailPage() {
         {(data) => (
           <ActivityDetailView
             activity={data}
+            student={
+              isTeacher
+                ? undefined
+                : {
+                    statusBusy: changingStatus,
+                    onChangeStatus: (next) => void changeStatus(next),
+                    onDeliver: () => deliveryDialog.show(),
+                    onSendForReview: () => setConfirmingReview(true),
+                  }
+            }
             canManage={isTeacher}
             onEdit={() => dialog.show()}
             onDelete={() => setConfirmingDelete(true)}
@@ -153,6 +215,36 @@ export function ActivityDetailPage() {
           onExited={dialog.unmount}
         />
       )}
+      {deliveryDialog.slot && id !== null && (
+        <DeliveryDialog
+          key={deliveryDialog.slot.openCount}
+          open={deliveryDialog.slot.open}
+          send={(files, onProgress) => submitDelivery(id, files, onProgress)}
+          onSaved={() => {
+            deliveryDialog.hide();
+            notify('Entrega enviada.', 'success');
+            setReload((current) => current + 1);
+          }}
+          onStateChanged={(error) => {
+            deliveryDialog.hide();
+            notifyStateChanged(error);
+            setReload((current) => current + 1);
+          }}
+          onClose={deliveryDialog.hide}
+          onExited={deliveryDialog.unmount}
+        />
+      )}
+      <ConfirmDialog
+        open={confirmingReview}
+        title="Enviar para revisão?"
+        message="Você deixará de poder alterar o status da atividade até o orientador revisá-la. Se ele recusar, a atividade volta para Pendente e você pode reenviar."
+        confirmLabel="Enviar para revisão"
+        confirmColor="primary"
+        busy={sendingReview}
+        busyLabel="Enviando…"
+        onCancel={() => setConfirmingReview(false)}
+        onConfirm={() => void confirmReview()}
+      />
       {lastLoaded && (
         <ConfirmDialog
           open={confirmingDelete}
