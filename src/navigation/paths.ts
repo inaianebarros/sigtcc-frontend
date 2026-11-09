@@ -12,6 +12,8 @@ export const paths = {
   registerStudent: '/cadastro/aluno',
   registerTeacher: '/cadastro/professor',
   studentDashboard: '/aluno/dashboard',
+  studentNotifications: '/aluno/notificacoes',
+  teacherNotifications: '/professor/notificacoes',
   teacherDashboard: '/professor/dashboard',
   teacherAdvisees: '/professor/orientandos',
   studentAdvisingHistory: '/aluno/historico',
@@ -39,6 +41,12 @@ export function teacherStudentPath(studentId: number): string {
 
 export function teacherActivitiesOfStudentPath(studentId: number): string {
   return `${paths.teacherActivities}?${STUDENT_FILTER_PARAM}=${studentId}`;
+}
+
+export function notificationsPathFor(userType: 'student' | 'teacher'): string {
+  return userType === 'student'
+    ? paths.studentNotifications
+    : paths.teacherNotifications;
 }
 
 export function studentAdvisorPath(teacherId: number): string {
