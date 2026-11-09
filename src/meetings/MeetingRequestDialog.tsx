@@ -89,6 +89,8 @@ export function MeetingRequestDialog({
     time: original?.time ?? '',
     description: meeting?.description ?? '',
   };
+  // O formulário entrega a descrição aparada; a original pode trazer espaços nas pontas.
+  const initialDescription = initial.description.trim();
   const {
     control,
     register,
@@ -114,7 +116,7 @@ export function MeetingRequestDialog({
   const pending =
     current.date !== initial.date ||
     current.time !== initial.time ||
-    current.description.trim() !== initial.description.trim() ||
+    current.description.trim() !== initialDescription ||
     current.student?.id !== initial.student?.id;
   // RN39: uma reunião aceita volta a pendente se a data ou a hora mudarem.
   const returnsToPending =
@@ -134,7 +136,7 @@ export function MeetingRequestDialog({
         const changes: Partial<MeetingInput> = {};
         if (form.date !== initial.date) changes.date = form.date;
         if (form.time !== initial.time) changes.time = form.time;
-        if (form.description !== initial.description)
+        if (form.description !== initialDescription)
           changes.description = form.description;
         if (Object.keys(changes).length === 0) {
           onNoChanges();

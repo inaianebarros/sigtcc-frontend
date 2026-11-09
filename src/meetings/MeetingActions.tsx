@@ -1,7 +1,7 @@
 import { Button, Stack } from '@mui/material';
 import type { MeetingItem } from '../services/meetingService';
 
-export interface MeetingActionHandlers {
+interface MeetingActionHandlers {
   onAccept: (item: MeetingItem) => void;
   onReject: (item: MeetingItem) => void;
   onEdit: (item: MeetingItem) => void;

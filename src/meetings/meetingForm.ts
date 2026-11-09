@@ -17,7 +17,8 @@ export interface MeetingFormValues {
 
 // Santarém fica em UTC-3 o ano inteiro, sem horário de verão: a data e a hora do formulário são
 // lidas nesse fuso, e não no do navegador, como o servidor as lê (RF17).
-const SANTAREM_OFFSET = '-03:00';
+const SANTAREM_OFFSET_HOURS = 3;
+const SANTAREM_OFFSET = `-0${SANTAREM_OFFSET_HOURS}:00`;
 
 /** O instante da data e da hora escritas no horário de Santarém, ou `null` se estiverem vazias. */
 export function scheduledInstant(date: string, time: string): Date | null {
@@ -29,7 +30,9 @@ export function scheduledInstant(date: string, time: string): Date | null {
 
 /** A data (AAAA-MM-DD) e a hora (HH:MM) de um instante, no horário de Santarém, como os campos nativos as pedem. */
 export function santaremParts(iso: string): { date: string; time: string } {
-  const instant = new Date(new Date(iso).getTime() - 3 * 60 * 60 * 1000);
+  const instant = new Date(
+    new Date(iso).getTime() - SANTAREM_OFFSET_HOURS * 60 * 60 * 1000,
+  );
   const text = instant.toISOString();
   return { date: text.slice(0, 10), time: text.slice(11, 16) };
 }

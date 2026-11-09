@@ -16,6 +16,7 @@ import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
 import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
 import { MeetingActions } from '../meetings/MeetingActions';
+import { REASON_ACTIONS } from '../meetings/reasonActions';
 import { MeetingReasonDialog } from '../meetings/MeetingReasonDialog';
 import { MeetingFiltersBar } from '../meetings/MeetingFiltersBar';
 import { MeetingRequestDialog } from '../meetings/MeetingRequestDialog';
@@ -29,7 +30,6 @@ import {
 } from '../services/apiError';
 import {
   answerMeeting,
-  cancelMeeting,
   listMeetings,
   MEETINGS_PAGE_SIZE,
 } from '../services/meetingService';
@@ -103,20 +103,33 @@ export function MeetingsPage() {
           name: studentNames[filters.studentId] ?? 'Aluno selecionado',
         };
 
+  const refresh = () => setReload((current) => current + 1);
+  // 404 ou 409: a reunião mudou, expirou ou a orientação encerrou. Mostra a mensagem do servidor e
+  // lê de novo a lista e a sessão, para o menu refletir o fim da orientação.
+  const handleStateChanged = (message: string) => {
+    notify(message, 'error');
+    refresh();
+    void refreshUser();
+  };
+  const reasonSlot = reasonDialog.slot;
+  const reasonAction = reasonSlot && REASON_ACTIONS[reasonSlot.payload.kind];
+
   const accept = async (item: MeetingItem) => {
     if (acting !== null) return;
     setActing(item.id);
     try {
       await answerMeeting(item.id, 'accept');
       notify('Reunião aceita.', 'success');
-      setReload((current) => current + 1);
+      refresh();
     } catch (error) {
-      notify(
-        error instanceof ApiError ? error.message : messageForStatus(0),
-        'error',
-      );
-      // 404 ou 409: a reunião mudou, expirou ou a orientação encerrou; a lista é lida de novo.
-      if (isStateChangedError(error)) setReload((current) => current + 1);
+      if (isStateChangedError(error)) {
+        handleStateChanged(error.message);
+      } else {
+        notify(
+          error instanceof ApiError ? error.message : messageForStatus(0),
+          'error',
+        );
+      }
     } finally {
       setActing(null);
     }
@@ -229,49 +242,26 @@ export function MeetingsPage() {
           listTop.current?.scrollIntoView?.({ block: 'start' });
         }}
       />
-      {reasonDialog.slot && (
+      {reasonSlot && reasonAction && (
         <MeetingReasonDialog
-          key={reasonDialog.slot.openCount}
-          open={reasonDialog.slot.open}
-          {...(reasonDialog.slot.payload.kind === 'reject'
-            ? {
-                title: 'Recusar reunião',
-                intro:
-                  'Explique à outra parte por que a reunião foi recusada. Depois de recusada, ela não pode ser alterada.',
-                noun: 'justificativa' as const,
-                confirmLabel: 'Recusar',
-                sendingLabel: 'Recusando…',
-                send: (reason: string) =>
-                  answerMeeting(
-                    reasonDialog.slot!.payload.item.id,
-                    'reject',
-                    reason,
-                  ),
-              }
-            : {
-                title: 'Cancelar reunião',
-                intro:
-                  'Esta ação não pode ser desfeita. Informe o motivo do cancelamento.',
-                noun: 'motivo' as const,
-                confirmLabel: 'Cancelar reunião',
-                sendingLabel: 'Cancelando…',
-                send: (reason: string) =>
-                  cancelMeeting(reasonDialog.slot!.payload.item.id, reason),
-              })}
+          key={reasonSlot.openCount}
+          open={reasonSlot.open}
+          title={reasonAction.title}
+          intro={reasonAction.intro}
+          noun={reasonAction.noun}
+          confirmLabel={reasonAction.confirmLabel}
+          sendingLabel={reasonAction.sendingLabel}
+          send={(reason) =>
+            reasonAction.send(reasonSlot.payload.item.id, reason)
+          }
           onSaved={() => {
             reasonDialog.hide();
-            notify(
-              reasonDialog.slot?.payload.kind === 'reject'
-                ? 'Reunião recusada.'
-                : 'Reunião cancelada.',
-              'success',
-            );
-            setReload((current) => current + 1);
+            notify(reasonAction.successMessage, 'success');
+            refresh();
           }}
           onStateChanged={(message) => {
             reasonDialog.hide();
-            notify(message, 'error');
-            setReload((current) => current + 1);
+            handleStateChanged(message);
           }}
           onClose={reasonDialog.hide}
           onExited={reasonDialog.unmount}
@@ -292,7 +282,7 @@ export function MeetingsPage() {
                 : 'Reunião solicitada.',
               'success',
             );
-            setReload((current) => current + 1);
+            refresh();
           }}
           onNoChanges={() => {
             dialog.hide();
@@ -300,13 +290,12 @@ export function MeetingsPage() {
           }}
           onStateChanged={(message) => {
             dialog.hide();
-            notify(message, 'error');
-            setReload((current) => current + 1);
+            handleStateChanged(message);
           }}
           onEnded={() => {
             // O diálogo fica aberto, com o aviso: a sessão e a lista é que se atualizam.
             void refreshUser();
-            setReload((current) => current + 1);
+            refresh();
           }}
           onClose={dialog.hide}
           onExited={dialog.unmount}

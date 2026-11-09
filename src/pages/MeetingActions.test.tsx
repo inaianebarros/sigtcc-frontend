@@ -859,3 +859,91 @@ describe('Reuniões: editar (RF21, RN39)', () => {
     ).toBeVisible();
   });
 });
+
+describe('Reuniões: a orientação encerrou durante uma ação', () => {
+  const ME = 'GET /api/auth/me';
+  const ENDED = {
+    status: 409,
+    body: { detail: 'A orientação foi encerrada.' },
+  };
+
+  it.each([
+    ['aceitar', 'POST /api/reunioes/:id/responder', [ANSWERABLE], /Aceitar/],
+    ['editar', 'PATCH /api/reunioes/:id', [OWN], /Editar a reunião/],
+    [
+      'cancelar',
+      'POST /api/reunioes/:id/cancelar',
+      [OWN],
+      /Cancelar a reunião/,
+    ],
+  ] as const)(
+    'ao %s, o 409 atualiza também a sessão, para o menu refletir o fim',
+    async (action, route, meetings, button) => {
+      const { fetchMock, events } = setup([...meetings], { [route]: ENDED });
+      await screen.findByRole('button', { name: button });
+      const reads = requestsTo(fetchMock, ME).length;
+
+      if (action === 'aceitar') {
+        await events.click(screen.getByRole('button', { name: button }));
+      } else {
+        const title =
+          action === 'editar' ? 'Editar reunião' : 'Cancelar reunião';
+        const dialog = await openReason(events, button, title);
+        await events.type(
+          within(dialog).getByLabelText(/Descrição|Motivo/),
+          ' x',
+        );
+        await events.click(
+          within(dialog).getByRole('button', {
+            name: action === 'editar' ? 'Salvar' : 'Cancelar reunião',
+          }),
+        );
+      }
+
+      expect(
+        await screen.findByText('A orientação foi encerrada.'),
+      ).toBeVisible();
+      await waitFor(() =>
+        expect(requestsTo(fetchMock, ME).length).toBeGreaterThan(reads),
+      );
+    },
+  );
+
+  it('a recusa também atualiza a sessão', async () => {
+    const { fetchMock, events } = setup([ANSWERABLE], {
+      'POST /api/reunioes/:id/responder': ENDED,
+    });
+    const dialog = await openReason(events, /Recusar/, 'Recusar reunião');
+    const reads = requestsTo(fetchMock, ME).length;
+    await events.type(within(dialog).getByLabelText(/Justificativa/), 'Motivo');
+
+    await events.click(within(dialog).getByRole('button', { name: 'Recusar' }));
+
+    await screen.findByText('A orientação foi encerrada.');
+    await waitFor(() =>
+      expect(requestsTo(fetchMock, ME).length).toBeGreaterThan(reads),
+    );
+  });
+});
+
+describe('Reuniões: editar uma descrição com espaços nas pontas', () => {
+  it('mudar só a hora não reenvia a descrição, que só difere pelos espaços', async () => {
+    const { fetchMock, events } = setup([
+      makeMeeting(7, { description: '  Pauta com espaços  ' }),
+    ]);
+    const dialog = await openReason(
+      events,
+      /Editar a reunião/,
+      'Editar reunião',
+    );
+    expect(
+      within(dialog).queryByText(/Você tem alterações não salvas/),
+    ).not.toBeInTheDocument();
+
+    change(dialog, /Hora/, '16:00');
+    await events.click(save(dialog));
+
+    await screen.findByText('Reunião atualizada.');
+    expect(bodiesTo(fetchMock, 'PATCH', '/7')).toEqual([{ time: '16:00' }]);
+  });
+});
