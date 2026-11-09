@@ -1,6 +1,9 @@
 import type { UserType } from '../types/session';
 import { areas } from './areas';
 
+/** O parâmetro da URL que filtra a lista de atividades de um professor por orientando (RNF30). */
+export const STUDENT_FILTER_PARAM = 'aluno';
+
 export const paths = {
   home: '/',
   login: '/login',
@@ -35,7 +38,7 @@ export function teacherStudentPath(studentId: number): string {
 }
 
 export function teacherActivitiesOfStudentPath(studentId: number): string {
-  return `${paths.teacherActivities}?aluno=${studentId}`;
+  return `${paths.teacherActivities}?${STUDENT_FILTER_PARAM}=${studentId}`;
 }
 
 export function studentAdvisorPath(teacherId: number): string {

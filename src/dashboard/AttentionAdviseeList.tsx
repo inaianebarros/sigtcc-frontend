@@ -42,63 +42,65 @@ export function AttentionAdviseeList({
   return (
     <Stack spacing={1}>
       <Stack component="ul" spacing={1} sx={{ m: 0, p: 0 }}>
-        {items.map((advisee) => (
-          <Paper
-            key={advisee.id}
-            component="li"
-            variant="outlined"
-            sx={{
-              p: 2,
-              listStyle: 'none',
-              borderLeftWidth: 4,
-              borderLeftColor:
-                advisee.overdueCount > 0 ? 'error.main' : 'text.secondary',
-            }}
-          >
-            <Stack spacing={0.5}>
-              <Link
-                component={RouterLink}
-                to={teacherStudentPath(advisee.id)}
-                sx={{ overflowWrap: 'anywhere', fontWeight: 'medium' }}
-              >
-                {advisee.fullName}
-              </Link>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ overflowWrap: 'anywhere' }}
-              >
-                {advisee.thesisTopic === null
-                  ? 'Tema do TCC ainda não cadastrado.'
-                  : `Tema do TCC: ${advisee.thesisTopic}`}
-              </Typography>
-              <Stack
-                direction="row"
-                useFlexGap
-                sx={{ gap: 1, flexWrap: 'wrap', alignItems: 'center' }}
-              >
-                <Chip
-                  size="small"
-                  variant="outlined"
-                  color={advisee.overdueCount > 0 ? 'error' : 'default'}
-                  label={overdueText(advisee.overdueCount)}
-                />
-                <Chip
-                  size="small"
-                  variant="outlined"
-                  label={inReviewText(advisee.inReviewCount)}
-                />
+        {items.map((advisee) => {
+          const isLate = advisee.overdueCount > 0;
+          return (
+            <Paper
+              key={advisee.id}
+              component="li"
+              variant="outlined"
+              sx={{
+                p: 2,
+                listStyle: 'none',
+                borderLeftWidth: 4,
+                borderLeftColor: isLate ? 'error.main' : 'text.secondary',
+              }}
+            >
+              <Stack spacing={0.5}>
                 <Link
                   component={RouterLink}
-                  to={teacherActivitiesOfStudentPath(advisee.id)}
-                  variant="body2"
+                  to={teacherStudentPath(advisee.id)}
+                  sx={{ overflowWrap: 'anywhere', fontWeight: 'medium' }}
                 >
-                  Ver atividades
+                  {advisee.fullName}
                 </Link>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ overflowWrap: 'anywhere' }}
+                >
+                  {advisee.thesisTopic === null
+                    ? 'Tema do TCC ainda não cadastrado.'
+                    : `Tema do TCC: ${advisee.thesisTopic}`}
+                </Typography>
+                <Stack
+                  direction="row"
+                  useFlexGap
+                  sx={{ gap: 1, flexWrap: 'wrap', alignItems: 'center' }}
+                >
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    color={isLate ? 'error' : 'default'}
+                    label={overdueText(advisee.overdueCount)}
+                  />
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    label={inReviewText(advisee.inReviewCount)}
+                  />
+                  <Link
+                    component={RouterLink}
+                    to={teacherActivitiesOfStudentPath(advisee.id)}
+                    variant="body2"
+                  >
+                    Ver atividades
+                  </Link>
+                </Stack>
               </Stack>
-            </Stack>
-          </Paper>
-        ))}
+            </Paper>
+          );
+        })}
       </Stack>
       {hasMore && (
         <Link

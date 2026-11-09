@@ -1,12 +1,13 @@
 import { useSearchParams } from 'react-router-dom';
 import { PAGE_PARAM } from '../hooks/useUrlPage';
+import { STUDENT_FILTER_PARAM } from '../navigation/paths';
 import { positiveIntFrom } from '../navigation/positiveInt';
 import type { ActivityStatus } from '../services/activityService';
 import { statusFrom } from './activityStatus';
 
 const STATUS_PARAM = 'situacao';
 const OVERDUE_PARAM = 'atrasadas';
-const STUDENT_PARAM = 'aluno';
+const STUDENT_PARAM = STUDENT_FILTER_PARAM;
 
 export interface ActivityFilterValues {
   status: ActivityStatus | null;
