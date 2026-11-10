@@ -47,11 +47,12 @@ export function destinationOf(
   if (type === 'advising_request_received') return paths.teacherRequests;
   if (
     type === 'advising_request_answered' ||
-    type === 'advising_request_unanswered' ||
-    type === 'advising_ended'
+    type === 'advising_request_unanswered'
   ) {
     return paths.studentRequest;
   }
+  // O histórico (RF49): a lista, sem destacar a orientação que a notificação cita.
+  if (type === 'advising_ended') return paths.studentAdvisingHistory;
   if (type === 'meeting_requested' || type === 'meeting_answered') {
     return userType === 'student'
       ? paths.studentMeetings

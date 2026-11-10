@@ -405,7 +405,7 @@ describe('Sino: ler e navegar', () => {
   it.each([
     ['advising_request_received', 'teacher', '/professor/solicitacoes', null],
     ['advising_request_answered', 'student', '/aluno/solicitacao', null],
-    ['advising_ended', 'student', '/aluno/solicitacao', null],
+    ['advising_ended', 'student', '/aluno/historico', null],
     [
       'meeting_requested',
       'student',

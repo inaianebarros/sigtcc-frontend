@@ -61,6 +61,7 @@ describe('item Tema do TCC do menu lateral do aluno', () => {
       'Atividades',
       'Reuniões',
       'Tema do TCC',
+      'Histórico de orientações',
       'Meu perfil',
     ]);
   });
