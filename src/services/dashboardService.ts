@@ -26,6 +26,23 @@ export interface ActivityIndicators {
 
 export type DashboardRequestState = 'pending' | 'rejected' | 'unanswered';
 
+/**
+ * Uma reunião aceita e futura de uma Dashboard (RF50, RF51): o horário com o fuso, o outro
+ * participante (o professor, para o aluno; o orientando, para o professor) e a descrição já
+ * resumida pelo servidor.
+ */
+export interface DashboardMeeting {
+  id: number;
+  scheduledAt: string;
+  partyName: string;
+  description: string;
+}
+
+export interface DashboardMeetings {
+  items: DashboardMeeting[];
+  hasMore: boolean;
+}
+
 export interface StudentDashboard {
   hasActiveAdvising: boolean;
   advising: {
@@ -35,6 +52,8 @@ export interface StudentDashboard {
   } | null;
   activities: ActivityIndicators | null;
   nextActivities: { items: DashboardActivity[]; hasMore: boolean } | null;
+  /** `null` sem orientação ativa. */
+  nextMeetings: DashboardMeetings | null;
   /** A última solicitação, se ainda está pendente, recusada ou não respondida (RN20). */
   lastRequest: {
     id: number;
@@ -52,6 +71,55 @@ interface ApiActivity {
   status: ActivityStatus;
   overdue: boolean;
   student?: { id: number; full_name: string };
+}
+
+interface ApiMeeting {
+  id: number;
+  scheduled_at: string;
+  description: string;
+}
+
+/** Na Dashboard do aluno o outro participante é o professor. */
+interface ApiStudentMeeting extends ApiMeeting {
+  teacher: { id: number; full_name: string };
+}
+
+/** Na Dashboard do professor o outro participante é o orientando. */
+interface ApiTeacherMeeting extends ApiMeeting {
+  student: { id: number; full_name: string };
+}
+
+function meetingFrom(meeting: ApiMeeting, partyName: string): DashboardMeeting {
+  return {
+    id: meeting.id,
+    scheduledAt: meeting.scheduled_at,
+    partyName,
+    description: meeting.description,
+  };
+}
+
+function studentMeetingsFrom(
+  api: { items: ApiStudentMeeting[]; has_more: boolean } | null | undefined,
+): DashboardMeetings | null {
+  if (!api) return null;
+  return {
+    items: api.items.map((meeting) =>
+      meetingFrom(meeting, meeting.teacher.full_name),
+    ),
+    hasMore: api.has_more,
+  };
+}
+
+function teacherMeetingsFrom(
+  api: { items: ApiTeacherMeeting[]; has_more: boolean } | null | undefined,
+): DashboardMeetings | null {
+  if (!api) return null;
+  return {
+    items: api.items.map((meeting) =>
+      meetingFrom(meeting, meeting.student.full_name),
+    ),
+    hasMore: api.has_more,
+  };
 }
 
 interface ApiIndicators {
@@ -72,6 +140,10 @@ interface ApiStudentDashboard {
   } | null;
   activities: ApiIndicators | null;
   next_activities: { items: ApiActivity[]; has_more: boolean } | null;
+  next_meetings: {
+    items: ApiStudentMeeting[];
+    has_more: boolean;
+  } | null;
   last_request: {
     id: number;
     status: DashboardRequestState;
@@ -124,6 +196,7 @@ function dashboardFrom(api: ApiStudentDashboard): StudentDashboard {
       items: api.next_activities.items.map(activityFrom),
       hasMore: api.next_activities.has_more,
     },
+    nextMeetings: studentMeetingsFrom(api.next_meetings),
     lastRequest: api.last_request && {
       id: api.last_request.id,
       status: api.last_request.status,
@@ -160,6 +233,8 @@ export interface TeacherDashboard {
   activities: ActivityIndicators | null;
   attentionAdvisees: { items: AttentionAdvisee[]; hasMore: boolean } | null;
   nextDeadlines: { items: DashboardActivity[]; hasMore: boolean } | null;
+  /** `null` sem orientações ativas. */
+  nextMeetings: DashboardMeetings | null;
 }
 
 interface ApiTeacherDashboard {
@@ -176,6 +251,10 @@ interface ApiTeacherDashboard {
     has_more: boolean;
   } | null;
   next_deadlines: { items: ApiActivity[]; has_more: boolean } | null;
+  next_meetings: {
+    items: ApiTeacherMeeting[];
+    has_more: boolean;
+  } | null;
 }
 
 function teacherDashboardFrom(api: ApiTeacherDashboard): TeacherDashboard {
@@ -196,6 +275,7 @@ function teacherDashboardFrom(api: ApiTeacherDashboard): TeacherDashboard {
       items: api.next_deadlines.items.map(activityFrom),
       hasMore: api.next_deadlines.has_more,
     },
+    nextMeetings: teacherMeetingsFrom(api.next_meetings),
   };
 }
 

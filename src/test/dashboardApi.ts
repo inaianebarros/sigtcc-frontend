@@ -8,6 +8,46 @@ export interface FakeDashboardActivity {
   overdue: boolean;
 }
 
+export interface FakeStudentMeeting {
+  id: number;
+  scheduled_at: string;
+  teacher: { id: number; full_name: string };
+  description: string;
+}
+
+export interface FakeTeacherMeeting {
+  id: number;
+  scheduled_at: string;
+  student: { id: number; full_name: string };
+  description: string;
+}
+
+export function makeStudentMeeting(
+  id: number,
+  overrides: Partial<FakeStudentMeeting> = {},
+): FakeStudentMeeting {
+  return {
+    id,
+    scheduled_at: '2099-12-10T14:30:00-03:00',
+    teacher: { id: 9, full_name: 'Carlos Lima' },
+    description: `Reunião ${id}`,
+    ...overrides,
+  };
+}
+
+export function makeTeacherMeeting(
+  id: number,
+  overrides: Partial<FakeTeacherMeeting> = {},
+): FakeTeacherMeeting {
+  return {
+    id,
+    scheduled_at: '2099-12-10T14:30:00-03:00',
+    student: { id: 101, full_name: 'Maria Lima' },
+    description: `Reunião ${id}`,
+    ...overrides,
+  };
+}
+
 export interface FakeStudentDashboard {
   has_active_advising: boolean;
   advising: {
@@ -24,6 +64,7 @@ export interface FakeStudentDashboard {
     progress_percent: number | null;
   } | null;
   next_activities: { items: FakeDashboardActivity[]; has_more: boolean } | null;
+  next_meetings: { items: FakeStudentMeeting[]; has_more: boolean } | null;
   last_request: {
     id: number;
     status: 'pending' | 'rejected' | 'unanswered';
@@ -82,6 +123,7 @@ export function makeStudentDashboard(
       ],
       has_more: false,
     },
+    next_meetings: { items: [], has_more: false },
     last_request: null,
     has_ended_advisings: false,
     ...overrides,
@@ -97,6 +139,7 @@ export function makeDashboardWithoutAdvising(
     advising: null,
     activities: null,
     next_activities: null,
+    next_meetings: null,
     ...overrides,
   });
 }
@@ -148,6 +191,7 @@ export interface FakeTeacherDashboard {
     has_more: boolean;
   } | null;
   next_deadlines: { items: FakeDeadline[]; has_more: boolean } | null;
+  next_meetings: { items: FakeTeacherMeeting[]; has_more: boolean } | null;
 }
 
 export function makeAttentionAdvisee(
@@ -223,6 +267,7 @@ export function makeTeacherDashboard(
       ],
       has_more: false,
     },
+    next_meetings: { items: [], has_more: false },
     ...overrides,
   };
 }
@@ -234,6 +279,7 @@ export function makeEmptyTeacherDashboard(): FakeTeacherDashboard {
     activities: null,
     attention_advisees: null,
     next_deadlines: null,
+    next_meetings: null,
   };
 }
 
