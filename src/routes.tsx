@@ -6,6 +6,7 @@ import { areas } from './navigation/areas';
 import { paths } from './navigation/paths';
 import { ActivitiesPage } from './pages/ActivitiesPage';
 import { ActivityDetailPage } from './pages/ActivityDetailPage';
+import { AdvisingHistoryPage } from './pages/AdvisingHistoryPage';
 import { AdvisorProfilePage } from './pages/AdvisorProfilePage';
 import { AdvisorsPage } from './pages/AdvisorsPage';
 import { AreaPage } from './pages/AreaPage';
@@ -38,6 +39,7 @@ const screens: Record<string, ReactElement> = {
   '/aluno/orientadores': <AdvisorsPage />,
   '/aluno/perfil': <StudentProfilePage />,
   '/aluno/solicitacao': <StudentRequestPage />,
+  '/aluno/historico': <AdvisingHistoryPage />,
   '/aluno/tema': <StudentThesisPage />,
   '/professor/dashboard': <TeacherDashboardPage />,
   '/professor/atividades': <ActivitiesPage />,
@@ -45,6 +47,7 @@ const screens: Record<string, ReactElement> = {
   '/professor/orientandos': <TeacherAdviseesPage />,
   '/professor/perfil': <TeacherProfilePage />,
   '/professor/solicitacoes': <TeacherRequestsPage />,
+  '/professor/historico': <AdvisingHistoryPage />,
 };
 
 // Telas de uma área que não são itens do menu: abrem a partir de outra tela.
@@ -61,9 +64,6 @@ const subScreens: Record<string, ReactElement> = {
   [paths.studentAdvisor]: <AdvisorProfilePage />,
   [paths.studentNotifications]: <NotificationsPage />,
   [paths.teacherNotifications]: <NotificationsPage />,
-  [paths.studentAdvisingHistory]: (
-    <ComingSoonPage title="Histórico de orientações" />
-  ),
 };
 
 export function AppRoutes() {

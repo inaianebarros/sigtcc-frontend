@@ -62,6 +62,7 @@ describe('item Reuniões do menu lateral', () => {
       'Atividades',
       'Reuniões',
       'Tema do TCC',
+      'Histórico de orientações',
       'Meu perfil',
     ]);
   });
@@ -94,6 +95,7 @@ describe('item Reuniões do menu lateral', () => {
       'Orientandos',
       'Atividades',
       'Reuniões',
+      'Histórico de orientações',
       'Meu perfil',
     ]);
   });

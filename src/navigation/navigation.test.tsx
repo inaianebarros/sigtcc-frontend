@@ -26,7 +26,7 @@ describe('menu lateral por perfil', () => {
     setViewportWidth(DESKTOP_WIDTH);
   });
 
-  it('mostra ao aluno os itens Dashboard, Orientadores, Minha solicitação e Meu perfil e abre no Dashboard', async () => {
+  it('mostra ao aluno os itens Dashboard, Orientadores, Minha solicitação, Histórico de orientações e Meu perfil e abre no Dashboard', async () => {
     mockApi(sessionOf('student', { has_active_advising: false }));
 
     renderApp('/login');
@@ -37,13 +37,19 @@ describe('menu lateral por perfil', () => {
       within(menu)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['Dashboard', 'Orientadores', 'Minha solicitação', 'Meu perfil']);
+    ).toEqual([
+      'Dashboard',
+      'Orientadores',
+      'Minha solicitação',
+      'Histórico de orientações',
+      'Meu perfil',
+    ]);
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/aluno/dashboard',
     );
   });
 
-  it('mostra ao professor os itens Dashboard, Solicitações e Meu perfil e abre no Dashboard', async () => {
+  it('mostra ao professor os itens Dashboard, Solicitações, Histórico de orientações e Meu perfil e abre no Dashboard', async () => {
     mockApi(sessionOf('teacher', { active_advisees_count: 0 }));
 
     renderApp('/login');
@@ -54,7 +60,12 @@ describe('menu lateral por perfil', () => {
       within(menu)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['Dashboard', 'Solicitações', 'Meu perfil']);
+    ).toEqual([
+      'Dashboard',
+      'Solicitações',
+      'Histórico de orientações',
+      'Meu perfil',
+    ]);
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/professor/dashboard',
     );
@@ -91,6 +102,7 @@ describe('menu lateral por perfil', () => {
       'Orientandos',
       'Atividades',
       'Reuniões',
+      'Histórico de orientações',
       'Meu perfil',
     ]);
     expect(

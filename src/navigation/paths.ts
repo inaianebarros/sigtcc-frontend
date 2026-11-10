@@ -17,6 +17,7 @@ export const paths = {
   teacherDashboard: '/professor/dashboard',
   teacherAdvisees: '/professor/orientandos',
   studentAdvisingHistory: '/aluno/historico',
+  teacherAdvisingHistory: '/professor/historico',
   studentAdvisors: '/aluno/orientadores',
   studentRequest: '/aluno/solicitacao',
   teacherRequests: '/professor/solicitacoes',

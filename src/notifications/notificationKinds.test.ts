@@ -49,17 +49,27 @@ describe('destinationOf', () => {
     ).toBe('/professor/solicitacoes');
   });
 
-  it.each([
-    'advising_request_answered',
-    'advising_request_unanswered',
-    'advising_ended',
-  ])('%s leva o aluno à tela da solicitação', (type) => {
+  it.each(['advising_request_answered', 'advising_request_unanswered'])(
+    '%s leva o aluno à tela da solicitação',
+    (type) => {
+      expect(
+        destinationOf(
+          notification(type, { reference: { type: 'advising', id: 3 } }),
+          'student',
+        ),
+      ).toBe('/aluno/solicitacao');
+    },
+  );
+
+  it('a orientação encerrada leva o aluno ao histórico de orientações (RF49)', () => {
     expect(
       destinationOf(
-        notification(type, { reference: { type: 'advising', id: 3 } }),
+        notification('advising_ended', {
+          reference: { type: 'advising', id: 3 },
+        }),
         'student',
       ),
-    ).toBe('/aluno/solicitacao');
+    ).toBe('/aluno/historico');
   });
 
   it.each([
