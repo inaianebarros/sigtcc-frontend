@@ -10,6 +10,7 @@ import { ActivityList } from './ActivityList';
 import { DashboardEmptyState } from './DashboardEmptyState';
 import { IndicatorCard } from './IndicatorCard';
 import { IndicatorGrid } from './IndicatorGrid';
+import { MeetingList } from './MeetingList';
 import { ProgressCard } from './ProgressCard';
 
 const REQUEST_TEXTS: Record<
@@ -115,6 +116,16 @@ function ActiveAdvisingView({
             />
           </Section>
         </>
+      )}
+      {dashboard.nextMeetings && (
+        <Section title="Próximas reuniões">
+          <MeetingList
+            items={dashboard.nextMeetings.items}
+            hasMore={dashboard.nextMeetings.hasMore}
+            meetingsPath={paths.studentMeetings}
+            partyLabel="Professor"
+          />
+        </Section>
       )}
     </>
   );

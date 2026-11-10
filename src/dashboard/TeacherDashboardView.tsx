@@ -8,6 +8,7 @@ import { AttentionAdviseeList } from './AttentionAdviseeList';
 import { DashboardEmptyState } from './DashboardEmptyState';
 import { IndicatorCard } from './IndicatorCard';
 import { IndicatorGrid } from './IndicatorGrid';
+import { MeetingList } from './MeetingList';
 import { ProgressCard } from './ProgressCard';
 
 const NO_ADVISEES_MESSAGE =
@@ -94,6 +95,16 @@ function ActiveAdviseesView({ dashboard }: { dashboard: TeacherDashboard }) {
             />
           </Section>
         </>
+      )}
+      {dashboard.nextMeetings && (
+        <Section title="Próximas reuniões">
+          <MeetingList
+            items={dashboard.nextMeetings.items}
+            hasMore={dashboard.nextMeetings.hasMore}
+            meetingsPath={paths.teacherMeetings}
+            partyLabel="Orientando"
+          />
+        </Section>
       )}
     </>
   );
