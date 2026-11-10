@@ -1,3 +1,4 @@
+import { HISTORY_PAGE_SIZE } from '../services/advisingHistoryService';
 import type { MockResponse } from './mockApi';
 
 export interface FakeEndedAdvising {
@@ -55,7 +56,9 @@ export function historyRoutes(
     'GET /api/orientacao/historico':
       list ??
       ((_body, url) => {
-        const limit = Number(url.searchParams.get('limit') ?? 20);
+        const limit = Number(
+          url.searchParams.get('limit') ?? HISTORY_PAGE_SIZE,
+        );
         const offset = Number(url.searchParams.get('offset') ?? 0);
         return {
           body: {

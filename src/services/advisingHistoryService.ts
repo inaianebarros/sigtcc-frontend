@@ -19,6 +19,11 @@ export interface EndedAdvisingPage {
   count: number;
 }
 
+interface ApiEndedAdvisingPage {
+  items: ApiEndedAdvising[];
+  count: number;
+}
+
 interface ApiEndedAdvising {
   id: number;
   counterpart: { id: number; full_name: string };
@@ -36,10 +41,9 @@ export async function listAdvisingHistory(
     limit: String(HISTORY_PAGE_SIZE),
     offset: String((page - 1) * HISTORY_PAGE_SIZE),
   });
-  const response = await httpClient.get<{
-    items: ApiEndedAdvising[];
-    count: number;
-  }>(`/orientacao/historico?${params}`);
+  const response = await httpClient.get<ApiEndedAdvisingPage>(
+    `/orientacao/historico?${params}`,
+  );
   return {
     count: response.count,
     items: response.items.map((item) => ({
