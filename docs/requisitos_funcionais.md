@@ -106,6 +106,8 @@ RF52 - **Notificar Aluno sobre Alteração de Atividade:** O sistema deve notifi
 
 RF53 - **Notificar Aluno sobre Encerramento da Orientação:** O sistema deve notificar o aluno, com uma única notificação, quando o professor encerrar a orientação, informando que as atividades em aberto foram arquivadas e que as reuniões pendentes ou aceitas ainda não realizadas foram canceladas (RN07, RN34).
 
+RF54 - **Enviar E-mail de Cada Notificação:** O sistema deve enviar um e-mail ao destinatário de cada notificação criada, com o tipo da notificação no assunto e o texto da própria notificação no corpo, e com um link para o sistema. A conta desativada (RN19) não recebe o e-mail. Uma falha no envio não desfaz a ação que gerou a notificação: o sistema tenta enviar de novo, até 5 tentativas, e a notificação continua disponível no sistema.
+
 RFADM01 - **Cadastrar Curso:** O sistema deve permitir que o admin cadastre um novo curso ao sistema.
 
 RFADM02 - **Editar Curso:** O sistema deve permitir que o admin edite as informações de um curso.
