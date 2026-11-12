@@ -124,6 +124,10 @@ RFADM07 - **Listar Usuários:** O sistema deve permitir que o admin visualize a 
 
 RFADM08 - **Excluir Usuário:** O sistema deve permitir que o admin exclua um usuário do sistema, por meio de exclusão lógica (RN19).
 
+RF57 - **Marcar Reunião como Realizada:** O sistema deve permitir que o professor orientador marque como realizada uma reunião aceita cujo horário ainda não passou, a qualquer momento, sem esperar o horário agendado. A marcação exige confirmação explícita (RNF21), é irreversível e fica registrada com o momento e o autor (RN43).
+
+RF58 - **Registrar Apontamentos da Reunião:** O sistema deve permitir que o professor orientador adicione, edite e remova os apontamentos de uma reunião realizada, em texto livre de até 3000 caracteres, e que o aluno orientando os visualize em leitura (RN44).
+
 RF59 - **Filtrar o Calendário de Reuniões:** O sistema deve oferecer, ao lado do calendário de reuniões, um painel de filtros. O professor filtra por orientandos, em uma lista com busca por nome, que inclui os alunos de orientações ativas e encerradas, e por situação (pendente, aceita, recusada, cancelada, realizada e expirada). O aluno filtra só por situação. Todos os filtros começam ligados, a lista de orientandos e a situação vêm sempre completas ao abrir a tela e os filtros são executados no servidor (RNF26, RN46). Em telas pequenas o painel vira uma seção recolhível acima do calendário (RNF24).
 
 RF60 - **Solicitar Reunião pelo Calendário:** O sistema deve permitir que o usuário inicie a solicitação de reunião clicando em um dia futuro do calendário, que abre o formulário de solicitação (RF17, RF18) com a data preenchida. Nas visões Dia e Semana, o clique em uma faixa de horário futura também preenche a hora de início, com a de término sugerida uma hora depois. No Mês, só a data é preenchida. O clique em data ou horário passado não faz nada, e a ação também está disponível por um botão "Solicitar reunião" para quem usa o teclado. Sem orientação ativa, ela fica desabilitada com o motivo explicado (RN29).
