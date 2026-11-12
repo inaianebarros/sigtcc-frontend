@@ -46,6 +46,8 @@ interface ProfileEditorProps<
   extraFields?: ReactNode;
   /** Campos editáveis próprios do perfil, depois dos artigos. */
   trailingFields?: ReactNode;
+  /** Seções salvas na hora, fora do formulário, mostradas depois dele (como as propostas de tema). */
+  afterForm?: ReactNode;
   /** Para onde o botão "Alterar senha" leva. */
   changePasswordPath: string;
 }
@@ -69,6 +71,7 @@ export function ProfileEditor<
   facts,
   extraFields,
   trailingFields,
+  afterForm,
   changePasswordPath,
 }: ProfileEditorProps<TProfile, TValues, TChanges>) {
   const { notify } = useFeedback();
@@ -148,6 +151,7 @@ export function ProfileEditor<
           </Button>
         </Stack>
       </Paper>
+      {afterForm}
       <UnsavedChangesDialog blocker={blocker} />
     </FormProvider>
   );
