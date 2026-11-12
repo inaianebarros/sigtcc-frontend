@@ -7,7 +7,8 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
@@ -38,6 +39,7 @@ import {
 import {
   answerMeeting,
   listMeetingsInPeriod,
+  markMeetingHeld,
   MEETING_SITUATIONS,
 } from '../services/meetingService';
 import type { MeetingItem, MeetingSituation } from '../services/meetingService';
@@ -79,6 +81,12 @@ export function MeetingsPage() {
     item: MeetingItem;
   }>();
   const detailsDialog = useDialogSlot<MeetingItem>();
+  // Marcar como realizada é irreversível e pede confirmação explícita (RNF21, RN43).
+  const heldDialog = useDialogSlot<MeetingItem>();
+  const [markingHeld, setMarkingHeld] = useState(false);
+  // A guarda do envio duplicado é um ref: o estado só muda na renderização seguinte, e dois cliques
+  // no mesmo instante passariam por ele.
+  const markingHeldNow = useRef(false);
   const isTeacher = user?.type === 'teacher';
   const userId = user?.id ?? 0;
   const controller = useCalendarController();
@@ -181,6 +189,32 @@ export function MeetingsPage() {
     }
   };
 
+  const confirmHeld = async (item: MeetingItem) => {
+    if (markingHeldNow.current) return;
+    markingHeldNow.current = true;
+    setMarkingHeld(true);
+    try {
+      await markMeetingHeld(item.id);
+      heldDialog.hide();
+      notify('Reunião marcada como realizada.', 'success');
+      refresh();
+    } catch (error) {
+      if (isStateChangedError(error)) {
+        // O horário passou, a reunião mudou ou a orientação encerrou: a mensagem é a do servidor.
+        heldDialog.hide();
+        handleStateChanged(error.message);
+      } else {
+        notify(
+          error instanceof ApiError ? error.message : messageForStatus(0),
+          'error',
+        );
+      }
+    } finally {
+      markingHeldNow.current = false;
+      setMarkingHeld(false);
+    }
+  };
+
   // Editar, recusar e cancelar abrem o próprio diálogo, no lugar do modal da reunião.
   const renderActions = (item: MeetingItem) => (
     <MeetingActions
@@ -199,10 +233,15 @@ export function MeetingsPage() {
         detailsDialog.hide();
         reasonDialog.show({ kind: 'cancel', item: target });
       }}
+      onMarkHeld={(target) => {
+        detailsDialog.hide();
+        heldDialog.show(target);
+      }}
     />
   );
 
   const detailsSlot = detailsDialog.slot;
+  const heldSlot = heldDialog.slot;
   // Ao recarregar (outro mês, ou depois de uma ação) o calendário mantém as reuniões já lidas até
   // as novas chegarem, em vez de esvaziar a grade.
   const [meetings, setMeetings] = useState(NO_MEETINGS);
@@ -301,6 +340,22 @@ export function MeetingsPage() {
           actions={renderActions(detailsSlot.payload)}
           onClose={detailsDialog.hide}
           onExited={detailsDialog.unmount}
+        />
+      )}
+      {heldSlot && (
+        <ConfirmDialog
+          key={`held-${heldSlot.openCount}`}
+          open={heldSlot.open}
+          title="Marcar reunião como realizada"
+          message={`Esta ação não pode ser desfeita: depois de marcada como realizada, a reunião deixa de poder ser editada ou cancelada. Deseja marcar como realizada a reunião "${heldSlot.payload.description}"?`}
+          confirmLabel="Marcar como realizada"
+          confirmColor="primary"
+          cancelLabel="Voltar"
+          busy={markingHeld}
+          busyLabel="Marcando…"
+          onConfirm={() => void confirmHeld(heldSlot.payload)}
+          onCancel={heldDialog.hide}
+          onExited={heldDialog.unmount}
         />
       )}
       {reasonSlot && reasonAction && (

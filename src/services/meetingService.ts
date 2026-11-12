@@ -28,6 +28,8 @@ export interface MeetingItem {
   canAnswer: boolean;
   canEdit: boolean;
   canCancel: boolean;
+  /** O usuário pode marcar a reunião como realizada agora, decidido no servidor (RN43). */
+  canMarkHeld: boolean;
 }
 
 export interface MeetingInput {
@@ -52,6 +54,8 @@ interface ApiMeeting {
   can_answer: boolean;
   can_edit: boolean;
   can_cancel: boolean;
+  marked_held: boolean;
+  can_mark_held: boolean;
 }
 
 function meetingFrom(item: ApiMeeting): MeetingItem {
@@ -76,6 +80,7 @@ function meetingFrom(item: ApiMeeting): MeetingItem {
     canAnswer: item.can_answer,
     canEdit: item.can_edit,
     canCancel: item.can_cancel,
+    canMarkHeld: item.can_mark_held,
   };
 }
 
@@ -198,4 +203,12 @@ export async function listCalendarAdvisees(
       ended: item.ended,
     })),
   };
+}
+
+/**
+ * O professor orientador marca uma reunião aceita e ainda futura como realizada (RF57, RN43). A
+ * marcação é irreversível; o servidor decide se a reunião ainda pode ser marcada.
+ */
+export async function markMeetingHeld(id: number): Promise<void> {
+  await httpClient.post(`/reunioes/${id}/realizada`, {});
 }

@@ -18,6 +18,8 @@ export interface FakeMeeting {
   can_answer: boolean;
   can_edit: boolean;
   can_cancel: boolean;
+  marked_held: boolean;
+  can_mark_held: boolean;
   /** O aluno da reunião, para o filtro do professor (não faz parte do contrato do item). */
   student_id?: number;
 }
@@ -42,6 +44,8 @@ export function makeMeeting(
     can_answer: false,
     can_edit: true,
     can_cancel: true,
+    marked_held: false,
+    can_mark_held: false,
     ...overrides,
   };
 }
@@ -226,6 +230,17 @@ export function meetingsServer(
       if (input.description !== undefined)
         found.description = input.description;
       return { body: found };
+    },
+    'POST /api/reunioes/:id/realizada': (_body, _url, params) => {
+      const found = state.find((item) => item.id === Number(params.id));
+      if (!found)
+        return { status: 404, body: { detail: 'Reunião não encontrada.' } };
+      found.situation = 'held';
+      found.marked_held = true;
+      found.can_mark_held = false;
+      found.can_edit = false;
+      found.can_cancel = false;
+      return { body: { ...found, held_at: '2026-11-10T12:00:00-03:00' } };
     },
     'POST /api/reunioes/:id/cancelar': (body, _url, params) => {
       const found = state.find((item) => item.id === Number(params.id));

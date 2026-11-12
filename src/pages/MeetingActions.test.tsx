@@ -1044,3 +1044,236 @@ describe('Reuniões: editar uma descrição com espaços nas pontas', () => {
     ]);
   });
 });
+
+const MARKABLE = makeMeeting(8, {
+  description: 'Pauta para marcar',
+  scheduled_at: '2026-11-24T14:30:00-03:00',
+  situation: 'accepted',
+  status: 'accepted',
+  author: { id: 9, full_name: 'Carlos Lima', type: 'teacher' },
+  counterpart: { id: 101, full_name: 'Maria Lima' },
+  can_answer: false,
+  can_edit: true,
+  can_cancel: true,
+  can_mark_held: true,
+});
+const MARK = 'POST /api/reunioes/:id/realizada';
+const MARK_BUTTON = { name: /Marcar como realizada a reunião/ };
+
+describe('Reuniões: marcar como realizada (RF57, RN43)', () => {
+  it('a ação aparece só quando a API indica que o professor pode marcar', async () => {
+    const { events } = setup([MARKABLE, OWN, ANSWERABLE], {}, 'teacher');
+
+    const markable = within(await openMeeting(events, /Pauta para marcar/));
+    expect(markable.getByRole('button', MARK_BUTTON)).toBeVisible();
+    await events.click(markable.getByRole('button', { name: 'Fechar' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+
+    for (const description of [/Pauta minha/, /Pauta para responder/]) {
+      const other = within(await openMeeting(events, description));
+      expect(other.queryByRole('button', MARK_BUTTON)).not.toBeInTheDocument();
+      await events.click(other.getByRole('button', { name: 'Fechar' }));
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+    }
+  });
+
+  it('a confirmação diz que é irreversível e que não edita nem cancela, e só marca ao confirmar', async () => {
+    const { fetchMock, events } = setup([MARKABLE], {}, 'teacher');
+    await openMeeting(events, /Pauta para marcar/);
+
+    await events.click(screen.getByRole('button', MARK_BUTTON));
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Marcar reunião como realizada',
+    });
+    expect(dialog).toHaveAccessibleDescription(
+      /Esta ação não pode ser desfeita.*deixa de poder ser editada ou cancelada/,
+    );
+    expect(bodiesTo(fetchMock, 'POST', '/realizada')).toEqual([]);
+
+    await events.click(within(dialog).getByRole('button', { name: 'Voltar' }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(bodiesTo(fetchMock, 'POST', '/realizada')).toEqual([]);
+    expect(
+      within(cardOf(/Pauta para marcar/)).getByText('Aceita'),
+    ).toBeVisible();
+  });
+
+  it('ao confirmar, a reunião passa a aparecer como realizada, sem editar nem cancelar, e a lista é atualizada', async () => {
+    const { fetchMock, events } = setup([MARKABLE], {}, 'teacher');
+    await openMeeting(events, /Pauta para marcar/);
+    await events.click(screen.getByRole('button', MARK_BUTTON));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Marcar reunião como realizada',
+    });
+    const reads = requestsTo(fetchMock, LIST).length;
+
+    await events.click(
+      within(dialog).getByRole('button', { name: 'Marcar como realizada' }),
+    );
+
+    expect(
+      await screen.findByText('Reunião marcada como realizada.'),
+    ).toBeVisible();
+    expect(bodiesTo(fetchMock, 'POST', '/realizada')).toEqual([{}]);
+    await waitFor(() =>
+      expect(
+        within(cardOf(/Pauta para marcar/)).getByText('Realizada'),
+      ).toBeVisible(),
+    );
+    expect(requestsTo(fetchMock, LIST).length).toBeGreaterThan(reads);
+    const details = within(await openMeeting(events, /Pauta para marcar/));
+    for (const name of [/Editar/, /Cancelar/, /Marcar como realizada/]) {
+      expect(details.queryByRole('button', { name })).not.toBeInTheDocument();
+    }
+  });
+
+  it('o botão fica ocupado durante o envio e a marcação sai uma vez só', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { fetchMock, events } = setup(
+      [MARKABLE],
+      {
+        [MARK]: async () => {
+          await gate;
+          return {
+            status: 200,
+            body: { ...MARKABLE, held_at: '2026-11-10T12:00:00-03:00' },
+          };
+        },
+      },
+      'teacher',
+    );
+    await openMeeting(events, /Pauta para marcar/);
+    await events.click(screen.getByRole('button', MARK_BUTTON));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Marcar reunião como realizada',
+    });
+
+    await events.click(
+      within(dialog).getByRole('button', { name: 'Marcar como realizada' }),
+    );
+
+    const busy = await within(dialog).findByRole('button', {
+      name: 'Marcando…',
+    });
+    expect(busy).toBeDisabled();
+    // Um segundo clique, mesmo forçado, não envia de novo.
+    fireEvent.click(busy);
+    release();
+    await screen.findByText('Reunião marcada como realizada.');
+    expect(bodiesTo(fetchMock, 'POST', '/realizada')).toHaveLength(1);
+  });
+
+  it.each([404, 409])(
+    'um %s mostra a mensagem do servidor, fecha o diálogo e recarrega a lista',
+    async (status) => {
+      const { fetchMock, events } = setup(
+        [MARKABLE],
+        {
+          [MARK]: {
+            status,
+            body: { detail: 'O horário desta reunião já passou.' },
+          },
+        },
+        'teacher',
+      );
+      await openMeeting(events, /Pauta para marcar/);
+      await events.click(screen.getByRole('button', MARK_BUTTON));
+      const dialog = await screen.findByRole('dialog', {
+        name: 'Marcar reunião como realizada',
+      });
+      const reads = requestsTo(fetchMock, LIST).length;
+
+      await events.click(
+        within(dialog).getByRole('button', { name: 'Marcar como realizada' }),
+      );
+
+      expect(
+        await screen.findByText('O horário desta reunião já passou.'),
+      ).toBeVisible();
+      await waitFor(() =>
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+      );
+      await waitFor(() =>
+        expect(requestsTo(fetchMock, LIST).length).toBeGreaterThan(reads),
+      );
+    },
+  );
+
+  it('uma falha do servidor mostra a mensagem em português e deixa tentar de novo', async () => {
+    const { events } = setup(
+      [MARKABLE],
+      { [MARK]: { status: 500, body: {} } },
+      'teacher',
+    );
+    await openMeeting(events, /Pauta para marcar/);
+    await events.click(screen.getByRole('button', MARK_BUTTON));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Marcar reunião como realizada',
+    });
+
+    await events.click(
+      within(dialog).getByRole('button', { name: 'Marcar como realizada' }),
+    );
+
+    expect(
+      await screen.findByText(/Ocorreu um erro no servidor/),
+    ).toBeVisible();
+    await waitFor(() =>
+      expect(
+        within(dialog).getByRole('button', { name: 'Marcar como realizada' }),
+      ).toBeEnabled(),
+    );
+  });
+
+  it('a orientação encerrada durante a marcação atualiza também a sessão', async () => {
+    const { fetchMock, events } = setup(
+      [MARKABLE],
+      {
+        [MARK]: { status: 404, body: { detail: 'Reunião não encontrada.' } },
+      },
+      'teacher',
+    );
+    await openMeeting(events, /Pauta para marcar/);
+    await events.click(screen.getByRole('button', MARK_BUTTON));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Marcar reunião como realizada',
+    });
+    const reads = requestsTo(fetchMock, 'GET /api/auth/me').length;
+
+    await events.click(
+      within(dialog).getByRole('button', { name: 'Marcar como realizada' }),
+    );
+
+    await screen.findByText('Reunião não encontrada.');
+    await waitFor(() =>
+      expect(requestsTo(fetchMock, 'GET /api/auth/me').length).toBeGreaterThan(
+        reads,
+      ),
+    );
+  });
+
+  it('funciona em tela pequena', async () => {
+    setViewportWidth(PHONE_WIDTH);
+    const { events } = setup([MARKABLE], {}, 'teacher');
+    await openMeeting(events, /Pauta para marcar/);
+
+    await events.click(screen.getByRole('button', MARK_BUTTON));
+
+    expect(
+      await screen.findByRole('dialog', {
+        name: 'Marcar reunião como realizada',
+      }),
+    ).toBeVisible();
+  });
+});
