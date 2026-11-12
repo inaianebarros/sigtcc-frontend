@@ -73,6 +73,10 @@ export function MeetingsPage() {
     period === null ? null : `${period.from}|${period.to}|${reload}`,
   );
 
+  const chooseView = (next: CalendarView) => {
+    setView(next);
+    saveViewPreference(userId, next);
+  };
   const refresh = () => setReload((current) => current + 1);
   // 404 ou 409: a reunião mudou, expirou ou a orientação encerrou. Mostra a mensagem do servidor e
   // lê de novo o calendário e a sessão, para o menu refletir o fim da orientação.
@@ -157,10 +161,7 @@ export function MeetingsPage() {
         onToday={() => controller.today()}
         onPrevious={() => controller.prev()}
         onNext={() => controller.next()}
-        onView={(next) => {
-          setView(next);
-          saveViewPreference(userId, next);
-        }}
+        onView={chooseView}
       />
       {list.status === 'loading' && (
         <LinearProgress aria-label="Carregando as reuniões do período" />
@@ -182,6 +183,7 @@ export function MeetingsPage() {
         meetings={meetings}
         onPeriod={setPeriod}
         onOpen={(item) => detailsDialog.show(item)}
+        onMoreLink={() => chooseView('day')}
       />
       {detailsSlot && (
         <MeetingDetailsDialog

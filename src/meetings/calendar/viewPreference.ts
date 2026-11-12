@@ -4,8 +4,8 @@ export type CalendarView = (typeof CALENDAR_VIEWS)[number];
 
 export const DEFAULT_VIEW: CalendarView = 'month';
 
-/** As visões que já funcionam; a escolha salva fora delas volta ao padrão. */
-export const AVAILABLE_VIEWS: readonly CalendarView[] = ['month'];
+/** As visões oferecidas; uma escolha salva fora delas volta ao padrão. */
+export const AVAILABLE_VIEWS: readonly CalendarView[] = CALENDAR_VIEWS;
 
 const storageKey = (userId: number) => `sigtcc:reunioes:visao:${userId}`;
 
