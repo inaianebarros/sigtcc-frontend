@@ -8,6 +8,7 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
+import { useId } from 'react';
 import { AVAILABLE_VIEWS } from './viewPreference';
 import type { CalendarView } from './viewPreference';
 
@@ -30,6 +31,9 @@ interface CalendarToolbarProps {
   onPrevious: () => void;
   onNext: () => void;
   onView: (view: CalendarView) => void;
+  onRequest: () => void;
+  /** Por que a solicitação está desabilitada (RN29); sem motivo, o botão está habilitado. */
+  requestDisabledReason: string | null;
 }
 
 /**
@@ -44,51 +48,76 @@ export function CalendarToolbar({
   onPrevious,
   onNext,
   onView,
+  onRequest,
+  requestDisabledReason,
 }: CalendarToolbarProps) {
+  const reasonId = useId();
   return (
-    <Stack
-      direction={{ xs: 'column', sm: 'row' }}
-      spacing={1}
-      sx={{ alignItems: { sm: 'center' }, justifyContent: 'space-between' }}
-    >
-      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-        <Button variant="outlined" onClick={onToday}>
-          Hoje
-        </Button>
-        <IconButton
-          aria-label={ARROW_LABELS[view].previous}
-          onClick={onPrevious}
-        >
-          <ChevronLeftIcon />
-        </IconButton>
-        <IconButton aria-label={ARROW_LABELS[view].next} onClick={onNext}>
-          <ChevronRightIcon />
-        </IconButton>
-        <Typography variant="h6" component="h2">
-          <span role="status" aria-live="polite">
-            {title}
-          </span>
-        </Typography>
-      </Stack>
-      <ToggleButtonGroup
-        exclusive
-        size="small"
-        value={view}
-        aria-label="Visão do calendário"
-        onChange={(_event, next: CalendarView | null) => {
-          if (next !== null) onView(next);
-        }}
+    <Stack spacing={1}>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={1}
+        sx={{ alignItems: { sm: 'center' }, justifyContent: 'space-between' }}
       >
-        {(Object.keys(VIEW_LABELS) as CalendarView[]).map((option) => (
-          <ToggleButton
-            key={option}
-            value={option}
-            disabled={!AVAILABLE_VIEWS.includes(option)}
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <Button variant="outlined" onClick={onToday}>
+            Hoje
+          </Button>
+          <IconButton
+            aria-label={ARROW_LABELS[view].previous}
+            onClick={onPrevious}
           >
-            {VIEW_LABELS[option]}
-          </ToggleButton>
-        ))}
-      </ToggleButtonGroup>
+            <ChevronLeftIcon />
+          </IconButton>
+          <IconButton aria-label={ARROW_LABELS[view].next} onClick={onNext}>
+            <ChevronRightIcon />
+          </IconButton>
+          <Typography variant="h6" component="h2">
+            <span role="status" aria-live="polite">
+              {title}
+            </span>
+          </Typography>
+        </Stack>
+        <Stack
+          direction="row"
+          spacing={1}
+          useFlexGap
+          sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+        >
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={view}
+            aria-label="Visão do calendário"
+            onChange={(_event, next: CalendarView | null) => {
+              if (next !== null) onView(next);
+            }}
+          >
+            {(Object.keys(VIEW_LABELS) as CalendarView[]).map((option) => (
+              <ToggleButton
+                key={option}
+                value={option}
+                disabled={!AVAILABLE_VIEWS.includes(option)}
+              >
+                {VIEW_LABELS[option]}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+          <Button
+            variant="contained"
+            onClick={onRequest}
+            disabled={requestDisabledReason !== null}
+            aria-describedby={requestDisabledReason ? reasonId : undefined}
+          >
+            Solicitar reunião
+          </Button>
+        </Stack>
+      </Stack>
+      {requestDisabledReason && (
+        <Typography id={reasonId} variant="body2" color="text.secondary">
+          {requestDisabledReason}
+        </Typography>
+      )}
     </Stack>
   );
 }
