@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { setupCalendarTest, teardownCalendarTest } from '../test/calendarClock';
 import { tokenStore } from '../services/tokenStore';
 import { makeMeeting, meetingsServer } from '../test/meetingsApi';
 import type { FakeMeeting } from '../test/meetingsApi';
@@ -10,7 +11,7 @@ import { renderApp } from '../test/renderApp';
 import { DESKTOP_WIDTH, PHONE_WIDTH, setViewportWidth } from '../test/viewport';
 
 const PATH = '/aluno/reunioes';
-const LIST = 'GET /api/reunioes';
+const LIST = 'GET /api/reunioes/calendario';
 
 type Overrides = Record<
   string,
@@ -34,6 +35,7 @@ function setup(
 
 const ANSWERABLE = makeMeeting(1, {
   description: 'Pauta para responder',
+  scheduled_at: '2026-11-18T14:30:00-03:00',
   author: { id: 9, full_name: 'Carlos Lima', type: 'teacher' },
   can_answer: true,
   can_edit: false,
@@ -41,20 +43,40 @@ const ANSWERABLE = makeMeeting(1, {
 });
 const OWN = makeMeeting(2, {
   description: 'Pauta minha',
+  scheduled_at: '2026-11-20T14:30:00-03:00',
   can_answer: false,
   can_edit: true,
   can_cancel: true,
 });
 const NONE = makeMeeting(3, {
   description: 'Pauta sem ações',
+  scheduled_at: '2026-11-22T14:30:00-03:00',
   situation: 'expired',
   can_answer: false,
   can_edit: false,
   can_cancel: false,
 });
 
-function rowOf(text: string | RegExp) {
-  return screen.getByRole('row', { name: text });
+/** O cartão da reunião no calendário: um botão cujo nome traz horário, outra parte, situação e descrição. */
+function cardOf(text: string | RegExp) {
+  return screen.getByRole('button', { name: text });
+}
+
+/** Abre o modal de uma reunião: o do cartão com o nome dado, ou o único do calendário. */
+async function openMeeting(
+  events: ReturnType<typeof userEvent.setup>,
+  name?: string | RegExp,
+) {
+  if (name) {
+    await events.click(await screen.findByRole('button', { name }));
+  } else {
+    const cards = await screen.findAllByRole('button', {
+      name: /^\d\d:\d\d às \d\d:\d\d, /,
+    });
+    expect(cards).toHaveLength(1);
+    await events.click(cards[0]!);
+  }
+  return screen.findByRole('dialog', { name: 'Reunião' });
 }
 
 function bodiesTo(
@@ -77,14 +99,20 @@ beforeEach(() => {
   tokenStore.clear();
   vi.unstubAllGlobals();
   setViewportWidth(DESKTOP_WIDTH);
+  setupCalendarTest();
+});
+
+afterEach(() => {
+  teardownCalendarTest();
 });
 
 describe('Reuniões: as ações aparecem só quando a flag do servidor é verdadeira', () => {
-  it('mostra Aceitar e Recusar só com can_answer, e Editar e Cancelar só com as suas flags', async () => {
-    setup([ANSWERABLE, OWN, NONE]);
-    await screen.findByText('Pauta minha');
+  it('mostra Aceitar e Recusar só com can_answer, e Editar e Cancelar só com as suas flags, no modal da reunião', async () => {
+    const { events } = setup([ANSWERABLE, OWN, NONE]);
 
-    const answerable = within(rowOf(/Pauta para responder/));
+    const answerable = within(
+      await openMeeting(events, /Pauta para responder/),
+    );
     expect(answerable.getByRole('button', { name: /Aceitar/ })).toBeVisible();
     expect(answerable.getByRole('button', { name: /Recusar/ })).toBeVisible();
     expect(
@@ -93,8 +121,12 @@ describe('Reuniões: as ações aparecem só quando a flag do servidor é verdad
     expect(
       answerable.queryByRole('button', { name: /Cancelar/ }),
     ).not.toBeInTheDocument();
+    await events.click(answerable.getByRole('button', { name: 'Fechar' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
 
-    const own = within(rowOf(/Pauta minha/));
+    const own = within(await openMeeting(events, /Pauta minha/));
     expect(own.getByRole('button', { name: /Editar/ })).toBeVisible();
     expect(own.getByRole('button', { name: /Cancelar/ })).toBeVisible();
     expect(
@@ -103,15 +135,20 @@ describe('Reuniões: as ações aparecem só quando a flag do servidor é verdad
     expect(
       own.queryByRole('button', { name: /Recusar/ }),
     ).not.toBeInTheDocument();
+    await events.click(own.getByRole('button', { name: 'Fechar' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
 
+    const none = within(await openMeeting(events, /Pauta sem ações/));
     expect(
-      within(rowOf(/Pauta sem ações/)).queryAllByRole('button'),
-    ).toHaveLength(0);
+      none.queryByRole('button', { name: /Aceitar|Recusar|Editar|Cancelar/ }),
+    ).not.toBeInTheDocument();
   });
 
-  it('cada botão tem um nome acessível com a reunião, para o leitor de tela distinguir as linhas', async () => {
-    setup([ANSWERABLE, OWN]);
-    await screen.findByText('Pauta minha');
+  it('cada botão tem um nome acessível com a reunião', async () => {
+    const { events } = setup([ANSWERABLE]);
+    await openMeeting(events, /Pauta para responder/);
 
     expect(
       screen.getByRole('button', {
@@ -119,43 +156,40 @@ describe('Reuniões: as ações aparecem só quando a flag do servidor é verdad
       }),
     ).toBeVisible();
     expect(
-      screen.getByRole('button', { name: 'Editar a reunião "Pauta minha"' }),
+      screen.getByRole('button', {
+        name: 'Recusar a reunião "Pauta para responder"',
+      }),
     ).toBeVisible();
   });
 
-  it('no celular as mesmas ações aparecem no cartão', async () => {
+  it('no celular as mesmas ações aparecem no modal', async () => {
     setViewportWidth(PHONE_WIDTH);
-    setup([ANSWERABLE, NONE]);
+    const { events } = setup([ANSWERABLE]);
 
-    const card = await screen.findByRole('article', {
-      name: /Pauta para responder/,
-    });
+    const dialog = within(await openMeeting(events, /Pauta para responder/));
 
-    expect(within(card).getByRole('button', { name: /Aceitar/ })).toBeVisible();
-    expect(within(card).getByRole('button', { name: /Recusar/ })).toBeVisible();
-    expect(
-      within(
-        screen.getByRole('article', { name: /Pauta sem ações/ }),
-      ).queryAllByRole('button'),
-    ).toHaveLength(0);
+    expect(dialog.getByRole('button', { name: /Aceitar/ })).toBeVisible();
+    expect(dialog.getByRole('button', { name: /Recusar/ })).toBeVisible();
   });
 });
 
 describe('Reuniões: aceitar', () => {
   it('aceita direto, sem diálogo, avisa e atualiza a lista', async () => {
     const { fetchMock, events } = setup([ANSWERABLE]);
-    await screen.findByText('Pauta para responder');
+    await openMeeting(events, /Pauta para responder/);
 
     await events.click(screen.getByRole('button', { name: /Aceitar/ }));
 
     expect(await screen.findByText('Reunião aceita.')).toBeVisible();
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
     expect(bodiesTo(fetchMock, 'POST', '/responder')).toEqual([
       { action: 'accept' },
     ]);
     await waitFor(() =>
       expect(
-        within(rowOf(/Pauta para responder/)).getByText('Aceita'),
+        within(cardOf(/Pauta para responder/)).getByText('Aceita'),
       ).toBeVisible(),
     );
     expect(
@@ -174,7 +208,7 @@ describe('Reuniões: aceitar', () => {
         return { status: 200, body: makeMeeting(1, { situation: 'accepted' }) };
       },
     });
-    await screen.findByText('Pauta para responder');
+    await openMeeting(events, /Pauta para responder/);
 
     await events.click(screen.getByRole('button', { name: /Aceitar/ }));
 
@@ -196,7 +230,7 @@ describe('Reuniões: aceitar', () => {
           body: { detail: 'Esta reunião já foi respondida.' },
         },
       });
-      await screen.findByText('Pauta para responder');
+      await openMeeting(events, /Pauta para responder/);
       const reads = requestsTo(fetchMock, LIST).length;
 
       await events.click(screen.getByRole('button', { name: /Aceitar/ }));
@@ -214,7 +248,7 @@ describe('Reuniões: aceitar', () => {
     const { events } = setup([ANSWERABLE], {
       'POST /api/reunioes/:id/responder': { status: 500, body: {} },
     });
-    await screen.findByText('Pauta para responder');
+    await openMeeting(events, /Pauta para responder/);
 
     await events.click(screen.getByRole('button', { name: /Aceitar/ }));
 
@@ -241,7 +275,9 @@ async function openReason(
   events: ReturnType<typeof userEvent.setup>,
   button: string | RegExp,
   title: string,
+  meeting?: string | RegExp,
 ) {
+  await openMeeting(events, meeting);
   await events.click(await screen.findByRole('button', { name: button }));
   return screen.findByRole('dialog', { name: title });
 }
@@ -282,12 +318,11 @@ describe('Reuniões: recusar com justificativa (RN11)', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
     expect(
-      within(rowOf(/Pauta para responder/)).getByText('Recusada'),
+      within(cardOf(/Pauta para responder/)).getByText('Recusada'),
     ).toBeVisible();
+    const details = within(await openMeeting(events, /Pauta para responder/));
     expect(
-      within(rowOf(/Pauta para responder/)).getByText(
-        /Motivo da recusa: Estarei em viagem\./,
-      ),
+      details.getByText(/Motivo da recusa: Estarei em viagem\./),
     ).toBeVisible();
   });
 
@@ -446,12 +481,13 @@ describe('Reuniões: cancelar com motivo e confirmação explícita (RNF21, RN10
       { reason: 'Tive um imprevisto.' },
     ]);
     await waitFor(() =>
-      expect(within(rowOf(/Pauta minha/)).getByText('Cancelada')).toBeVisible(),
+      expect(
+        within(cardOf(/Pauta minha/)).getByText('Cancelada'),
+      ).toBeVisible(),
     );
+    const details = within(await openMeeting(events, /Pauta minha/));
     expect(
-      within(rowOf(/Pauta minha/)).getByText(
-        /Motivo do cancelamento: Tive um imprevisto\./,
-      ),
+      details.getByText(/Motivo do cancelamento: Tive um imprevisto\./),
     ).toBeVisible();
   });
 
@@ -574,7 +610,7 @@ describe('Reuniões: editar (RF21, RN39)', () => {
       'Editar reunião',
     );
 
-    expect(within(dialog).getByLabelText(/Data/)).toHaveValue('2099-12-31');
+    expect(within(dialog).getByLabelText(/Data/)).toHaveValue('2026-11-20');
     expect(within(dialog).getByLabelText(/Hora de início/)).toHaveValue(
       '14:30',
     );
@@ -625,7 +661,9 @@ describe('Reuniões: editar (RF21, RN39)', () => {
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
-    expect(await screen.findByText('Nova pauta')).toBeVisible();
+    expect(
+      await screen.findByRole('button', { name: /Nova pauta/ }),
+    ).toBeVisible();
   });
 
   it('mudar só a hora manda só a hora', async () => {
@@ -758,7 +796,7 @@ describe('Reuniões: editar (RF21, RN39)', () => {
     await screen.findByText('Reunião atualizada.');
     await waitFor(() =>
       expect(
-        within(rowOf(/Pauta aceita minha/)).getByText('Pendente'),
+        within(cardOf(/Pauta aceita minha/)).getByText('Pendente'),
       ).toBeVisible(),
     );
   });
@@ -786,7 +824,7 @@ describe('Reuniões: editar (RF21, RN39)', () => {
     const { fetchMock, events } = setup([
       makeMeeting(6, {
         description: 'Pauta de horário vencido',
-        scheduled_at: '2000-01-01T10:00:00-03:00',
+        scheduled_at: '2026-11-05T10:00:00-03:00',
       }),
     ]);
     const dialog = await openReason(
@@ -935,7 +973,7 @@ describe('Reuniões: a orientação encerrou durante uma ação', () => {
     'ao %s, o 409 atualiza também a sessão, para o menu refletir o fim',
     async (action, route, meetings, button) => {
       const { fetchMock, events } = setup([...meetings], { [route]: ENDED });
-      await screen.findByRole('button', { name: button });
+      await openMeeting(events);
       const reads = requestsTo(fetchMock, ME).length;
 
       if (action === 'aceitar') {
@@ -943,7 +981,8 @@ describe('Reuniões: a orientação encerrou durante uma ação', () => {
       } else {
         const title =
           action === 'editar' ? 'Editar reunião' : 'Cancelar reunião';
-        const dialog = await openReason(events, button, title);
+        await events.click(screen.getByRole('button', { name: button }));
+        const dialog = await screen.findByRole('dialog', { name: title });
         await events.type(
           within(dialog).getByLabelText(/Descrição|Motivo/),
           ' x',

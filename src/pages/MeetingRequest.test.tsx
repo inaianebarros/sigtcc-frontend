@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { setupCalendarTest, teardownCalendarTest } from '../test/calendarClock';
 import { tokenStore } from '../services/tokenStore';
 import { makeAdvisee } from '../test/adviseesApi';
 import type { FakeAdvisee } from '../test/adviseesApi';
@@ -110,6 +111,11 @@ beforeEach(() => {
   tokenStore.clear();
   vi.unstubAllGlobals();
   setViewportWidth(DESKTOP_WIDTH);
+  setupCalendarTest();
+});
+
+afterEach(() => {
+  teardownCalendarTest();
 });
 
 describe('Solicitar reunião: o aluno', () => {
@@ -137,7 +143,7 @@ describe('Solicitar reunião: o aluno', () => {
     const { fetchMock, events } = setup('student');
     const dialog = await openDialog(events);
     await fill(events, dialog, {
-      date: '2099-12-31',
+      date: '2026-11-25',
       time: '14:30',
       endTime: '15:30',
       description: '  Revisar o capítulo 2  ',
@@ -154,13 +160,15 @@ describe('Solicitar reunião: o aluno', () => {
     );
     expect(postBodies(fetchMock)).toEqual([
       {
-        date: '2099-12-31',
+        date: '2026-11-25',
         time: '14:30',
         end_time: '15:30',
         description: 'Revisar o capítulo 2',
       },
     ]);
-    expect(await screen.findByText('Revisar o capítulo 2')).toBeVisible();
+    expect(
+      await screen.findByRole('button', { name: /Revisar o capítulo 2/ }),
+    ).toBeVisible();
   });
 
   it('conta os caracteres e só habilita com 1 a 500 caracteres, sem contar as pontas', async () => {
@@ -493,29 +501,6 @@ describe('Solicitar reunião: o professor', () => {
         student_id: 102,
       },
     ]);
-  });
-
-  it('já vem com o aluno do filtro escolhido e isso não conta como alteração', async () => {
-    const { events } = setup('teacher', {
-      meetings: [
-        makeMeeting(1, {
-          description: 'Da Maria',
-          student_id: 101,
-          counterpart: { id: 101, full_name: 'Maria Lima' },
-        }),
-      ],
-      path: '/professor/reunioes?aluno=101',
-    });
-    await screen.findByText('Da Maria');
-
-    const dialog = await openDialog(events);
-
-    expect(within(dialog).getByRole('combobox', { name: 'Aluno' })).toHaveValue(
-      'Maria Lima',
-    );
-    expect(
-      within(dialog).queryByText(/Você tem alterações não salvas/),
-    ).not.toBeInTheDocument();
   });
 });
 

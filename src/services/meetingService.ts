@@ -1,7 +1,5 @@
 import { httpClient } from './httpClient';
 
-export const MEETINGS_PAGE_SIZE = 20;
-
 export const MEETING_SITUATIONS = [
   'pending',
   'accepted',
@@ -30,19 +28,6 @@ export interface MeetingItem {
   canAnswer: boolean;
   canEdit: boolean;
   canCancel: boolean;
-}
-
-export interface MeetingPage {
-  items: MeetingItem[];
-  count: number;
-}
-
-export interface MeetingFilters {
-  page: number;
-  situation: MeetingSituation | null;
-  dateFrom: string | null;
-  dateTo: string | null;
-  studentId: number | null;
 }
 
 export interface MeetingInput {
@@ -94,22 +79,20 @@ function meetingFrom(item: ApiMeeting): MeetingItem {
   };
 }
 
-export async function listMeetings(
-  filters: MeetingFilters,
-): Promise<MeetingPage> {
-  const params = new URLSearchParams({
-    limit: String(MEETINGS_PAGE_SIZE),
-    offset: String((filters.page - 1) * MEETINGS_PAGE_SIZE),
-  });
-  if (filters.situation) params.set('situation', filters.situation);
-  if (filters.dateFrom) params.set('date_from', filters.dateFrom);
-  if (filters.dateTo) params.set('date_to', filters.dateTo);
-  if (filters.studentId !== null)
-    params.set('student_id', String(filters.studentId));
-  const response = await httpClient.get<{ items: ApiMeeting[]; count: number }>(
-    `/reunioes?${params}`,
+/**
+ * As reuniões do período exibido no calendário (RF19, RNF26): todas as do usuário entre duas
+ * datas inclusivas (AAAA-MM-DD, no horário de Santarém), sem paginar e ordenadas pelo início. O
+ * servidor aceita no máximo 42 dias, a grade de 6 semanas do Mês.
+ */
+export async function listMeetingsInPeriod(
+  dateFrom: string,
+  dateTo: string,
+): Promise<MeetingItem[]> {
+  const params = new URLSearchParams({ date_from: dateFrom, date_to: dateTo });
+  const response = await httpClient.get<ApiMeeting[]>(
+    `/reunioes/calendario?${params}`,
   );
-  return { count: response.count, items: response.items.map(meetingFrom) };
+  return response.map(meetingFrom);
 }
 
 /**
