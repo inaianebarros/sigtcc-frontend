@@ -1277,3 +1277,390 @@ describe('Reuniões: marcar como realizada (RF57, RN43)', () => {
     ).toBeVisible();
   });
 });
+
+const HELD = makeMeeting(9, {
+  description: 'Pauta realizada',
+  scheduled_at: '2026-11-05T14:30:00-03:00',
+  situation: 'held',
+  status: 'accepted',
+  author: { id: 9, full_name: 'Carlos Lima', type: 'teacher' },
+  counterpart: { id: 101, full_name: 'Maria Lima' },
+  can_answer: false,
+  can_edit: false,
+  can_cancel: false,
+  can_edit_notes: true,
+});
+const NOTES = 'PUT /api/reunioes/:id/apontamentos';
+const ADD_NOTES = { name: /Adicionar apontamentos da reunião/ };
+const EDIT_NOTES = { name: /Editar apontamentos da reunião/ };
+
+async function openNotes(
+  events: ReturnType<typeof userEvent.setup>,
+  button = ADD_NOTES,
+  meeting: string | RegExp = /Pauta realizada/,
+) {
+  await openMeeting(events, meeting);
+  await events.click(screen.getByRole('button', button));
+  return screen.findByRole('dialog', { name: 'Apontamentos da reunião' });
+}
+
+describe('Reuniões: apontamentos da reunião realizada (RF58, RN44)', () => {
+  it('o professor vê Adicionar sem apontamentos e Editar com apontamentos, só quando a API indica', async () => {
+    const { events } = setup(
+      [
+        HELD,
+        makeMeeting(10, {
+          ...HELD,
+          description: 'Pauta com texto',
+          scheduled_at: '2026-11-06T14:30:00-03:00',
+          notes: 'Combinamos a entrega.',
+        }),
+        makeMeeting(11, {
+          ...HELD,
+          description: 'Pauta congelada',
+          scheduled_at: '2026-11-07T14:30:00-03:00',
+          notes: 'Texto final.',
+          can_edit_notes: false,
+        }),
+      ],
+      {},
+      'teacher',
+    );
+
+    const empty = within(await openMeeting(events, /Pauta realizada/));
+    expect(empty.getByRole('button', ADD_NOTES)).toBeVisible();
+    expect(empty.queryByRole('button', EDIT_NOTES)).not.toBeInTheDocument();
+    await events.click(empty.getByRole('button', { name: 'Fechar' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+
+    const filled = within(await openMeeting(events, /Pauta com texto/));
+    expect(filled.getByRole('button', EDIT_NOTES)).toBeVisible();
+    expect(filled.getByText('Combinamos a entrega.')).toBeVisible();
+    await events.click(filled.getByRole('button', { name: 'Fechar' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+
+    const frozen = within(await openMeeting(events, /Pauta congelada/));
+    expect(frozen.getByText('Texto final.')).toBeVisible();
+    expect(frozen.queryByRole('button', ADD_NOTES)).not.toBeInTheDocument();
+    expect(frozen.queryByRole('button', EDIT_NOTES)).not.toBeInTheDocument();
+  });
+
+  it('adiciona apontamentos com o contador, salva o texto aparado e a lista é atualizada', async () => {
+    const { fetchMock, events } = setup([HELD], {}, 'teacher');
+    const dialog = await openNotes(events);
+    const field = within(dialog).getByLabelText('Apontamentos');
+    expect(within(dialog).getByText('0/3000')).toBeVisible();
+    expect(
+      within(dialog).getByRole('button', { name: 'Salvar' }),
+    ).toBeDisabled();
+
+    await events.type(field, '  Definimos o escopo.  ');
+    expect(within(dialog).getByText('19/3000')).toBeVisible();
+    await events.click(within(dialog).getByRole('button', { name: 'Salvar' }));
+
+    expect(await screen.findByText('Apontamentos salvos.')).toBeVisible();
+    expect(bodiesTo(fetchMock, 'PUT', '/apontamentos')).toEqual([
+      { notes: 'Definimos o escopo.' },
+    ]);
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    const details = within(await openMeeting(events, /Pauta realizada/));
+    expect(details.getByText('Definimos o escopo.')).toBeVisible();
+    expect(details.getByRole('button', EDIT_NOTES)).toBeVisible();
+  });
+
+  it('o contador é lido junto do campo, para o leitor de tela, antes de passar do limite', async () => {
+    const { events } = setup([HELD], {}, 'teacher');
+    const dialog = await openNotes(events);
+    const field = within(dialog).getByLabelText('Apontamentos');
+
+    await events.type(field, 'Abc');
+
+    expect(field).toHaveAccessibleDescription('3/3000');
+  });
+
+  it('o texto longo passa do limite: mostra o erro e bloqueia o envio; no limite exato salva', async () => {
+    const { events } = setup([HELD], {}, 'teacher');
+    const dialog = await openNotes(events);
+    const field = within(dialog).getByLabelText('Apontamentos');
+
+    await events.click(field);
+    await events.paste('a'.repeat(3001));
+
+    expect(
+      await within(dialog).findByText(
+        'Os apontamentos devem ter no máximo 3000 caracteres.',
+      ),
+    ).toBeVisible();
+    expect(within(dialog).getByText('3001/3000')).toBeVisible();
+    expect(
+      within(dialog).getByRole('button', { name: 'Salvar' }),
+    ).toBeDisabled();
+
+    await events.clear(field);
+    await events.click(field);
+    await events.paste(`  ${'a'.repeat(3000)}  `);
+
+    await waitFor(() =>
+      expect(
+        within(dialog).getByRole('button', { name: 'Salvar' }),
+      ).toBeEnabled(),
+    );
+  });
+
+  it('edita os apontamentos existentes, e preserva as quebras de linha ao exibir', async () => {
+    const withNotes = makeMeeting(9, {
+      ...HELD,
+      notes: 'Linha um\nLinha dois',
+    });
+    const { fetchMock, events } = setup([withNotes], {}, 'teacher');
+    const detailsBefore = within(await openMeeting(events, /Pauta realizada/));
+    expect(detailsBefore.getByText(/Linha um/)).toHaveStyle({
+      whiteSpace: 'pre-wrap',
+    });
+    await events.click(detailsBefore.getByRole('button', EDIT_NOTES));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Apontamentos da reunião',
+    });
+    const field = within(dialog).getByLabelText('Apontamentos');
+    expect(field).toHaveValue('Linha um\nLinha dois');
+
+    await events.type(field, ' e três');
+    await events.click(within(dialog).getByRole('button', { name: 'Salvar' }));
+
+    await screen.findByText('Apontamentos salvos.');
+    expect(bodiesTo(fetchMock, 'PUT', '/apontamentos')).toEqual([
+      { notes: 'Linha um\nLinha dois e três' },
+    ]);
+  });
+
+  it('texto vazio remove os apontamentos, depois de uma confirmação explícita', async () => {
+    const withNotes = makeMeeting(9, { ...HELD, notes: 'Para remover.' });
+    const { fetchMock, events } = setup([withNotes], {}, 'teacher');
+    const dialog = await openNotes(events, EDIT_NOTES);
+    await events.clear(within(dialog).getByLabelText('Apontamentos'));
+    await events.type(within(dialog).getByLabelText('Apontamentos'), '   ');
+
+    await events.click(within(dialog).getByRole('button', { name: 'Remover' }));
+
+    const confirm = await screen.findByRole('dialog', {
+      name: 'Remover os apontamentos?',
+    });
+    expect(confirm).toHaveAccessibleDescription(/não pode ser desfeita/);
+    expect(bodiesTo(fetchMock, 'PUT', '/apontamentos')).toEqual([]);
+    await events.click(
+      within(confirm).getByRole('button', { name: 'Remover apontamentos' }),
+    );
+
+    expect(await screen.findByText('Apontamentos removidos.')).toBeVisible();
+    expect(bodiesTo(fetchMock, 'PUT', '/apontamentos')).toEqual([
+      { notes: '' },
+    ]);
+  });
+
+  it('Voltar na confirmação da remoção não remove nada', async () => {
+    const withNotes = makeMeeting(9, { ...HELD, notes: 'Fica.' });
+    const { fetchMock, events } = setup([withNotes], {}, 'teacher');
+    const dialog = await openNotes(events, EDIT_NOTES);
+    await events.clear(within(dialog).getByLabelText('Apontamentos'));
+    await events.click(within(dialog).getByRole('button', { name: 'Remover' }));
+    const confirm = await screen.findByRole('dialog', {
+      name: 'Remover os apontamentos?',
+    });
+
+    await events.click(within(confirm).getByRole('button', { name: 'Voltar' }));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Remover os apontamentos?' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(bodiesTo(fetchMock, 'PUT', '/apontamentos')).toEqual([]);
+  });
+
+  it('sem apontamentos, salvar vazio não é oferecido', async () => {
+    const { events } = setup([HELD], {}, 'teacher');
+    const dialog = await openNotes(events);
+
+    await events.type(within(dialog).getByLabelText('Apontamentos'), '   ');
+
+    expect(
+      within(dialog).getByRole('button', { name: 'Salvar' }),
+    ).toBeDisabled();
+  });
+
+  it('fechar com alterações não salvas avisa antes de descartar (RNF28)', async () => {
+    const { fetchMock, events } = setup([HELD], {}, 'teacher');
+    const dialog = await openNotes(events);
+    await events.type(
+      within(dialog).getByLabelText('Apontamentos'),
+      'Rascunho',
+    );
+    expect(
+      await within(dialog).findByText(/Você tem alterações não salvas/),
+    ).toBeVisible();
+
+    await events.click(within(dialog).getByRole('button', { name: 'Voltar' }));
+
+    const discard = await screen.findByRole('dialog', {
+      name: 'Descartar alterações?',
+    });
+    await events.click(
+      within(discard).getByRole('button', { name: 'Continuar editando' }),
+    );
+    expect(
+      await screen.findByRole('dialog', { name: 'Apontamentos da reunião' }),
+    ).toBeVisible();
+    await events.click(within(dialog).getByRole('button', { name: 'Voltar' }));
+    await events.click(
+      await screen.findByRole('button', { name: 'Sair sem salvar' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(bodiesTo(fetchMock, 'PUT', '/apontamentos')).toEqual([]);
+  });
+
+  it('o botão fica ocupado durante o envio e o texto sai uma vez só', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { fetchMock, events } = setup(
+      [HELD],
+      {
+        [NOTES]: async () => {
+          await gate;
+          return { status: 200, body: HELD };
+        },
+      },
+      'teacher',
+    );
+    const dialog = await openNotes(events);
+    await events.type(within(dialog).getByLabelText('Apontamentos'), 'Texto');
+
+    await events.click(within(dialog).getByRole('button', { name: 'Salvar' }));
+
+    const busy = await within(dialog).findByRole('button', {
+      name: 'Salvando…',
+    });
+    expect(busy).toBeDisabled();
+    fireEvent.click(busy);
+    release();
+    await screen.findByText('Apontamentos salvos.');
+    expect(bodiesTo(fetchMock, 'PUT', '/apontamentos')).toHaveLength(1);
+  });
+
+  it.each([404, 409])(
+    'um %s mostra a mensagem do servidor, fecha o diálogo e recarrega a lista',
+    async (status) => {
+      const { fetchMock, events } = setup(
+        [HELD],
+        {
+          [NOTES]: {
+            status,
+            body: { detail: 'Só uma reunião realizada pode ter apontamentos.' },
+          },
+        },
+        'teacher',
+      );
+      const dialog = await openNotes(events);
+      await events.type(within(dialog).getByLabelText('Apontamentos'), 'Texto');
+      const reads = requestsTo(fetchMock, LIST).length;
+
+      await events.click(
+        within(dialog).getByRole('button', { name: 'Salvar' }),
+      );
+
+      expect(
+        await screen.findByText(
+          'Só uma reunião realizada pode ter apontamentos.',
+        ),
+      ).toBeVisible();
+      await waitFor(() =>
+        expect(requestsTo(fetchMock, LIST).length).toBeGreaterThan(reads),
+      );
+    },
+  );
+
+  it('uma falha do servidor mostra a mensagem em português e deixa tentar de novo', async () => {
+    const { events } = setup(
+      [HELD],
+      { [NOTES]: { status: 500, body: {} } },
+      'teacher',
+    );
+    const dialog = await openNotes(events);
+    await events.type(within(dialog).getByLabelText('Apontamentos'), 'Texto');
+
+    await events.click(within(dialog).getByRole('button', { name: 'Salvar' }));
+
+    expect(
+      await within(dialog).findByText(/Ocorreu um erro no servidor/),
+    ).toBeVisible();
+    await waitFor(() =>
+      expect(
+        within(dialog).getByRole('button', { name: 'Salvar' }),
+      ).toBeEnabled(),
+    );
+  });
+
+  it('o aluno lê os apontamentos, sem ações de adicionar, editar ou remover', async () => {
+    const { events } = setup(
+      [
+        makeMeeting(9, {
+          ...HELD,
+          author: { id: 7, full_name: 'Ana Souza', type: 'student' },
+          counterpart: { id: 9, full_name: 'Carlos Lima' },
+          notes: 'Combinamos a entrega do capítulo.',
+          can_edit_notes: false,
+        }),
+      ],
+      {},
+      'student',
+    );
+
+    const details = within(await openMeeting(events, /Pauta realizada/));
+
+    expect(
+      details.getByText('Combinamos a entrega do capítulo.'),
+    ).toBeVisible();
+    expect(details.queryByRole('button', ADD_NOTES)).not.toBeInTheDocument();
+    expect(details.queryByRole('button', EDIT_NOTES)).not.toBeInTheDocument();
+  });
+
+  it('o aluno não vê bloco vazio quando a reunião realizada não tem apontamentos', async () => {
+    const { events } = setup(
+      [
+        makeMeeting(9, {
+          ...HELD,
+          author: { id: 7, full_name: 'Ana Souza', type: 'student' },
+          counterpart: { id: 9, full_name: 'Carlos Lima' },
+          can_edit_notes: false,
+        }),
+      ],
+      {},
+      'student',
+    );
+
+    const details = within(await openMeeting(events, /Pauta realizada/));
+
+    expect(
+      details.queryByRole('region', { name: 'Apontamentos' }),
+    ).not.toBeInTheDocument();
+    expect(details.queryByText('Apontamentos')).not.toBeInTheDocument();
+  });
+
+  it('funciona em tela pequena', async () => {
+    setViewportWidth(PHONE_WIDTH);
+    const { events } = setup([HELD], {}, 'teacher');
+
+    const dialog = await openNotes(events);
+
+    expect(within(dialog).getByLabelText('Apontamentos')).toBeVisible();
+  });
+});
