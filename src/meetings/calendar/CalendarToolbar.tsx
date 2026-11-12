@@ -11,6 +11,12 @@ import {
 import { AVAILABLE_VIEWS } from './viewPreference';
 import type { CalendarView } from './viewPreference';
 
+const ARROW_LABELS: Record<CalendarView, { previous: string; next: string }> = {
+  day: { previous: 'Dia anterior', next: 'Próximo dia' },
+  week: { previous: 'Semana anterior', next: 'Próxima semana' },
+  month: { previous: 'Mês anterior', next: 'Próximo mês' },
+};
+
 const VIEW_LABELS: Record<CalendarView, string> = {
   day: 'Dia',
   week: 'Semana',
@@ -49,10 +55,13 @@ export function CalendarToolbar({
         <Button variant="outlined" onClick={onToday}>
           Hoje
         </Button>
-        <IconButton aria-label="Mês anterior" onClick={onPrevious}>
+        <IconButton
+          aria-label={ARROW_LABELS[view].previous}
+          onClick={onPrevious}
+        >
           <ChevronLeftIcon />
         </IconButton>
-        <IconButton aria-label="Próximo mês" onClick={onNext}>
+        <IconButton aria-label={ARROW_LABELS[view].next} onClick={onNext}>
           <ChevronRightIcon />
         </IconButton>
         <Typography variant="h6" component="h2">

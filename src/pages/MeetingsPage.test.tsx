@@ -331,6 +331,197 @@ describe('MeetingsPage: a navegação entre os períodos', () => {
   });
 });
 
+describe('MeetingsPage: as visões Dia e Semana', () => {
+  const title = (name: string | RegExp) =>
+    screen.findByRole('heading', { level: 2, name });
+
+  it('trocar de visão mantém o período em torno da data exibida e lê só o que é exibido', async () => {
+    const { fetchMock, events } = setup([], 'student');
+    await title('Novembro de 2026');
+
+    await events.click(screen.getByRole('button', { name: 'Semana' }));
+    await title('8 – 14 de novembro de 2026');
+    await events.click(screen.getByRole('button', { name: 'Dia' }));
+    await title('Terça-feira, 10 de novembro de 2026');
+    await events.click(screen.getByRole('button', { name: 'Mês' }));
+    await title('Novembro de 2026');
+
+    const periods = periodsRequested(fetchMock);
+    expect(periods).toContainEqual({ from: '2026-11-08', to: '2026-11-14' });
+    expect(periods).toContainEqual({ from: '2026-11-10', to: '2026-11-10' });
+    expect(periods.at(-1)).toEqual({ from: '2026-11-01', to: '2026-12-12' });
+    for (const { from, to } of periods) {
+      const days =
+        (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) /
+          86_400_000 +
+        1;
+      expect(days).toBeLessThanOrEqual(42);
+    }
+  });
+
+  it('as setas e Hoje andam um dia na visão Dia, com os nomes acessíveis certos', async () => {
+    window.localStorage.setItem('sigtcc:reunioes:visao:7', 'day');
+    const { fetchMock, events } = setup([], 'student');
+    await title('Terça-feira, 10 de novembro de 2026');
+
+    await events.click(screen.getByRole('button', { name: 'Próximo dia' }));
+    await title('Quarta-feira, 11 de novembro de 2026');
+    await events.click(screen.getByRole('button', { name: 'Dia anterior' }));
+    await events.click(screen.getByRole('button', { name: 'Dia anterior' }));
+    await title('Segunda-feira, 9 de novembro de 2026');
+    await events.click(screen.getByRole('button', { name: 'Hoje' }));
+
+    await title('Terça-feira, 10 de novembro de 2026');
+    expect(periodsRequested(fetchMock)).toContainEqual({
+      from: '2026-11-11',
+      to: '2026-11-11',
+    });
+  });
+
+  it('as setas andam uma semana na visão Semana, e o título descreve a semana que cruza dois meses', async () => {
+    window.localStorage.setItem('sigtcc:reunioes:visao:7', 'week');
+    const { fetchMock, events } = setup([], 'student');
+    await title('8 – 14 de novembro de 2026');
+
+    await events.click(screen.getByRole('button', { name: 'Próxima semana' }));
+    await events.click(screen.getByRole('button', { name: 'Próxima semana' }));
+    await events.click(screen.getByRole('button', { name: 'Próxima semana' }));
+
+    const crossing = await title('29 de novembro – 5 de dezembro de 2026');
+    expect(crossing).toBeVisible();
+    expect(periodsRequested(fetchMock).at(-1)).toEqual({
+      from: '2026-11-29',
+      to: '2026-12-05',
+    });
+    await events.click(screen.getByRole('button', { name: 'Semana anterior' }));
+    await events.click(screen.getByRole('button', { name: 'Hoje' }));
+    expect(periodsRequested(fetchMock).at(-1)).toEqual({
+      from: '2026-11-08',
+      to: '2026-11-14',
+    });
+  });
+
+  it('mostra a reunião como um bloco com o horário, a outra parte e a situação, e abre o mesmo modal', async () => {
+    window.localStorage.setItem('sigtcc:reunioes:visao:7', 'week');
+    const { events } = setup(
+      [
+        makeMeeting(1, {
+          scheduled_at: '2026-11-11T09:00:00-03:00',
+          ends_at: '2026-11-11T11:00:00-03:00',
+          description: 'Revisar o capítulo 2',
+        }),
+      ],
+      'student',
+    );
+
+    const block = await screen.findByRole('button', { name: /capítulo 2/ });
+
+    expect(within(block).getByText('09:00–11:00')).toBeVisible();
+    expect(within(block).getByText('Carlos Lima')).toBeVisible();
+    expect(within(block).getByText('Pendente')).toBeVisible();
+    await events.click(block);
+    const dialog = await screen.findByRole('dialog', { name: 'Reunião' });
+    expect(
+      within(dialog).getByText('11 de novembro de 2026, das 09:00 às 11:00'),
+    ).toBeVisible();
+  });
+
+  it('um bloco de uma hora também usa a linha única, para a situação não ser cortada', async () => {
+    window.localStorage.setItem('sigtcc:reunioes:visao:7', 'day');
+    setup(
+      [
+        makeMeeting(1, {
+          scheduled_at: '2026-11-10T10:00:00-03:00',
+          ends_at: '2026-11-10T11:00:00-03:00',
+          description: 'Uma hora',
+        }),
+      ],
+      'student',
+    );
+
+    const block = await screen.findByRole('button', { name: /Uma hora/ });
+
+    expect(within(block).queryByText('Pendente')).not.toBeInTheDocument();
+    expect(within(block).getByTitle('Pendente')).toBeInTheDocument();
+  });
+
+  it('o bloco curto cabe numa linha, com o horário, a outra parte e o ícone da situação', async () => {
+    window.localStorage.setItem('sigtcc:reunioes:visao:7', 'day');
+    setup(
+      [
+        makeMeeting(1, {
+          scheduled_at: '2026-11-10T14:00:00-03:00',
+          ends_at: '2026-11-10T14:30:00-03:00',
+          description: 'Rápida',
+          situation: 'accepted',
+        }),
+      ],
+      'student',
+    );
+
+    const block = await screen.findByRole('button', { name: /Rápida/ });
+
+    expect(within(block).getByText('14:00')).toBeVisible();
+    expect(within(block).getByText('Carlos Lima')).toBeVisible();
+    expect(within(block).queryByText('Aceita')).not.toBeInTheDocument();
+    expect(
+      within(block).getByTitle('Aceita').querySelector('svg'),
+    ).not.toBeNull();
+    expect(block).toHaveAccessibleName(/Aceita: Rápida/);
+  });
+
+  it('reuniões que se sobrepõem aparecem todas, cada uma com o seu bloco', async () => {
+    window.localStorage.setItem('sigtcc:reunioes:visao:7', 'day');
+    setup(
+      [
+        makeMeeting(1, {
+          scheduled_at: '2026-11-10T10:00:00-03:00',
+          ends_at: '2026-11-10T11:30:00-03:00',
+          description: 'Primeira',
+        }),
+        makeMeeting(2, {
+          scheduled_at: '2026-11-10T10:30:00-03:00',
+          ends_at: '2026-11-10T12:00:00-03:00',
+          description: 'Segunda',
+        }),
+        makeMeeting(3, {
+          scheduled_at: '2026-11-10T10:00:00-03:00',
+          ends_at: '2026-11-10T11:00:00-03:00',
+          description: 'Terceira',
+        }),
+      ],
+      'student',
+    );
+
+    await screen.findByRole('button', { name: /Primeira/ });
+
+    expect(screen.getByRole('button', { name: /Segunda/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Terceira/ })).toBeVisible();
+  });
+
+  it('funciona em tela pequena', async () => {
+    setViewportWidth(PHONE_WIDTH);
+    window.localStorage.setItem('sigtcc:reunioes:visao:7', 'day');
+    const { events } = setup(
+      [
+        makeMeeting(1, {
+          scheduled_at: '2026-11-10T09:00:00-03:00',
+          ends_at: '2026-11-10T10:00:00-03:00',
+          description: 'No celular',
+        }),
+      ],
+      'student',
+    );
+
+    const block = await screen.findByRole('button', { name: /No celular/ });
+    await events.click(block);
+
+    expect(
+      await screen.findByRole('dialog', { name: 'Reunião' }),
+    ).toBeVisible();
+  });
+});
+
 describe('MeetingsPage: ao recarregar', () => {
   it('mantém as reuniões já lidas enquanto o período é lido de novo', async () => {
     const server = meetingsServer(
@@ -365,7 +556,7 @@ describe('MeetingsPage: ao recarregar', () => {
 });
 
 describe('MeetingsPage: a visão salva', () => {
-  it('abre no Mês sem preferência e o seletor deixa Dia e Semana indisponíveis por ora', async () => {
+  it('abre no Mês sem preferência, com o seletor oferecendo as três visões', async () => {
     setup([], 'student');
     await screen.findByRole('heading', { level: 2, name: 'Novembro de 2026' });
 
@@ -373,21 +564,52 @@ describe('MeetingsPage: a visão salva', () => {
       'aria-pressed',
       'true',
     );
-    expect(screen.getByRole('button', { name: 'Dia' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Semana' })).toBeDisabled();
+    for (const name of ['Dia', 'Semana', 'Mês']) {
+      expect(screen.getByRole('button', { name })).toBeEnabled();
+    }
   });
 
   it('guarda a visão no navegador, separada por usuário, sem pedir nada', async () => {
     const { events } = setup([], 'student');
     await screen.findByRole('heading', { level: 2, name: 'Novembro de 2026' });
-    window.localStorage.removeItem('sigtcc:reunioes:visao:7');
 
-    await events.click(screen.getByRole('button', { name: 'Mês' }));
-    // Clicar na visão já escolhida não a desmarca, e a preferência fica guardada para o usuário 7.
-    expect(screen.getByRole('button', { name: 'Mês' })).toHaveAttribute(
+    await events.click(screen.getByRole('button', { name: 'Semana' }));
+
+    expect(screen.getByRole('button', { name: 'Semana' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+    expect(window.localStorage.getItem('sigtcc:reunioes:visao:7')).toBe('week');
+    expect(window.localStorage.getItem('sigtcc:reunioes:visao:9')).toBeNull();
+  });
+
+  it('abre na visão salva do próprio usuário e ignora a de outro', async () => {
+    window.localStorage.setItem('sigtcc:reunioes:visao:7', 'day');
+    window.localStorage.setItem('sigtcc:reunioes:visao:9', 'week');
+    setup([], 'student');
+
+    expect(
+      await screen.findByRole('heading', {
+        level: 2,
+        name: 'Terça-feira, 10 de novembro de 2026',
+      }),
+    ).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Dia' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('uma preferência salva que não é uma visão conhecida volta ao Mês', async () => {
+    window.localStorage.setItem('sigtcc:reunioes:visao:7', 'ano');
+    setup([], 'student');
+
+    expect(
+      await screen.findByRole('heading', {
+        level: 2,
+        name: 'Novembro de 2026',
+      }),
+    ).toBeVisible();
   });
 
   it('segue funcionando quando o navegador não deixa guardar a preferência', async () => {
