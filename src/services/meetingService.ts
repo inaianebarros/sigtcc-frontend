@@ -30,6 +30,10 @@ export interface MeetingItem {
   canCancel: boolean;
   /** O usuário pode marcar a reunião como realizada agora, decidido no servidor (RN43). */
   canMarkHeld: boolean;
+  /** Os apontamentos da reunião realizada (RN44); vazio quando não há. */
+  notes: string;
+  /** O usuário pode adicionar, editar ou remover os apontamentos agora, decidido no servidor. */
+  canEditNotes: boolean;
 }
 
 export interface MeetingInput {
@@ -56,6 +60,8 @@ interface ApiMeeting {
   can_cancel: boolean;
   marked_held: boolean;
   can_mark_held: boolean;
+  notes: string;
+  can_edit_notes: boolean;
 }
 
 function meetingFrom(item: ApiMeeting): MeetingItem {
@@ -81,6 +87,8 @@ function meetingFrom(item: ApiMeeting): MeetingItem {
     canEdit: item.can_edit,
     canCancel: item.can_cancel,
     canMarkHeld: item.can_mark_held,
+    notes: item.notes,
+    canEditNotes: item.can_edit_notes,
   };
 }
 
@@ -211,4 +219,18 @@ export async function listCalendarAdvisees(
  */
 export async function markMeetingHeld(id: number): Promise<void> {
   await httpClient.post(`/reunioes/${id}/realizada`, {});
+}
+
+/** O limite dos apontamentos, sem contar os espaços das pontas (RN44). */
+export const NOTES_MAX = 3000;
+
+/**
+ * O professor orientador grava os apontamentos de uma reunião realizada (RF58, RN44). Um texto
+ * vazio, depois de aparado, remove os apontamentos; o servidor decide se ainda podem ser alterados.
+ */
+export async function writeMeetingNotes(
+  id: number,
+  notes: string,
+): Promise<void> {
+  await httpClient.put(`/reunioes/${id}/apontamentos`, { notes });
 }

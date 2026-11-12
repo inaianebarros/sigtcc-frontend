@@ -29,6 +29,7 @@ import { MeetingActions } from '../meetings/MeetingActions';
 import { REASON_ACTIONS } from '../meetings/reasonActions';
 import { MeetingReasonDialog } from '../meetings/MeetingReasonDialog';
 import { MeetingDetailsDialog } from '../meetings/MeetingDetailsDialog';
+import { MeetingNotesDialog } from '../meetings/MeetingNotesDialog';
 import { MeetingRequestDialog } from '../meetings/MeetingRequestDialog';
 import { hasActiveAdvisingOf } from '../navigation/advisingState';
 import {
@@ -83,6 +84,8 @@ export function MeetingsPage() {
   const detailsDialog = useDialogSlot<MeetingItem>();
   // Marcar como realizada é irreversível e pede confirmação explícita (RNF21, RN43).
   const heldDialog = useDialogSlot<MeetingItem>();
+  // Os apontamentos de uma reunião realizada: adicionar, editar e remover (RF58, RN44).
+  const notesDialog = useDialogSlot<MeetingItem>();
   const [markingHeld, setMarkingHeld] = useState(false);
   // A guarda do envio duplicado é um ref: o estado só muda na renderização seguinte, e dois cliques
   // no mesmo instante passariam por ele.
@@ -237,11 +240,16 @@ export function MeetingsPage() {
         detailsDialog.hide();
         heldDialog.show(target);
       }}
+      onEditNotes={(target) => {
+        detailsDialog.hide();
+        notesDialog.show(target);
+      }}
     />
   );
 
   const detailsSlot = detailsDialog.slot;
   const heldSlot = heldDialog.slot;
+  const notesSlot = notesDialog.slot;
   // Ao recarregar (outro mês, ou depois de uma ação) o calendário mantém as reuniões já lidas até
   // as novas chegarem, em vez de esvaziar a grade.
   const [meetings, setMeetings] = useState(NO_MEETINGS);
@@ -340,6 +348,27 @@ export function MeetingsPage() {
           actions={renderActions(detailsSlot.payload)}
           onClose={detailsDialog.hide}
           onExited={detailsDialog.unmount}
+        />
+      )}
+      {notesSlot && (
+        <MeetingNotesDialog
+          key={`notes-${notesSlot.openCount}`}
+          open={notesSlot.open}
+          meeting={notesSlot.payload}
+          onSaved={(removed) => {
+            notesDialog.hide();
+            notify(
+              removed ? 'Apontamentos removidos.' : 'Apontamentos salvos.',
+              'success',
+            );
+            refresh();
+          }}
+          onStateChanged={(message) => {
+            notesDialog.hide();
+            handleStateChanged(message);
+          }}
+          onClose={notesDialog.hide}
+          onExited={notesDialog.unmount}
         />
       )}
       {heldSlot && (

@@ -20,6 +20,8 @@ export interface FakeMeeting {
   can_cancel: boolean;
   marked_held: boolean;
   can_mark_held: boolean;
+  notes: string;
+  can_edit_notes: boolean;
   /** O aluno da reunião, para o filtro do professor (não faz parte do contrato do item). */
   student_id?: number;
 }
@@ -46,6 +48,8 @@ export function makeMeeting(
     can_cancel: true,
     marked_held: false,
     can_mark_held: false,
+    notes: '',
+    can_edit_notes: false,
     ...overrides,
   };
 }
@@ -241,6 +245,13 @@ export function meetingsServer(
       found.can_edit = false;
       found.can_cancel = false;
       return { body: { ...found, held_at: '2026-11-10T12:00:00-03:00' } };
+    },
+    'PUT /api/reunioes/:id/apontamentos': (body, _url, params) => {
+      const found = state.find((item) => item.id === Number(params.id));
+      if (!found)
+        return { status: 404, body: { detail: 'Reunião não encontrada.' } };
+      found.notes = (body as { notes: string }).notes.trim();
+      return { body: found };
     },
     'POST /api/reunioes/:id/cancelar': (body, _url, params) => {
       const found = state.find((item) => item.id === Number(params.id));

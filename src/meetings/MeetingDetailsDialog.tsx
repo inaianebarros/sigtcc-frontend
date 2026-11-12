@@ -93,6 +93,20 @@ export function MeetingDetailsDialog({
             <SituationChip situation={item.situation} />
             <Reasons item={item} />
           </Stack>
+          {item.notes && (
+            // Os apontamentos da reunião realizada (RF19, RN44): as quebras de linha são
+            // preservadas e o texto longo quebra em vez de estourar o modal.
+            <Stack spacing={0.5} component="section" aria-label="Apontamentos">
+              <Typography variant="subtitle2" component="h3">
+                Apontamentos
+              </Typography>
+              <Typography
+                sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
+              >
+                {item.notes}
+              </Typography>
+            </Stack>
+          )}
           <Typography variant="body2" color="text.secondary">
             Solicitada por {requestedBy(item, userId)}
           </Typography>

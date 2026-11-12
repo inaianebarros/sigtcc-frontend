@@ -7,6 +7,7 @@ interface MeetingActionHandlers {
   onEdit: (item: MeetingItem) => void;
   onCancel: (item: MeetingItem) => void;
   onMarkHeld: (item: MeetingItem) => void;
+  onEditNotes: (item: MeetingItem) => void;
 }
 
 interface MeetingActionsProps extends MeetingActionHandlers {
@@ -16,7 +17,7 @@ interface MeetingActionsProps extends MeetingActionHandlers {
 }
 
 /**
- * As ações de uma reunião (RF20 a RF22 e RF57). Cada uma aparece só quando o servidor a permite: a tela
+ * As ações de uma reunião (RF20 a RF22, RF57 e RF58). Cada uma aparece só quando o servidor a permite: a tela
  * não repete as regras (RN09 a RN11), só segue as flags `can_*` da lista.
  */
 export function MeetingActions({
@@ -27,8 +28,15 @@ export function MeetingActions({
   onEdit,
   onCancel,
   onMarkHeld,
+  onEditNotes,
 }: MeetingActionsProps) {
-  if (!item.canAnswer && !item.canEdit && !item.canCancel && !item.canMarkHeld)
+  if (
+    !item.canAnswer &&
+    !item.canEdit &&
+    !item.canCancel &&
+    !item.canMarkHeld &&
+    !item.canEditNotes
+  )
     return null;
   const subject = `a reunião "${item.description}"`;
   return (
@@ -76,6 +84,17 @@ export function MeetingActions({
           onClick={() => onMarkHeld(item)}
         >
           Marcar como realizada
+        </Button>
+      )}
+      {item.canEditNotes && (
+        <Button
+          size="small"
+          variant="outlined"
+          disabled={busy}
+          aria-label={`${item.notes ? 'Editar' : 'Adicionar'} apontamentos da reunião "${item.description}"`}
+          onClick={() => onEditNotes(item)}
+        >
+          {item.notes ? 'Editar apontamentos' : 'Adicionar apontamentos'}
         </Button>
       )}
       {item.canCancel && (
