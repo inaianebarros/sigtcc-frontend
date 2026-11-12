@@ -848,6 +848,7 @@ function availabilityParams(fetchMock: ReturnType<typeof mockApi>) {
 }
 
 const SWITCH = { name: 'Mostrar todos' };
+const ACTION = { name: 'Ver todos os professores do curso' };
 
 describe('AdvisorsPage: filtro Mostrar todos', () => {
   beforeEach(() => {
@@ -966,6 +967,79 @@ describe('AdvisorsPage: filtro Mostrar todos', () => {
     await screen.findByText('Ana Pereira');
     expect(screen.getByRole('switch', SWITCH)).not.toBeChecked();
     expect(screen.queryByText('Carla Dias')).not.toBeInTheDocument();
+  });
+
+  it('sem nenhum professor com área em comum, explica o padrão e oferece mostrar todos', async () => {
+    mockApi(
+      advisorRoutes([
+        makeAdvisor(1, { full_name: 'Ana Pereira', compatibility: 0 }),
+      ]),
+    );
+    const user = userEvent.setup();
+    renderApp('/aluno/orientadores');
+
+    expect(
+      await screen.findByText(
+        'Nenhum professor do seu curso tem áreas em comum com as suas.',
+      ),
+    ).toBeVisible();
+    await user.click(screen.getByRole('button', ACTION));
+
+    expect(await screen.findByText('Ana Pereira')).toBeInTheDocument();
+    expect(screen.getByRole('switch', SWITCH)).toBeChecked();
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/aluno\/orientadores\?show_all=true$/,
+    );
+  });
+
+  it('com um nome digitado que só existe fora das áreas em comum, cita o nome e oferece a mesma ação', async () => {
+    mockApi(
+      advisorRoutes([
+        makeAdvisor(1, { full_name: 'Ana Pereira', compatibility: 0 }),
+        makeAdvisor(2, { full_name: 'Bruno Lima' }),
+      ]),
+    );
+    const user = userEvent.setup();
+    renderApp('/aluno/orientadores');
+    await screen.findByText('Bruno Lima');
+
+    await user.type(screen.getByLabelText('Buscar por nome'), 'ana');
+
+    expect(
+      await screen.findByText(
+        'Nenhum professor com áreas em comum encontrado para “ana”.',
+        {},
+        { timeout: 3000 },
+      ),
+    ).toBeVisible();
+    await user.click(screen.getByRole('button', ACTION));
+    expect(await screen.findByText('Ana Pereira')).toBeInTheDocument();
+  });
+
+  it('leva o foco à chave quando a ação do estado vazio é usada, para o novo estado ser anunciado', async () => {
+    mockApi(
+      advisorRoutes([
+        makeAdvisor(1, { full_name: 'Ana Pereira', compatibility: 0 }),
+      ]),
+    );
+    const user = userEvent.setup();
+    renderApp('/aluno/orientadores');
+    await user.click(await screen.findByRole('button', ACTION));
+
+    await screen.findByText('Ana Pereira');
+
+    expect(screen.getByRole('switch', SWITCH)).toHaveFocus();
+  });
+
+  it('não repete o nome da chave na ação do estado vazio: só um controle se chama "Mostrar todos"', async () => {
+    mockApi(advisorRoutes([makeAdvisor(1, { compatibility: 0 })]));
+    renderApp('/aluno/orientadores');
+    await screen.findByRole('button', ACTION);
+
+    expect(screen.getAllByLabelText('Mostrar todos')).toHaveLength(1);
+    expect(
+      screen.queryByRole('button', { name: 'Mostrar todos' }),
+    ).not.toBeInTheDocument();
   });
 
   it('com a chave ligada e nenhum professor, volta a valer a mensagem de lista vazia comum', async () => {
