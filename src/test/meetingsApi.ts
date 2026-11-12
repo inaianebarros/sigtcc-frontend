@@ -1,9 +1,11 @@
+import { plusOneHour } from './plusOneHour';
 import type { FakeAdvisee } from './adviseesApi';
 import type { MockResponse } from './mockApi';
 
 export interface FakeMeeting {
   id: number;
   scheduled_at: string;
+  ends_at: string;
   description: string;
   status: 'pending' | 'accepted' | 'rejected' | 'cancelled';
   situation:
@@ -24,9 +26,11 @@ export function makeMeeting(
   id: number,
   overrides: Partial<FakeMeeting> = {},
 ): FakeMeeting {
+  const scheduledAt = overrides.scheduled_at ?? '2099-12-31T14:30:00-03:00';
   return {
     id,
-    scheduled_at: '2099-12-31T14:30:00-03:00',
+    scheduled_at: scheduledAt,
+    ends_at: plusOneHour(scheduledAt),
     description: `Reunião ${id} de orientação`,
     status: 'pending',
     situation: 'pending',
@@ -134,11 +138,13 @@ export function meetingsServer(
       const input = body as {
         date: string;
         time: string;
+        end_time: string;
         description: string;
         student_id?: number;
       };
       const created = makeMeeting(nextId++, {
         scheduled_at: `${input.date}T${input.time}:00-03:00`,
+        ends_at: `${input.date}T${input.end_time}:00-03:00`,
         description: input.description,
         author:
           user === 'student'
@@ -175,13 +181,20 @@ export function meetingsServer(
       const input = body as {
         date?: string;
         time?: string;
+        end_time?: string;
         description?: string;
       };
-      if (input.date !== undefined || input.time !== undefined) {
+      if (
+        input.date !== undefined ||
+        input.time !== undefined ||
+        input.end_time !== undefined
+      ) {
         const day = input.date ?? found.scheduled_at.slice(0, 10);
         const hour = input.time ?? found.scheduled_at.slice(11, 16);
+        const endHour = input.end_time ?? found.ends_at.slice(11, 16);
         found.scheduled_at = `${day}T${hour}:00-03:00`;
-        // RN39: mudar a data ou a hora de uma reunião aceita a devolve para pendente.
+        found.ends_at = `${day}T${endHour}:00-03:00`;
+        // RN39: mudar a data, o início ou o término de uma reunião aceita a devolve para pendente.
         if (found.situation === 'accepted') {
           found.status = 'pending';
           found.situation = 'pending';

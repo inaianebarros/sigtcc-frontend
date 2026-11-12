@@ -34,6 +34,7 @@ export type DashboardRequestState = 'pending' | 'rejected' | 'unanswered';
 export interface DashboardMeeting {
   id: number;
   scheduledAt: string;
+  endsAt: string;
   partyName: string;
   description: string;
 }
@@ -76,6 +77,7 @@ interface ApiActivity {
 interface ApiMeeting {
   id: number;
   scheduled_at: string;
+  ends_at: string;
   description: string;
 }
 
@@ -93,6 +95,7 @@ function meetingFrom(meeting: ApiMeeting, partyName: string): DashboardMeeting {
   return {
     id: meeting.id,
     scheduledAt: meeting.scheduled_at,
+    endsAt: meeting.ends_at,
     partyName,
     description: meeting.description,
   };

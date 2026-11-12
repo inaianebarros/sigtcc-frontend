@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatDateTime, formatDeadline } from './dateTime';
+import {
+  formatDate,
+  formatDateTime,
+  formatDateTimeRange,
+  formatDeadline,
+} from './dateTime';
 
 describe('formatDate e formatDateTime', () => {
   it('escrevem a data no horário da instituição (Santarém, UTC-3)', () => {
@@ -25,5 +30,22 @@ describe('formatDeadline', () => {
     expect(formatDeadline('amanhã')).toBe('data indisponível');
     expect(formatDeadline('2026-02-30')).toBe('data indisponível');
     expect(formatDeadline('2026-12-31T10:00:00Z')).toBe('data indisponível');
+  });
+});
+
+describe('formatDateTimeRange', () => {
+  it('escreve o intervalo da reunião no horário da instituição', () => {
+    expect(
+      formatDateTimeRange('2026-11-02T14:30:00Z', '2026-11-02T15:45:00Z'),
+    ).toBe('2 de novembro de 2026, das 11:30 às 12:45');
+  });
+
+  it('mostra só o início se o término não puder ser lido', () => {
+    expect(formatDateTimeRange('2026-11-02T14:30:00Z', 'lixo')).toBe(
+      '2 de novembro de 2026, às 11:30',
+    );
+    expect(formatDateTimeRange('lixo', '2026-11-02T14:30:00Z')).toBe(
+      'data indisponível',
+    );
   });
 });

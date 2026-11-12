@@ -16,6 +16,8 @@ export interface MeetingItem {
   id: number;
   /** O instante com o fuso, como o servidor o devolve. */
   scheduledAt: string;
+  /** O término, no mesmo dia do início (RN45). */
+  endsAt: string;
   description: string;
   /** Derivada pelo servidor do status e do relógio (RN34 e glossário): a tela não a recalcula. */
   situation: MeetingSituation;
@@ -46,12 +48,15 @@ export interface MeetingFilters {
 export interface MeetingInput {
   date: string;
   time: string;
+  /** A hora de término (HH:MM), depois da de início e no mesmo dia (RN45). */
+  endTime: string;
   description: string;
 }
 
 interface ApiMeeting {
   id: number;
   scheduled_at: string;
+  ends_at: string;
   description: string;
   situation: MeetingSituation;
   author: { id: number; full_name: string; type: 'student' | 'teacher' };
@@ -68,6 +73,7 @@ function meetingFrom(item: ApiMeeting): MeetingItem {
   return {
     id: item.id,
     scheduledAt: item.scheduled_at,
+    endsAt: item.ends_at,
     description: item.description,
     situation: item.situation,
     author: {
@@ -115,7 +121,10 @@ export async function createMeeting(
   studentId?: number,
 ): Promise<void> {
   await httpClient.post('/reunioes', {
-    ...input,
+    date: input.date,
+    time: input.time,
+    end_time: input.endTime,
+    description: input.description,
     ...(studentId === undefined ? {} : { student_id: studentId }),
   });
 }
@@ -142,7 +151,11 @@ export async function updateMeeting(
   id: number,
   changes: Partial<MeetingInput>,
 ): Promise<void> {
-  await httpClient.patch(`/reunioes/${id}`, changes);
+  const { endTime, ...rest } = changes;
+  await httpClient.patch(`/reunioes/${id}`, {
+    ...rest,
+    ...(endTime === undefined ? {} : { end_time: endTime }),
+  });
 }
 
 /** O cancelamento, com motivo (RF22, RN10); é definitivo. */

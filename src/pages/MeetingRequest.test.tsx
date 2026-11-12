@@ -70,12 +70,26 @@ async function openDialog(events: ReturnType<typeof userEvent.setup>) {
 async function fill(
   events: ReturnType<typeof userEvent.setup>,
   dialog: HTMLElement,
-  values: { date?: string; time?: string; description?: string },
+  values: {
+    date?: string;
+    time?: string;
+    endTime?: string;
+    description?: string;
+  },
 ) {
   if (values.date !== undefined)
     await events.type(within(dialog).getByLabelText(/Data/), values.date);
   if (values.time !== undefined)
-    await events.type(within(dialog).getByLabelText(/Hora/), values.time);
+    await events.type(
+      within(dialog).getByLabelText(/Hora de início/),
+      values.time,
+    );
+  // O término é obrigatório: quem só informa o início fica com o término no fim do dia.
+  if (values.time !== undefined || values.endTime !== undefined)
+    await events.type(
+      within(dialog).getByLabelText(/Hora de término/),
+      values.endTime ?? '23:59',
+    );
   if (values.description !== undefined)
     await events.type(
       within(dialog).getByLabelText(/Descrição/),
@@ -108,7 +122,7 @@ describe('Solicitar reunião: o aluno', () => {
       'type',
       'date',
     );
-    expect(within(dialog).getByLabelText(/Hora/)).toHaveAttribute(
+    expect(within(dialog).getByLabelText(/Hora de início/)).toHaveAttribute(
       'type',
       'time',
     );
@@ -125,6 +139,7 @@ describe('Solicitar reunião: o aluno', () => {
     await fill(events, dialog, {
       date: '2099-12-31',
       time: '14:30',
+      endTime: '15:30',
       description: '  Revisar o capítulo 2  ',
     });
 
@@ -141,6 +156,7 @@ describe('Solicitar reunião: o aluno', () => {
       {
         date: '2099-12-31',
         time: '14:30',
+        end_time: '15:30',
         description: 'Revisar o capítulo 2',
       },
     ]);
@@ -208,13 +224,13 @@ describe('Solicitar reunião: o aluno', () => {
     });
 
     expect(submit(dialog)).toBeEnabled();
-    await events.clear(within(dialog).getByLabelText(/Hora/));
+    await events.clear(within(dialog).getByLabelText(/Hora de início/));
     const earlier = new Date(
       inFiveMinutes.getTime() - 3 * 3_600_000 - 10 * 60_000,
     )
       .toISOString()
       .slice(11, 16);
-    await events.type(within(dialog).getByLabelText(/Hora/), earlier);
+    await events.type(within(dialog).getByLabelText(/Hora de início/), earlier);
     expect(submit(dialog)).toBeDisabled();
   });
 
@@ -348,6 +364,105 @@ describe('Solicitar reunião: alterações não salvas (RNF28)', () => {
   });
 });
 
+describe('Solicitar reunião: a hora de término (RN45)', () => {
+  it('tem o campo de término, obrigatório, e o botão só habilita com ele', async () => {
+    const { events } = setup('student');
+    const dialog = await openDialog(events);
+    const end = within(dialog).getByLabelText(/Hora de término/);
+
+    expect(end).toHaveAttribute('type', 'time');
+    expect(end).toBeRequired();
+    await events.type(within(dialog).getByLabelText(/Data/), '2099-12-31');
+    await events.type(within(dialog).getByLabelText(/Hora de início/), '14:30');
+    await events.type(within(dialog).getByLabelText(/Descrição/), 'Pauta');
+    expect(submit(dialog)).toBeDisabled();
+
+    await events.type(end, '15:00');
+
+    expect(submit(dialog)).toBeEnabled();
+  });
+
+  it.each(['14:30', '13:00'])(
+    'um término em %s, que não é depois do início, mostra o erro em português e desabilita o envio',
+    async (endTime) => {
+      const { events } = setup('student');
+      const dialog = await openDialog(events);
+      await fill(events, dialog, {
+        date: '2099-12-31',
+        time: '14:30',
+        endTime,
+        description: 'Pauta',
+      });
+
+      expect(
+        await within(dialog).findByText(
+          'A hora de término deve ser depois da hora de início.',
+        ),
+      ).toBeVisible();
+      expect(submit(dialog)).toBeDisabled();
+    },
+  );
+
+  it('leva o erro do servidor sobre o término ao campo, sem mensagem técnica', async () => {
+    const { events } = setup('student', {
+      overrides: {
+        [CREATE]: {
+          status: 422,
+          body: {
+            detail: [
+              {
+                loc: ['body', 'payload', 'end_time'],
+                msg: 'A hora de término deve ser depois da hora de início.',
+                type: 'value_error',
+              },
+            ],
+          },
+        },
+      },
+    });
+    const dialog = await openDialog(events);
+    await fill(events, dialog, {
+      date: '2099-12-31',
+      time: '14:30',
+      endTime: '15:30',
+      description: 'Pauta',
+    });
+
+    await events.click(submit(dialog));
+
+    const message = await within(dialog).findByText(
+      'A hora de término deve ser depois da hora de início.',
+    );
+    expect(message).toBeVisible();
+    expect(within(dialog).getByLabelText(/Hora de término/)).toBeInvalid();
+  });
+});
+
+describe('Solicitar reunião: o término não é cobrado antes da hora', () => {
+  it('preencher o início não mostra o erro do término vazio, e mudar o início revalida o término já preenchido', async () => {
+    const { events } = setup('student');
+    const dialog = await openDialog(events);
+    const start = within(dialog).getByLabelText(/Hora de início/);
+
+    await events.type(start, '14:30');
+
+    expect(
+      within(dialog).queryByText('Informe a hora de término.'),
+    ).not.toBeInTheDocument();
+    await events.type(
+      within(dialog).getByLabelText(/Hora de término/),
+      '15:00',
+    );
+    await events.clear(start);
+    await events.type(start, '16:00');
+    expect(
+      await within(dialog).findByText(
+        'A hora de término deve ser depois da hora de início.',
+      ),
+    ).toBeVisible();
+  });
+});
+
 describe('Solicitar reunião: o professor', () => {
   it('exige o aluno, escolhido por {nome} - {tema}, e envia o student_id', async () => {
     const { fetchMock, events } = setup('teacher');
@@ -355,6 +470,7 @@ describe('Solicitar reunião: o professor', () => {
     await fill(events, dialog, {
       date: '2099-12-31',
       time: '14:30',
+      endTime: '15:30',
       description: 'Pauta',
     });
     expect(submit(dialog)).toBeDisabled();
@@ -372,6 +488,7 @@ describe('Solicitar reunião: o professor', () => {
       {
         date: '2099-12-31',
         time: '14:30',
+        end_time: '15:30',
         description: 'Pauta',
         student_id: 102,
       },

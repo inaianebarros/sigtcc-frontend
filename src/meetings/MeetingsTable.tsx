@@ -13,7 +13,7 @@ import {
 } from '@mui/material';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
-import { formatDateTime } from '../formatters/dateTime';
+import { formatDateTimeRange } from '../formatters/dateTime';
 import type { MeetingItem } from '../services/meetingService';
 import { SituationChip } from './SituationChip';
 
@@ -95,7 +95,9 @@ export function MeetingsTable({
         <TableBody>
           {items.map((item) => (
             <TableRow key={item.id} hover>
-              <TableCell>{formatDateTime(item.scheduledAt)}</TableCell>
+              <TableCell>
+                {formatDateTimeRange(item.scheduledAt, item.endsAt)}
+              </TableCell>
               <TableCell>{item.counterpart.fullName}</TableCell>
               <TableCell sx={{ maxWidth: 0, width: '30%' }}>
                 <TruncatedText text={item.description} />
@@ -129,7 +131,9 @@ function MeetingCard({
           <Typography id={titleId} variant="h6" component="h2">
             {item.description}
           </Typography>
-          <Typography>{formatDateTime(item.scheduledAt)}</Typography>
+          <Typography>
+            {formatDateTimeRange(item.scheduledAt, item.endsAt)}
+          </Typography>
           <Typography color="text.secondary">
             Com: {item.counterpart.fullName}
           </Typography>

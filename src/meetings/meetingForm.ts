@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 export const DESCRIPTION_MAX = 500;
 export const FUTURE_MESSAGE = 'O horário deve ser futuro.';
+export const END_AFTER_START_MESSAGE =
+  'A hora de término deve ser depois da hora de início.';
 export const ENDED_MESSAGE =
   'A orientação foi encerrada. A reunião não pode mais ser solicitada';
 
@@ -12,6 +14,8 @@ export interface MeetingFormValues {
   date: string;
   /** HH:MM, como o campo de hora nativo o devolve. */
   time: string;
+  /** HH:MM da hora de término, depois da de início e no mesmo dia (RN45). */
+  endTime: string;
   description: string;
 }
 
@@ -39,7 +43,7 @@ export function santaremParts(iso: string): { date: string; time: string } {
 
 /**
  * As regras do formulário de reunião (RF17, RF18 e RF21): data e hora informadas e no futuro,
- * descrição de 1 a 500 caracteres sem contar as pontas e, quando `requireStudent`, o aluno
+ * hora de término depois da de início (RN45), descrição de 1 a 500 caracteres sem contar as pontas e, quando `requireStudent`, o aluno
  * escolhido. Na edição, `original` é o horário atual: o futuro só é exigido se ele mudar.
  */
 export function meetingFormSchema(
@@ -52,6 +56,7 @@ export function meetingFormSchema(
       student: z.object({ id: z.number(), name: z.string() }).nullable(),
       date: z.string().min(1, 'Informe a data.'),
       time: z.string().min(1, 'Informe a hora.'),
+      endTime: z.string().min(1, 'Informe a hora de término.'),
       description: z
         .string()
         .trim()
@@ -67,6 +72,14 @@ export function meetingFormSchema(
           code: 'custom',
           path: ['student'],
           message: 'Escolha o aluno.',
+        });
+      }
+      // HH:MM compara como texto: o término fica no mesmo dia e depois do início.
+      if (values.time && values.endTime && values.endTime <= values.time) {
+        context.addIssue({
+          code: 'custom',
+          path: ['endTime'],
+          message: END_AFTER_START_MESSAGE,
         });
       }
       const instant = scheduledInstant(values.date, values.time);

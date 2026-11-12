@@ -56,12 +56,12 @@ describe('Dashboard do professor: próximas reuniões', () => {
     const [first, second] = within(region).getAllByRole('listitem');
     expect(within(first!).getByText('Orientando: Maria Lima')).toBeVisible();
     expect(
-      within(first!).getByText('10 de dezembro de 2099, às 14:30'),
+      within(first!).getByText('10 de dezembro de 2099, das 14:30 às 15:30'),
     ).toBeVisible();
     expect(within(first!).getByText('Revisar o capítulo 2')).toBeVisible();
     expect(within(second!).getByText('Orientando: João Souza')).toBeVisible();
     expect(
-      within(second!).getByText('20 de dezembro de 2099, às 09:00'),
+      within(second!).getByText('20 de dezembro de 2099, das 09:00 às 10:00'),
     ).toBeVisible();
   });
 
