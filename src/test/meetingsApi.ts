@@ -58,6 +58,8 @@ interface ServerOptions {
   active?: boolean;
   /** Os orientandos do professor, para o seletor do aluno (com busca pelo nome). */
   advisees?: FakeAdvisee[];
+  /** Os orientandos do painel do calendário, com a marca de orientação encerrada. */
+  calendarAdvisees?: { id: number; full_name: string; ended: boolean }[];
   overrides?: Record<string, MockResponse | Handler>;
 }
 
@@ -79,7 +81,13 @@ function plain(text: string): string {
  */
 export function meetingsServer(
   initial: FakeMeeting[],
-  { user, active = true, advisees = [], overrides = {} }: ServerOptions,
+  {
+    user,
+    active = true,
+    advisees = [],
+    calendarAdvisees = [],
+    overrides = {},
+  }: ServerOptions,
 ): MeetingsServer {
   const state = initial.map((item) => structuredClone(item));
   let advising = active;
@@ -109,10 +117,17 @@ export function meetingsServer(
     'GET /api/reunioes/calendario': (_body, url) => {
       const from = url.searchParams.get('date_from') ?? '';
       const to = url.searchParams.get('date_to') ?? '';
+      const situations = url.searchParams.getAll('situation');
+      const hidden = url.searchParams.getAll('hidden_student_ids').map(Number);
       const matching = state
         .filter((item) => {
           const day = item.scheduled_at.slice(0, 10);
-          return day >= from && day <= to;
+          return (
+            day >= from &&
+            day <= to &&
+            (situations.length === 0 || situations.includes(item.situation)) &&
+            !hidden.includes(item.student_id ?? item.counterpart.id)
+          );
         })
         .sort(
           (a, b) => a.scheduled_at.localeCompare(b.scheduled_at) || a.id - b.id,
@@ -123,6 +138,23 @@ export function meetingsServer(
           void _studentId;
           return contract;
         }),
+      };
+    },
+    'GET /api/orientacao/orientandos/calendario': (_body, url) => {
+      const search = plain(url.searchParams.get('search') ?? '');
+      const limit = Number(url.searchParams.get('limit') ?? 20);
+      const offset = Number(url.searchParams.get('offset') ?? 0);
+      const matching = calendarAdvisees
+        .filter((advisee) => plain(advisee.full_name).includes(search))
+        .sort(
+          (a, b) =>
+            plain(a.full_name).localeCompare(plain(b.full_name)) || a.id - b.id,
+        );
+      return {
+        body: {
+          items: matching.slice(offset, offset + limit),
+          count: matching.length,
+        },
       };
     },
     'POST /api/reunioes': (body) => {

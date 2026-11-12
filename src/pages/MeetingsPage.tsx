@@ -1,6 +1,7 @@
 import { useCalendarController } from '@fullcalendar/react';
 import {
   Alert,
+  Box,
   Button,
   LinearProgress,
   Stack,
@@ -11,6 +12,7 @@ import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { useSession } from '../hooks/useSession';
+import { CalendarFiltersPanel } from '../meetings/calendar/CalendarFiltersPanel';
 import { CalendarToolbar } from '../meetings/calendar/CalendarToolbar';
 import { prefillFromClick } from '../meetings/calendar/clickedSlot';
 import type { SlotPrefill } from '../meetings/calendar/clickedSlot';
@@ -36,10 +38,25 @@ import {
 import {
   answerMeeting,
   listMeetingsInPeriod,
+  MEETING_SITUATIONS,
 } from '../services/meetingService';
-import type { MeetingItem } from '../services/meetingService';
+import type { MeetingItem, MeetingSituation } from '../services/meetingService';
 
 const NO_MEETINGS: MeetingItem[] = [];
+
+const ALL_SITUATIONS: ReadonlySet<MeetingSituation> = new Set(
+  MEETING_SITUATIONS,
+);
+
+// O texto só para o leitor de tela: a região de estado que anuncia o resultado do filtro.
+const SCREEN_READER_ONLY = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+} as const;
 
 const NO_ADVISING_REASON =
   'Você precisa ter uma orientação ativa para solicitar reuniões.';
@@ -75,10 +92,50 @@ export function MeetingsPage() {
   const [acting, setActing] = useState<number | null>(null);
   // Sem orientação ativa o calendário continua, como histórico, mas não há como solicitar (RN29).
   const canRequest = user !== null && hasActiveAdvisingOf(user);
-  const list = useLoad(
-    () => listMeetingsInPeriod(period?.from ?? '', period?.to ?? ''),
-    period === null ? null : `${period.from}|${period.to}|${reload}`,
+  // Os filtros do painel (RF59): todos ligados ao abrir e nada é guardado (RN46). Os orientandos
+  // são guardados como os desmarcados, para um orientando novo já aparecer marcado.
+  const [situations, setSituations] =
+    useState<ReadonlySet<MeetingSituation>>(ALL_SITUATIONS);
+  const [hiddenStudentIds, setHiddenStudentIds] = useState<ReadonlySet<number>>(
+    new Set(),
   );
+  const allSituations = situations.size === MEETING_SITUATIONS.length;
+  const filtersActive = !allSituations || hiddenStudentIds.size > 0;
+  const noSituation = situations.size === 0;
+  // Na ordem fixa das situações, para a mesma seleção dar sempre a mesma chave de leitura.
+  const situationParam = allSituations
+    ? []
+    : MEETING_SITUATIONS.filter((situation) => situations.has(situation));
+  const hiddenParam = [...hiddenStudentIds].sort((a, b) => a - b);
+  const list = useLoad(
+    () =>
+      listMeetingsInPeriod(period?.from ?? '', period?.to ?? '', {
+        situations: situationParam,
+        hiddenStudentIds: hiddenParam,
+      }),
+    // Sem nenhuma situação ligada não há o que ler: o servidor entenderia "todas".
+    period === null || noSituation
+      ? null
+      : `${period.from}|${period.to}|${situationParam.join(',')}|${hiddenParam.join(',')}|${reload}`,
+  );
+  const chooseSituation = (situation: MeetingSituation, on: boolean) =>
+    setSituations((current) => {
+      const next = new Set(current);
+      if (on) next.add(situation);
+      else next.delete(situation);
+      return next;
+    });
+  const chooseStudent = (id: number, on: boolean) =>
+    setHiddenStudentIds((current) => {
+      const next = new Set(current);
+      if (on) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const clearFilters = () => {
+    setSituations(ALL_SITUATIONS);
+    setHiddenStudentIds(new Set());
+  };
 
   // Clicar num dia ou numa faixa de horário futura abre a solicitação já preenchida (RF60); o clique
   // em data ou horário passado não faz nada.
@@ -152,47 +209,89 @@ export function MeetingsPage() {
   if (list.status === 'ready' && list.data !== meetings) {
     setMeetings(list.data);
   }
+  // Com a leitura falha ou sem nenhuma situação, a grade não mantém reuniões que não correspondem
+  // aos filtros marcados.
+  const shownMeetings =
+    noSituation || list.status === 'error' ? NO_MEETINGS : meetings;
+  const noMeetingsInPeriod =
+    noSituation || (list.status === 'ready' && list.data.length === 0);
 
   return (
     <Stack spacing={3}>
       <Typography variant="h4" component="h1">
         Reuniões
       </Typography>
-      <CalendarToolbar
-        title={capitalize(period?.title ?? '')}
-        view={view}
-        onToday={() => controller.today()}
-        onPrevious={() => controller.prev()}
-        onNext={() => controller.next()}
-        onView={chooseView}
-        onRequest={() => dialog.show()}
-        requestDisabledReason={
-          user === null || canRequest ? null : NO_ADVISING_REASON
-        }
-      />
-      {list.status === 'loading' && (
-        <LinearProgress aria-label="Carregando as reuniões do período" />
-      )}
-      {list.status === 'error' && (
-        <Stack spacing={2}>
-          <Alert severity="error">{list.message}</Alert>
-          <Button onClick={refresh} sx={{ alignSelf: 'flex-start' }}>
-            Tentar novamente
-          </Button>
+      <Stack
+        spacing={2}
+        useFlexGap
+        sx={{ flexDirection: { md: 'row' }, alignItems: { md: 'flex-start' } }}
+      >
+        <CalendarFiltersPanel
+          isTeacher={isTeacher}
+          situations={situations}
+          onSituation={chooseSituation}
+          hiddenStudentIds={hiddenStudentIds}
+          onStudent={chooseStudent}
+          onShowAllStudents={() => setHiddenStudentIds(new Set())}
+        />
+        <Stack spacing={2} sx={{ flexGrow: 1, minWidth: 0 }}>
+          <CalendarToolbar
+            title={capitalize(period?.title ?? '')}
+            view={view}
+            onToday={() => controller.today()}
+            onPrevious={() => controller.prev()}
+            onNext={() => controller.next()}
+            onView={chooseView}
+            onRequest={() => dialog.show()}
+            requestDisabledReason={
+              user === null || canRequest ? null : NO_ADVISING_REASON
+            }
+          />
+          {list.status === 'loading' && (
+            <LinearProgress aria-label="Carregando as reuniões do período" />
+          )}
+          {list.status === 'error' && (
+            <Stack spacing={2}>
+              <Alert severity="error">{list.message}</Alert>
+              <Button onClick={refresh} sx={{ alignSelf: 'flex-start' }}>
+                Tentar novamente
+              </Button>
+            </Stack>
+          )}
+          <Box role="status" aria-live="polite" sx={SCREEN_READER_ONLY}>
+            {list.status === 'ready'
+              ? `${list.data.length} ${list.data.length === 1 ? 'reunião' : 'reuniões'} no período.`
+              : noSituation
+                ? 'Nenhuma situação marcada.'
+                : ''}
+          </Box>
+          {noMeetingsInPeriod && (
+            <Alert
+              severity="info"
+              action={
+                filtersActive ? (
+                  <Button color="inherit" size="small" onClick={clearFilters}>
+                    Ligar todos os filtros
+                  </Button>
+                ) : undefined
+              }
+            >
+              {filtersActive
+                ? 'Nenhuma reunião com esses filtros. Ligue mais filtros para ver outras reuniões.'
+                : 'Nenhuma reunião neste período.'}
+            </Alert>
+          )}
+          <MeetingCalendar
+            controller={controller}
+            view={view}
+            meetings={shownMeetings}
+            onPeriod={setPeriod}
+            onOpen={(item) => detailsDialog.show(item)}
+            onMoreLink={() => chooseView('day')}
+            onSlotClick={canRequest ? openFromClick : undefined}
+          />
         </Stack>
-      )}
-      {list.status === 'ready' && list.data.length === 0 && (
-        <Alert severity="info">Nenhuma reunião neste período.</Alert>
-      )}
-      <MeetingCalendar
-        controller={controller}
-        view={view}
-        meetings={meetings}
-        onPeriod={setPeriod}
-        onOpen={(item) => detailsDialog.show(item)}
-        onMoreLink={() => chooseView('day')}
-        onSlotClick={canRequest ? openFromClick : undefined}
-      />
+      </Stack>
       {detailsSlot && (
         <MeetingDetailsDialog
           key={`details-${detailsSlot.openCount}`}
