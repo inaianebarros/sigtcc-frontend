@@ -76,6 +76,10 @@ RN37 - **Identificação de Atividades Atrasadas na Dashboard:** A identificaç�
 
 RN38 - **Priorização dos Orientandos que Precisam de Atenção:** Na Dashboard do professor, um orientando precisa de atenção quando possui ao menos uma atividade atrasada ou ao menos uma atividade em revisão. A lista prioriza quem tem mais atividades atrasadas; em caso de empate, quem tem mais atividades em revisão; persistindo o empate, o nome em ordem alfabética. A classificação é informativa e não altera o status das atividades nem das orientações.
 
-RN39 - **Edição de Reunião Aceita:** Quando o autor altera a data ou a hora de uma reunião aceita, ela volta ao status pendente e a outra parte precisa aceitá-la de novo, porque aceitou outro horário. Alterar apenas a descrição mantém o status. Só o autor edita (RN09).
+RN39 - **Edição de Reunião Aceita:** Quando o autor altera a data, a hora de início ou a hora de término de uma reunião aceita, ela volta ao status pendente e a outra parte precisa aceitá-la de novo, porque aceitou outro horário. Alterar apenas a descrição mantém o status. Só o autor edita (RN09).
 
 RN40 - **Justificativa de Recusa de Revisão:** A recusa de uma atividade em revisão deve ser obrigatoriamente acompanhada de uma justificativa, de 1 a 500 caracteres, que o aluno e o professor veem no histórico de revisões da atividade. O aceite não tem justificativa.
+
+RN45 - **Intervalo da Reunião:** Toda reunião tem uma hora de início e uma hora de término, ambas obrigatórias ao solicitar e ao editar. O término deve ser depois do início e no mesmo dia, sem duração mínima nem máxima. Não há regra de conflito: duas reuniões do mesmo usuário podem se sobrepor. A reunião realizada continua definida pelo horário de início (RN43), não pelo de término. As reuniões criadas antes desse campo receberam o término uma hora depois do início.
+
+RN46 - **Preferências do Calendário de Reuniões:** O calendário de reuniões abre sempre no dia de hoje, com todos os orientandos e todas as situações ligados. Só a visão escolhida (Dia, Semana ou Mês) fica salva no navegador do usuário, de forma automática e sem pedir permissão, separada por usuário. Sem preferência salva, a visão é o Mês.

@@ -32,11 +32,11 @@ RF15 - **Encerrar Orientação:** O sistema deve permitir que o professor encerr
 
 RF16 - **Visualizar Status da Solicitação:** O sistema deve permitir que o aluno visualize o status (pendente, aceita, recusada ou não respondida) de sua solicitação de orientação.
 
-RF17 - **Solicitar Reunião com Orientador:** O sistema deve permitir que o aluno solicite reuniões com seu orientador, informando data, hora e descrição.
+RF17 - **Solicitar Reunião com Orientador:** O sistema deve permitir que o aluno solicite reuniões com seu orientador, informando data, hora de início, hora de término e descrição.
 
-RF18 - **Solicitar Reunião com Aluno:** O sistema deve permitir que o professor solicite reuniões, informando data, hora, descrição e aluno.
+RF18 - **Solicitar Reunião com Aluno:** O sistema deve permitir que o professor solicite reuniões, informando data, hora de início, hora de término, descrição e aluno.
 
-RF19 - **Visualizar Reuniões:** O sistema deve permitir que o usuário visualize a lista de reuniões agendadas. A reunião cancelada permanece na lista com o motivo do cancelamento e, quando foi cancelada automaticamente, com a indicação de que o cancelamento foi feito pelo sistema (RN34).
+RF19 - **Visualizar Reuniões:** O sistema deve apresentar ao usuário as reuniões em um calendário, no lugar de uma listagem, com as visões Dia, Semana e Mês, o botão "Hoje", a navegação para o período anterior e o seguinte e o título do período exibido. Cada reunião aparece no seu dia (e na sua faixa de horário, nas visões Dia e Semana) como um card com o horário, a outra parte e a situação, e o card abre um modal com as informações da reunião e as ações permitidas. No Mês, cada dia mostra até 3 cards e um "+N mais" que leva à visão Dia daquele dia. A reunião cancelada permanece no calendário com o motivo do cancelamento e, quando foi cancelada automaticamente, com a indicação de que o cancelamento foi feito pelo sistema (RN34). A reunião realizada exibe os apontamentos, quando houver (RF58). O calendário carrega as reuniões do período exibido (RNF26) e guarda a visão escolhida no navegador (RN46).
 
 RF20 - **Responder Solicitação de Reunião:** O sistema deve permitir que o usuário aceite ou recuse solicitações de reunião. Em caso de recusa é necessário adicionar a justificativa.
 
@@ -123,3 +123,7 @@ RFADM06 - **Excluir Área de Interesse:** O sistema deve permitir que o admin ex
 RFADM07 - **Listar Usuários:** O sistema deve permitir que o admin visualize a lista de usuários cadastrados no sistema.
 
 RFADM08 - **Excluir Usuário:** O sistema deve permitir que o admin exclua um usuário do sistema, por meio de exclusão lógica (RN19).
+
+RF59 - **Filtrar o Calendário de Reuniões:** O sistema deve oferecer, ao lado do calendário de reuniões, um painel de filtros. O professor filtra por orientandos, em uma lista com busca por nome, que inclui os alunos de orientações ativas e encerradas, e por situação (pendente, aceita, recusada, cancelada, realizada e expirada). O aluno filtra só por situação. Todos os filtros começam ligados, a lista de orientandos e a situação vêm sempre completas ao abrir a tela e os filtros são executados no servidor (RNF26, RN46). Em telas pequenas o painel vira uma seção recolhível acima do calendário (RNF24).
+
+RF60 - **Solicitar Reunião pelo Calendário:** O sistema deve permitir que o usuário inicie a solicitação de reunião clicando em um dia futuro do calendário, que abre o formulário de solicitação (RF17, RF18) com a data preenchida. Nas visões Dia e Semana, o clique em uma faixa de horário futura também preenche a hora de início, com a de término sugerida uma hora depois. No Mês, só a data é preenchida. O clique em data ou horário passado não faz nada, e a ação também está disponível por um botão "Solicitar reunião" para quem usa o teclado. Sem orientação ativa, ela fica desabilitada com o motivo explicado (RN29).
