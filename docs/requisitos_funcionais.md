@@ -18,7 +18,7 @@ RF08 - **Realizar Log Out:** O sistema deve permitir que o usuário encerre sua 
 
 RF09 - **Pesquisar e Visualizar Orientadores Compatíveis:** O sistema deve apresentar ao aluno uma lista de orientadores ordenada pela compatibilidade entre as áreas de interesse cadastradas pelo aluno e as áreas de interesse cadastradas por cada orientador, limitada aos professores vinculados ao curso do aluno (RN28) e permitindo, adicionalmente, a filtragem por nome e por disponibilidade (RNF26). Por padrão, a lista mostra os professores do curso que têm ao menos uma área de interesse em comum com o aluno (RN23), disponíveis e indisponíveis, com os disponíveis primeiro (RN26); a opção "Mostrar todos" remove o corte por áreas em comum e exibe todos os professores do curso, na mesma ordem. Cada professor é exibido com sua disponibilidade para orientar.
 
-RF10 - **Visualizar Perfil do Professor:** O sistema deve permitir que o aluno visualize as informações sobre o professor como: nome, instituto, cursos, áreas de interesse (com as áreas em comum com o aluno destacadas) e artigos publicados, limitado aos professores vinculados ao curso do aluno (RN28). A disponibilidade para orientar também é exibida.
+RF10 - **Visualizar Perfil do Professor:** O sistema deve permitir que o aluno visualize as informações sobre o professor como: nome, instituto, cursos, áreas de interesse (com as áreas em comum com o aluno destacadas) e artigos publicados, limitado aos professores vinculados ao curso do aluno (RN28). A disponibilidade para orientar também é exibida, assim como as propostas de tema do professor (RF56).
 
 RF11 - **Visualizar Perfil do Aluno:** O sistema deve permitir que o professor visualize as informações do aluno, como nome, instituto, curso, áreas de interesse (com as áreas em comum com o professor destacadas) e artigos publicados, limitado aos alunos que lhe enviaram uma solicitação de orientação, em qualquer status, ou que têm ou tiveram orientação com ele (RN32).
 
@@ -108,6 +108,18 @@ RF53 - **Notificar Aluno sobre Encerramento da Orientação:** O sistema deve no
 
 RF54 - **Enviar E-mail de Cada Notificação:** O sistema deve enviar um e-mail ao destinatário de cada notificação criada, com o tipo da notificação no assunto e o texto da própria notificação no corpo, e com um link para o sistema. A conta desativada (RN19) não recebe o e-mail. Uma falha no envio não desfaz a ação que gerou a notificação: o sistema tenta enviar de novo, até 5 tentativas, e a notificação continua disponível no sistema.
 
+RF55 - **Gerenciar Propostas de Tema:** O sistema deve permitir que o professor cadastre, edite e remova, em seu perfil, as propostas de tema de TCC que ele deseja orientar e para as quais busca alunos (RN41). Cada ação é salva na hora, fora do formulário de edição do perfil. A remoção exige confirmação explícita (RNF21), é definitiva, e o professor pode ter nenhuma, uma ou várias propostas.
+
+RF56 - **Visualizar Propostas de Tema do Professor:** O sistema deve exibir as propostas de tema do professor em seu perfil, para ele e para o aluno que visualiza o perfil (RF10, limitado aos professores do curso do aluno, RN28). A listagem é paginada no servidor, de 5 em 5, da proposta mais recente para a mais antiga: com até 5 propostas aparece uma lista, e com 6 ou mais aparece uma tabela paginada (RNF26, RNF30). Sem propostas, o professor vê um estado vazio que o convida a cadastrar, e o aluno não vê a seção (RN42).
+
+RF57 - **Marcar Reunião como Realizada:** O sistema deve permitir que o professor orientador marque como realizada uma reunião aceita cujo horário ainda não passou, a qualquer momento, sem esperar o horário agendado. A marcação exige confirmação explícita (RNF21), é irreversível e fica registrada com o momento e o autor (RN43).
+
+RF58 - **Registrar Apontamentos da Reunião:** O sistema deve permitir que o professor orientador adicione, edite e remova os apontamentos de uma reunião realizada, em texto livre de até 3000 caracteres, e que o aluno orientando os visualize em leitura (RN44).
+
+RF59 - **Filtrar o Calendário de Reuniões:** O sistema deve oferecer, ao lado do calendário de reuniões, um painel de filtros. O professor filtra por orientandos, em uma lista com busca por nome, que inclui os alunos de orientações ativas e encerradas, e por situação (pendente, aceita, recusada, cancelada, realizada e expirada). O aluno filtra só por situação. Todos os filtros começam ligados, a lista de orientandos e a situação vêm sempre completas ao abrir a tela e os filtros são executados no servidor (RNF26, RN46). Em telas pequenas o painel vira uma seção recolhível acima do calendário (RNF24).
+
+RF60 - **Solicitar Reunião pelo Calendário:** O sistema deve permitir que o usuário inicie a solicitação de reunião clicando em um dia futuro do calendário, que abre o formulário de solicitação (RF17, RF18) com a data preenchida. Nas visões Dia e Semana, o clique em uma faixa de horário futura também preenche a hora de início, com a de término sugerida uma hora depois. No Mês, só a data é preenchida. O clique em data ou horário passado não faz nada, e a ação também está disponível por um botão "Solicitar reunião" para quem usa o teclado. Sem orientação ativa, ela fica desabilitada com o motivo explicado (RN29).
+
 RFADM01 - **Cadastrar Curso:** O sistema deve permitir que o admin cadastre um novo curso ao sistema.
 
 RFADM02 - **Editar Curso:** O sistema deve permitir que o admin edite as informações de um curso.
@@ -123,11 +135,3 @@ RFADM06 - **Excluir Área de Interesse:** O sistema deve permitir que o admin ex
 RFADM07 - **Listar Usuários:** O sistema deve permitir que o admin visualize a lista de usuários cadastrados no sistema.
 
 RFADM08 - **Excluir Usuário:** O sistema deve permitir que o admin exclua um usuário do sistema, por meio de exclusão lógica (RN19).
-
-RF57 - **Marcar Reunião como Realizada:** O sistema deve permitir que o professor orientador marque como realizada uma reunião aceita cujo horário ainda não passou, a qualquer momento, sem esperar o horário agendado. A marcação exige confirmação explícita (RNF21), é irreversível e fica registrada com o momento e o autor (RN43).
-
-RF58 - **Registrar Apontamentos da Reunião:** O sistema deve permitir que o professor orientador adicione, edite e remova os apontamentos de uma reunião realizada, em texto livre de até 3000 caracteres, e que o aluno orientando os visualize em leitura (RN44).
-
-RF59 - **Filtrar o Calendário de Reuniões:** O sistema deve oferecer, ao lado do calendário de reuniões, um painel de filtros. O professor filtra por orientandos, em uma lista com busca por nome, que inclui os alunos de orientações ativas e encerradas, e por situação (pendente, aceita, recusada, cancelada, realizada e expirada). O aluno filtra só por situação. Todos os filtros começam ligados, a lista de orientandos e a situação vêm sempre completas ao abrir a tela e os filtros são executados no servidor (RNF26, RN46). Em telas pequenas o painel vira uma seção recolhível acima do calendário (RNF24).
-
-RF60 - **Solicitar Reunião pelo Calendário:** O sistema deve permitir que o usuário inicie a solicitação de reunião clicando em um dia futuro do calendário, que abre o formulário de solicitação (RF17, RF18) com a data preenchida. Nas visões Dia e Semana, o clique em uma faixa de horário futura também preenche a hora de início, com a de término sugerida uma hora depois. No Mês, só a data é preenchida. O clique em data ou horário passado não faz nada, e a ação também está disponível por um botão "Solicitar reunião" para quem usa o teclado. Sem orientação ativa, ela fica desabilitada com o motivo explicado (RN29).
