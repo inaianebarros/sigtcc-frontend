@@ -44,13 +44,13 @@ RN21 - **Revisão de Atividade:** Somente o orientador ativo do aluno pode revis
 
 RN22 - **Áreas de Interesse Obrigatórias:** Todo aluno e todo professor deve ter ao menos uma área de interesse cadastrada, informada no cadastro e mantida ao editar o perfil (não é possível remover a última). O cálculo de compatibilidade depende das áreas cadastradas no perfil de ambos.
 
-RN23 - **Cálculo de Compatibilidade:** A compatibilidade entre aluno e orientador é calculada com base no número de áreas de interesse em comum entre os perfis, utilizadas para ordenar a lista de orientadores apresentada ao aluno.
+RN23 - **Cálculo de Compatibilidade:** A compatibilidade entre aluno e orientador é calculada com base no número de áreas de interesse em comum entre os perfis, utilizadas para filtrar e ordenar a lista de orientadores apresentada ao aluno: por padrão a lista só inclui professores com ao menos uma área em comum, e a opção "Mostrar todos" remove esse corte. Dentro de cada grupo de disponibilidade (RN26), quanto mais áreas em comum, mais acima o professor aparece.
 
 RN24 - **Atividade Atrasada:** Uma atividade cujo prazo venceu, sem que esteja concluída nem arquivada, é exibida como "Atrasada". O prazo é uma data sem hora: a atividade passa a ser atrasada no dia seguinte ao prazo, pela data atual do servidor. Atrasada não é um status persistido: é uma indicação calculada pelo servidor a partir do prazo e do status, que a fornece junto de cada atividade e nas contagens da Dashboard (RN35, RN37). A atividade mantém o status original. O professor que criou a atividade pode editar o prazo (RN14).
 
 RN25 - **Unicidade de Matrícula:** A matrícula deve ser única entre os alunos e única entre os professores.
 
-RN26 - **Disponibilidade do Professor:** O professor indica em seu perfil se está disponível para orientar. Ele pode ter nenhum ou vários orientandos, conforme sua capacidade e disponibilidade, e é o próprio professor quem controla essa indicação. Um professor indisponível não recebe novas solicitações de orientação; solicitações já pendentes e orientações ativas não são afetadas. Na busca de orientadores, o aluno vê por padrão apenas os professores disponíveis e pode optar por ver também os indisponíveis, que continuam sem poder receber solicitações.
+RN26 - **Disponibilidade do Professor:** O professor indica em seu perfil se está disponível para orientar. Ele pode ter nenhum ou vários orientandos, conforme sua capacidade e disponibilidade, e é o próprio professor quem controla essa indicação. Um professor indisponível não recebe novas solicitações de orientação; solicitações já pendentes e orientações ativas não são afetadas. Na busca de orientadores, o aluno vê os professores disponíveis e indisponíveis, sempre com os disponíveis primeiro e só depois os indisponíveis; os indisponíveis continuam sem poder receber solicitações.
 
 RN27 - **Encerramento de Sessões:** Ao redefinir ou alterar a senha de um usuário, e ao desativar a sua conta, todas as sessões ativas desse usuário são encerradas.
 
