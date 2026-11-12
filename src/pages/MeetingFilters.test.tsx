@@ -359,11 +359,28 @@ describe('Filtros do calendário: estados', () => {
   });
 
   it('o professor vê o aviso de carregamento enquanto a lista de orientandos não chega', async () => {
-    setup('teacher');
+    const server = meetingsServer(MEETINGS, {
+      user: 'teacher',
+      calendarAdvisees: ADVISEE_LIST,
+    });
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const original = server.routes[ADVISEES]!;
+    server.routes[ADVISEES] = async (body, url, params) => {
+      await gate;
+      return typeof original === 'function'
+        ? original(body, url, params)
+        : original;
+    };
+    mockApi(server.routes);
+    renderApp('/professor/reunioes');
 
     expect(
       await screen.findByText('Carregando orientandos…'),
     ).toBeInTheDocument();
+    release();
     await within(screen.getByRole('group', { name: 'Orientandos' })).findByRole(
       'checkbox',
       { name: /Ana Ativa/ },
