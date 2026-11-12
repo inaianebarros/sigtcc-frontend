@@ -13,6 +13,7 @@ import {
 import { ProfileEditor } from '../profile/ProfileEditor';
 import { ProfileScreen } from '../profile/ProfileScreen';
 import { ReadOnlyFacts } from '../profile/ReadOnlyFacts';
+import { ThesisProposalsSection } from '../proposals/ThesisProposalsSection';
 import { listInstitutes } from '../services/catalogService';
 import {
   getTeacherProfile,
@@ -72,6 +73,7 @@ export function TeacherProfilePage() {
             save={updateTeacherProfile}
             fieldByApiField={FIELD_BY_API_FIELD}
             changePasswordPath={paths.teacherPassword}
+            afterForm={<ThesisProposalsSection />}
             facts={<TeacherFacts profile={profile} instituteId={instituteId} />}
             extraFields={
               <>

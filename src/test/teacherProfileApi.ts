@@ -35,6 +35,7 @@ export function teacherProfileRoutes(
       },
     },
     'GET /api/professores/me/perfil': { body: profile },
+    'GET /api/professores/me/propostas': { body: { items: [], count: 0 } },
     'GET /api/areas-de-interesse': { body: AREAS },
     'GET /api/institutos': {
       body: [{ id: 1, name: 'Instituto de Engenharia e Geociências' }],

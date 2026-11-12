@@ -1,6 +1,18 @@
 import { useEffect } from 'react';
 import { useBlocker } from 'react-router-dom';
-import type { Blocker } from 'react-router-dom';
+import type { Blocker, Location } from 'react-router-dom';
+import { PAGE_PARAM } from './useUrlPage';
+
+/**
+ * O endereço de uma tela sem a página de uma lista: trocar de página dentro da tela, como a lista de
+ * propostas do perfil, não é sair dela e não pede para descartar o formulário.
+ */
+function screenOf({ pathname, search }: Location): string {
+  const params = new URLSearchParams(search);
+  params.delete(PAGE_PARAM);
+  const rest = params.toString();
+  return rest ? `${pathname}?${rest}` : pathname;
+}
 
 /**
  * Impede sair da tela com alterações pendentes (RNF28): navegação interna e botão Voltar passam
@@ -9,9 +21,7 @@ import type { Blocker } from 'react-router-dom';
 export function useUnsavedChangesGuard(hasPendingChanges: boolean): Blocker {
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      hasPendingChanges &&
-      currentLocation.pathname + currentLocation.search !==
-        nextLocation.pathname + nextLocation.search,
+      hasPendingChanges && screenOf(currentLocation) !== screenOf(nextLocation),
   );
 
   useEffect(() => {
