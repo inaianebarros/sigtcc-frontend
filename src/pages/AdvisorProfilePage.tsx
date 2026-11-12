@@ -9,6 +9,7 @@ import { useLoad } from '../hooks/useLoad';
 import { originPath } from '../navigation/origin';
 import { positiveIntFrom } from '../navigation/positiveInt';
 import { paths } from '../navigation/paths';
+import { AdvisorThesisProposals } from '../proposals/AdvisorThesisProposals';
 import { ProfileSections } from '../profile/ProfileSections';
 import { ProfileView } from '../profile/ProfileView';
 import { ReadOnlyFacts } from '../profile/ReadOnlyFacts';
@@ -68,6 +69,7 @@ export function AdvisorProfilePage() {
               {...request.requesting}
               unavailableId={availabilityId}
             />
+            <AdvisorThesisProposals key={advisor.id} teacherId={advisor.id} />
             <ProfileSections
               areas={advisor.areas}
               compatibility={advisor.compatibility}

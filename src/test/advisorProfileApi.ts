@@ -36,9 +36,13 @@ export function advisorProfileRoutes(
   profiles: FakeAdvisorProfile[],
 ): Record<string, MockResponse> {
   return Object.fromEntries(
-    profiles.map((profile) => [
-      `GET /api/professores/${profile.id}/perfil`,
-      { body: profile },
+    profiles.flatMap((profile) => [
+      [`GET /api/professores/${profile.id}/perfil`, { body: profile }],
+      // Sem propostas por padrão: os testes que as querem trocam esta rota.
+      [
+        `GET /api/professores/${profile.id}/propostas`,
+        { body: { items: [], count: 0 } },
+      ],
     ]),
   );
 }

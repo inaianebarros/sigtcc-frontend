@@ -78,3 +78,18 @@ export async function updateProposal(
 export async function deleteProposal(id: number): Promise<void> {
   await httpClient.delete(`/professores/me/propostas/${id}`);
 }
+
+/**
+ * As propostas de tema de um professor do curso do aluno, só para leitura (RF56, RN42). O servidor
+ * responde 404 para um professor de outro curso, um inativo e um id que não existe.
+ */
+export async function listAdvisorProposals(
+  teacherId: number,
+  page: number,
+): Promise<ThesisProposalPage> {
+  return pageFrom(
+    await httpClient.get<{ items: ApiThesisProposal[]; count: number }>(
+      `/professores/${teacherId}/propostas?${pageParams(page)}`,
+    ),
+  );
+}

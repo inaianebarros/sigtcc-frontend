@@ -10,6 +10,10 @@ import {
 import { mockApi, requestsTo } from '../test/mockApi';
 import { renderApp } from '../test/renderApp';
 import { teacherProfileRoutes } from '../test/teacherProfileApi';
+import {
+  advisorProposalsRoute,
+  makeProposal,
+} from '../test/thesisProposalsApi';
 import { DESKTOP_WIDTH, PHONE_WIDTH, setViewportWidth } from '../test/viewport';
 
 const PROFILE_OF_7 = 'GET /api/professores/7/perfil';
@@ -588,5 +592,203 @@ describe('Link para o perfil na lista de orientadores', () => {
     expect(
       within(menu).getByRole('link', { name: 'Meu perfil' }),
     ).not.toHaveAttribute('aria-current');
+  });
+});
+
+const PROPOSALS_OF_7 = 'GET /api/professores/7/propostas';
+
+function proposalsOf(count: number) {
+  return Array.from({ length: count }, (_, index) => makeProposal(index + 1));
+}
+
+function proposalRequests(fetchMock: ReturnType<typeof mockApi>) {
+  return requestsTo(fetchMock, PROPOSALS_OF_7).map(([input]) => {
+    const params = new URL(String(input), 'http://localhost').searchParams;
+    return { limit: params.get('limit'), offset: params.get('offset') };
+  });
+}
+
+describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
+  it('com 1 a 5 propostas mostra uma lista só de leitura, na ordem do servidor', async () => {
+    open(
+      undefined,
+      '/aluno/orientadores/7',
+      advisorProposalsRoute(7, proposalsOf(3)),
+    );
+    await loaded();
+
+    const section = await screen.findByRole('region', {
+      name: 'Propostas de tema',
+    });
+
+    const list = within(section).getByRole('list', {
+      name: 'Propostas de tema',
+    });
+    const items = within(list).getAllByRole('listitem');
+    expect(items).toHaveLength(3);
+    expect(items[0]).toHaveTextContent('número 03');
+    expect(items[2]).toHaveTextContent('número 01');
+    expect(within(section).queryByRole('table')).not.toBeInTheDocument();
+    expect(within(section).queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('com 6 ou mais mostra uma tabela paginada de 5 em 5, também só de leitura, com a página na URL', async () => {
+    const { fetchMock, user } = open(
+      undefined,
+      '/aluno/orientadores/7',
+      advisorProposalsRoute(7, proposalsOf(12)),
+    );
+    await loaded();
+    const section = await screen.findByRole('region', {
+      name: 'Propostas de tema',
+    });
+    const table = await within(section).findByRole('table', {
+      name: 'Propostas de tema',
+    });
+    expect(within(table).getAllByRole('row')).toHaveLength(6);
+    expect(within(table).queryByRole('button')).not.toBeInTheDocument();
+    expect(within(table).queryByText('Ações')).not.toBeInTheDocument();
+    expect(proposalRequests(fetchMock)).toEqual([{ limit: '5', offset: '0' }]);
+
+    await user.click(
+      within(section).getByRole('button', { name: 'Ir para a página 2' }),
+    );
+
+    expect(await within(section).findByText(/número 07/)).toBeVisible();
+    expect(screen.getByTestId('location')).toHaveTextContent('pagina=2');
+    expect(proposalRequests(fetchMock).at(-1)).toEqual({
+      limit: '5',
+      offset: '5',
+    });
+    // A tabela e a paginação continuam na tela, e a mudança de página é anunciada.
+    expect(
+      within(section).getByRole('button', { name: 'Página 2, atual' }),
+    ).toBeVisible();
+    expect(within(section).getByText('Página 2 de 3.')).toBeInTheDocument();
+  });
+
+  it('o foco continua no botão da paginação depois de trocar de página', async () => {
+    const { user } = open(
+      undefined,
+      '/aluno/orientadores/7',
+      advisorProposalsRoute(7, proposalsOf(12)),
+    );
+    await loaded();
+    const section = await screen.findByRole('region', {
+      name: 'Propostas de tema',
+    });
+    await within(section).findByRole('table');
+
+    await user.click(
+      within(section).getByRole('button', { name: 'Ir para a página 2' }),
+    );
+
+    await within(section).findByText(/número 07/);
+    expect(document.activeElement).toHaveAccessibleName(/Página 2, atual/);
+  });
+
+  it('recarregar na página da URL reabre a mesma página, e uma página inexistente volta para a última', async () => {
+    open(
+      undefined,
+      '/aluno/orientadores/7?pagina=3',
+      advisorProposalsRoute(7, proposalsOf(12)),
+    );
+    await loaded();
+    const section = await screen.findByRole('region', {
+      name: 'Propostas de tema',
+    });
+    expect(await within(section).findByText(/número 02/)).toBeVisible();
+  });
+
+  it('uma página inexistente volta para a última válida', async () => {
+    open(
+      undefined,
+      '/aluno/orientadores/7?pagina=9',
+      advisorProposalsRoute(7, proposalsOf(8)),
+    );
+    await loaded();
+
+    expect(await screen.findByText(/número 03/)).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent('pagina=2'),
+    );
+  });
+
+  it('sem propostas a seção inteira não é exibida, sem estado vazio', async () => {
+    const { fetchMock } = open();
+    await loaded();
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(([input]) =>
+          String(input).includes('/propostas'),
+        ),
+      ).toBe(true),
+    );
+
+    expect(
+      screen.queryByRole('region', { name: 'Propostas de tema' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Propostas de tema')).not.toBeInTheDocument();
+    expect(screen.queryByText(/não cadastrou/)).not.toBeInTheDocument();
+  });
+
+  it('com o professor indisponível as propostas aparecem junto do aviso, e a solicitação segue desabilitada', async () => {
+    open(
+      [
+        makeAdvisorProfile(7, {
+          full_name: 'Marta Rocha',
+          is_available: false,
+        }),
+      ],
+      '/aluno/orientadores/7',
+      advisorProposalsRoute(7, proposalsOf(2)),
+    );
+    await loaded();
+
+    const section = await screen.findByRole('region', {
+      name: 'Propostas de tema',
+    });
+
+    expect(within(section).getAllByRole('listitem')).toHaveLength(2);
+    expect(
+      within(main()).getByText(
+        'Este professor não está disponível para novas solicitações.',
+      ),
+    ).toBeVisible();
+    expect(requestButton()).toBeDisabled();
+  });
+
+  it('uma falha na leitura mostra o aviso com nova tentativa, sem derrubar o perfil', async () => {
+    const { user } = open(undefined, '/aluno/orientadores/7', {
+      [PROPOSALS_OF_7]: { status: 500, body: {} },
+    });
+    await loaded();
+
+    expect(
+      await screen.findByText(
+        'Não foi possível carregar as propostas de tema deste professor.',
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Marta Rocha' }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Tentar novamente' }),
+    ).toBeVisible();
+    void user;
+  });
+
+  it('funciona em tela pequena', async () => {
+    setViewportWidth(PHONE_WIDTH);
+    open(
+      undefined,
+      '/aluno/orientadores/7',
+      advisorProposalsRoute(7, proposalsOf(3)),
+    );
+    await loaded();
+
+    expect(
+      await screen.findByRole('list', { name: 'Propostas de tema' }),
+    ).toBeVisible();
   });
 });

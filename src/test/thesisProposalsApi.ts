@@ -45,6 +45,30 @@ function titleError(message: string): MockResponse {
   };
 }
 
+function newestFirstPage(list: FakeProposal[], url: URL) {
+  const limit = Number(url.searchParams.get('limit') ?? 5);
+  const offset = Number(url.searchParams.get('offset') ?? 0);
+  const newestFirst = [...list].sort(
+    (a, b) => b.created_at.localeCompare(a.created_at) || b.id - a.id,
+  );
+  return {
+    items: newestFirst.slice(offset, offset + limit),
+    count: newestFirst.length,
+  };
+}
+
+/** A leitura das propostas de um professor pelo aluno: a mesma página, só que sem escrita. */
+export function advisorProposalsRoute(
+  teacherId: number,
+  list: FakeProposal[],
+): Record<string, Handler> {
+  return {
+    [`GET /api/professores/${teacherId}/propostas`]: (_body, url) => ({
+      body: newestFirstPage(list, url),
+    }),
+  };
+}
+
 export interface ProposalsServer {
   routes: Record<string, MockResponse | Handler>;
   proposals: () => FakeProposal[];
@@ -72,19 +96,9 @@ export function proposalsServer(initial: FakeProposal[]): ProposalsServer {
   return {
     proposals: () => state,
     routes: {
-      'GET /api/professores/me/propostas': (_body, url) => {
-        const limit = Number(url.searchParams.get('limit') ?? 5);
-        const offset = Number(url.searchParams.get('offset') ?? 0);
-        const newestFirst = [...state].sort(
-          (a, b) => b.created_at.localeCompare(a.created_at) || b.id - a.id,
-        );
-        return {
-          body: {
-            items: newestFirst.slice(offset, offset + limit),
-            count: newestFirst.length,
-          },
-        };
-      },
+      'GET /api/professores/me/propostas': (_body, url) => ({
+        body: newestFirstPage(state, url),
+      }),
       'POST /api/professores/me/propostas': (body) => {
         const { title } = body as { title: string };
         if (state.length >= 50)
