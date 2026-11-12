@@ -19,7 +19,7 @@ export function makeAdvisor(
     id,
     full_name: `Professor ${id}`,
     institute: INSTITUTE,
-    compatibility: 0,
+    compatibility: 1,
     common_areas: [],
     is_available: true,
     ...overrides,
@@ -40,17 +40,27 @@ function plain(text: string): string {
     .toLowerCase();
 }
 
-/** Um servidor simulado: filtra por nome (sem acentos) e por disponibilidade, e pagina como a API real. */
+/**
+ * Um servidor simulado: filtra por nome (sem acentos) e por área em comum, ordena como a API real
+ * (disponíveis primeiro, mais áreas em comum, id) e pagina.
+ */
 export function searchResponse(advisors: FakeAdvisor[], url: URL) {
   const name = plain(url.searchParams.get('name') ?? '');
   const limit = Number(url.searchParams.get('limit') ?? 20);
   const offset = Number(url.searchParams.get('offset') ?? 0);
-  const onlyAvailable = url.searchParams.get('only_available') !== 'false';
-  const matching = advisors.filter(
-    (advisor) =>
-      plain(advisor.full_name).includes(name) &&
-      (!onlyAvailable || advisor.is_available),
-  );
+  const showAll = url.searchParams.get('show_all') === 'true';
+  const matching = advisors
+    .filter(
+      (advisor) =>
+        plain(advisor.full_name).includes(name) &&
+        (showAll || advisor.compatibility >= 1),
+    )
+    .sort(
+      (a, b) =>
+        Number(b.is_available) - Number(a.is_available) ||
+        b.compatibility - a.compatibility ||
+        a.id - b.id,
+    );
   return {
     body: {
       items: matching.slice(offset, offset + limit),
