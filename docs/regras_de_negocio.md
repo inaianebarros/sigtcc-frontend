@@ -16,7 +16,7 @@ RN07 - **Arquivamento de Atividades ao Encerrar Orientação:** Ao encerrar o v�
 
 RN08 - **Restrição de Solicitação de Reunião pelo Aluno:** O aluno só pode solicitar reunião com seu orientador ativo.
 
-RN09 - **Edição de Reunião:** Uma reunião só pode ser editada pelo seu autor e somente enquanto ainda não tiver sido realizada.
+RN09 - **Edição de Reunião:** Uma reunião só pode ser editada pelo seu autor e somente enquanto ainda não tiver sido realizada, isto é, marcada como realizada pelo professor (RN43) ou com o horário já passado.
 
 RN10 - **Cancelamento de Reunião:** Uma reunião pendente só pode ser cancelada pelo seu autor. Uma reunião aceita pode ser cancelada por qualquer das partes da orientação, o autor ou a outra parte, para o caso de imprevisto. Em ambos os casos o cancelamento só vale enquanto a reunião ainda não tiver sido realizada, exige um motivo e é definitivo. A outra parte de uma reunião pendente não a cancela: ela a recusa (RN11).
 
@@ -66,7 +66,7 @@ RN32 - **Perfis de Alunos Visíveis ao Professor:** O professor só visualiza o 
 
 RN33 - **Motivo do Encerramento de Orientação:** Ao encerrar uma orientação, o professor deve informar o motivo, em texto livre de 10 a 500 caracteres, sem contar espaços nas pontas. Sem o motivo, o encerramento não é realizado. O motivo fica registrado junto com a data do encerramento e é exibido ao aluno e ao professor no histórico da orientação encerrada, junto do tema congelado (RN12, RN30).
 
-RN34 - **Cancelamento de Reuniões ao Encerrar Orientação:** Ao encerrar uma orientação, as reuniões pendentes ou aceitas dessa orientação que ainda não foram realizadas, isto é, com data e hora no futuro, são canceladas automaticamente pelo sistema, junto com o arquivamento das atividades (RN07). O cancelamento fica registrado como feito pelo sistema, com a mensagem padrão "Esta reunião foi cancelada automaticamente pelo sistema porque a orientação foi encerrada.", exibida ao aluno e ao professor. As reuniões já realizadas, recusadas ou canceladas permanecem como estão, como histórico.
+RN34 - **Cancelamento de Reuniões ao Encerrar Orientação:** Ao encerrar uma orientação, as reuniões pendentes ou aceitas dessa orientação que ainda não foram realizadas, isto é, com data e hora no futuro e não marcadas como realizadas (RN43), são canceladas automaticamente pelo sistema, junto com o arquivamento das atividades (RN07). O cancelamento fica registrado como feito pelo sistema, com a mensagem padrão "Esta reunião foi cancelada automaticamente pelo sistema porque a orientação foi encerrada.", exibida ao aluno e ao professor. As reuniões já realizadas, recusadas ou canceladas permanecem como estão, como histórico.
 
 RN35 - **Cálculo dos Indicadores de Atividades:** Os indicadores da Dashboard consideram exclusivamente as atividades não arquivadas nem excluídas (RF27) das orientações ativas, contadas pelo status persistido: pendente, em andamento, em revisão e concluída. As atividades arquivadas (RN07), as excluídas e as de orientações encerradas não participam. Para o professor, os indicadores somam as atividades de todos os seus orientandos ativos; para o aluno, só as da sua orientação ativa.
 
@@ -79,6 +79,10 @@ RN38 - **Priorização dos Orientandos que Precisam de Atenção:** Na Dashboard
 RN39 - **Edição de Reunião Aceita:** Quando o autor altera a data, a hora de início ou a hora de término de uma reunião aceita, ela volta ao status pendente e a outra parte precisa aceitá-la de novo, porque aceitou outro horário. Alterar apenas a descrição mantém o status. Só o autor edita (RN09).
 
 RN40 - **Justificativa de Recusa de Revisão:** A recusa de uma atividade em revisão deve ser obrigatoriamente acompanhada de uma justificativa, de 1 a 500 caracteres, que o aluno e o professor veem no histórico de revisões da atividade. O aceite não tem justificativa.
+
+RN43 - **Marcação de Reunião como Realizada:** Só o professor orientador, com a orientação ativa (RN29), marca como realizada uma reunião aceita cujo horário ainda não passou; o aluno não marca, e reuniões pendentes, recusadas ou canceladas não são marcadas. A marcação é irreversível, exige confirmação explícita e registra o momento e o autor. A reunião marcada é realizada para todos os efeitos: não pode mais ser editada nem cancelada (RN09, RN10), sai das próximas reuniões dos dashboards (RF50, RF51) e não é cancelada ao encerrar a orientação (RN34) nem ao desativar o usuário (RN19). A reunião aceita com horário passado continua realizada sem precisar de marcação, e a ação de marcar só é oferecida enquanto o horário não passou. A marcação não gera notificação.
+
+RN44 - **Apontamentos da Reunião:** Os apontamentos são um texto livre e opcional de até 3000 caracteres, sem contar espaços nas pontas, que só existe para uma reunião realizada, seja marcada pelo professor (RN43) ou pelo horário passado. Só o professor orientador adiciona, edita e remove os apontamentos, e apenas enquanto a orientação estiver ativa: ao encerrá-la, os apontamentos ficam congelados, como o tema do TCC (RN12). O aluno orientando os vê, em leitura. O professor pode marcar a reunião como realizada sem escrever apontamentos e escrevê-los depois. Adicionar ou alterar apontamentos não gera notificação.
 
 RN45 - **Intervalo da Reunião:** Toda reunião tem uma hora de início e uma hora de término, ambas obrigatórias ao solicitar e ao editar. O término deve ser depois do início e no mesmo dia, sem duração mínima nem máxima. Não há regra de conflito: duas reuniões do mesmo usuário podem se sobrepor. A reunião realizada continua definida pelo horário de início (RN43), não pelo de término. As reuniões criadas antes desse campo receberam o término uma hora depois do início.
 
