@@ -79,6 +79,14 @@ function meetingFrom(item: ApiMeeting): MeetingItem {
   };
 }
 
+/** Os filtros do calendário (RF59), executados no servidor (RNF26). */
+export interface CalendarFilters {
+  /** As situações que aparecem; sem elas (vazio) vêm todas. */
+  situations?: readonly MeetingSituation[];
+  /** Os orientandos ocultos, por id do usuário do aluno; só o professor os usa. */
+  hiddenStudentIds?: readonly number[];
+}
+
 /**
  * As reuniões do período exibido no calendário (RF19, RNF26): todas as do usuário entre duas
  * datas inclusivas (AAAA-MM-DD, no horário de Santarém), sem paginar e ordenadas pelo início. O
@@ -87,8 +95,13 @@ function meetingFrom(item: ApiMeeting): MeetingItem {
 export async function listMeetingsInPeriod(
   dateFrom: string,
   dateTo: string,
+  filters: CalendarFilters = {},
 ): Promise<MeetingItem[]> {
   const params = new URLSearchParams({ date_from: dateFrom, date_to: dateTo });
+  for (const situation of filters.situations ?? [])
+    params.append('situation', situation);
+  for (const id of filters.hiddenStudentIds ?? [])
+    params.append('hidden_student_ids', String(id));
   const response = await httpClient.get<ApiMeeting[]>(
     `/reunioes/calendario?${params}`,
   );
@@ -144,4 +157,45 @@ export async function updateMeeting(
 /** O cancelamento, com motivo (RF22, RN10); é definitivo. */
 export async function cancelMeeting(id: number, reason: string): Promise<void> {
   await httpClient.post(`/reunioes/${id}/cancelar`, { reason });
+}
+
+export const CALENDAR_ADVISEES_PAGE_SIZE = 10;
+
+/** Um orientando do painel de filtros do calendário; `ended` marca a orientação encerrada (RF59). */
+export interface CalendarAdvisee {
+  id: number;
+  fullName: string;
+  ended: boolean;
+}
+
+export interface CalendarAdviseePage {
+  items: CalendarAdvisee[];
+  count: number;
+}
+
+/**
+ * Os orientandos do painel do calendário, de orientações ativas e encerradas, buscados por nome no
+ * servidor (sem diferenciar maiúsculas e acentos) e paginados (RF59, RNF26).
+ */
+export async function listCalendarAdvisees(
+  page: number,
+  search?: string,
+): Promise<CalendarAdviseePage> {
+  const params = new URLSearchParams({
+    limit: String(CALENDAR_ADVISEES_PAGE_SIZE),
+    offset: String((page - 1) * CALENDAR_ADVISEES_PAGE_SIZE),
+  });
+  if (search) params.set('search', search);
+  const response = await httpClient.get<{
+    items: { id: number; full_name: string; ended: boolean }[];
+    count: number;
+  }>(`/orientacao/orientandos/calendario?${params}`);
+  return {
+    count: response.count,
+    items: response.items.map((item) => ({
+      id: item.id,
+      fullName: item.full_name,
+      ended: item.ended,
+    })),
+  };
 }
