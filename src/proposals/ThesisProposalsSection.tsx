@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
+import { useLastReady } from '../hooks/useLastReady';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
@@ -40,6 +41,7 @@ export function ThesisProposalsSection() {
   const removeDialog = useDialogSlot<ThesisProposal>();
   const [removing, setRemoving] = useState(false);
   const list = useLoad(() => listOwnProposals(page), `${page}|${reload}`);
+  const shown = useLastReady(list);
   const { fallbackPage } = usePageBounds(
     list,
     THESIS_PROPOSALS_PAGE_SIZE,
@@ -118,34 +120,37 @@ export function ThesisProposalsSection() {
             que deseja orientar, para os alunos do seu curso as verem.
           </Alert>
         )}
-        {list.status === 'ready' && list.data.count > 0 && !correctingPage && (
-          <ThesisProposalsView
-            items={list.data.items}
-            count={list.data.count}
-            page={page}
-            onPage={setPage}
-            renderActions={(proposal) => (
-              <Stack direction="row" sx={{ flexShrink: 0 }}>
-                <Tooltip title="Editar proposta">
-                  <IconButton
-                    aria-label={`Editar a proposta "${proposal.title}"`}
-                    onClick={() => formDialog.show(proposal)}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Remover proposta">
-                  <IconButton
-                    aria-label={`Remover a proposta "${proposal.title}"`}
-                    onClick={() => removeDialog.show(proposal)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
-            )}
-          />
-        )}
+        {shown !== null &&
+          list.status !== 'error' &&
+          shown.count > 0 &&
+          !correctingPage && (
+            <ThesisProposalsView
+              items={shown.items}
+              count={shown.count}
+              page={page}
+              onPage={setPage}
+              renderActions={(proposal) => (
+                <Stack direction="row" sx={{ flexShrink: 0 }}>
+                  <Tooltip title="Editar proposta">
+                    <IconButton
+                      aria-label={`Editar a proposta "${proposal.title}"`}
+                      onClick={() => formDialog.show(proposal)}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Remover proposta">
+                    <IconButton
+                      aria-label={`Remover a proposta "${proposal.title}"`}
+                      onClick={() => removeDialog.show(proposal)}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              )}
+            />
+          )}
       </Stack>
       {formSlot && (
         <ThesisProposalDialog

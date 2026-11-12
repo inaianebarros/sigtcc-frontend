@@ -231,6 +231,41 @@ describe('Propostas de tema: com o formulário do perfil alterado', () => {
   });
 });
 
+describe('Propostas de tema: falha ao trocar de página', () => {
+  it('depois de uma falha na leitura, a tabela antiga e as suas ações saem da tela', async () => {
+    const server = proposalsServer(proposals(12));
+    const original = server.routes[LIST]!;
+    let reads = 0;
+    mockApi({
+      ...teacherProfileRoutes(),
+      ...server.routes,
+      [LIST]: async (body, url, params) => {
+        reads += 1;
+        if (reads > 1) return { status: 500, body: {} };
+        return typeof original === 'function'
+          ? original(body, url, params)
+          : original;
+      },
+    });
+    const events = userEvent.setup();
+    renderApp('/professor/perfil');
+    const area = await section();
+    await within(area).findByRole('table', { name: 'Propostas de tema' });
+
+    await events.click(
+      within(area).getByRole('button', { name: 'Ir para a página 2' }),
+    );
+
+    expect(await within(area).findByRole('alert')).toHaveTextContent(
+      'Ocorreu um erro no servidor',
+    );
+    expect(within(area).queryByRole('table')).not.toBeInTheDocument();
+    expect(
+      within(area).queryByRole('button', { name: /^Remover a proposta/ }),
+    ).not.toBeInTheDocument();
+  });
+});
+
 describe('Propostas de tema: adicionar e editar', () => {
   it('adiciona uma proposta, avisa, fecha o diálogo e ela aparece em primeiro', async () => {
     const { fetchMock, events } = setup(proposals(2));
