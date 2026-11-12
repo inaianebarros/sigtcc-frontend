@@ -1,0 +1,7 @@
+/* O cartão da reunião é um botão do MUI: o FullCalendar só dá o lugar na grade. */
+.fc-event {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: default;
+}

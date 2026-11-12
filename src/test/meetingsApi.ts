@@ -26,7 +26,7 @@ export function makeMeeting(
   id: number,
   overrides: Partial<FakeMeeting> = {},
 ): FakeMeeting {
-  const scheduledAt = overrides.scheduled_at ?? '2099-12-31T14:30:00-03:00';
+  const scheduledAt = overrides.scheduled_at ?? '2026-11-20T14:30:00-03:00';
   return {
     id,
     scheduled_at: scheduledAt,
@@ -75,8 +75,7 @@ function plain(text: string): string {
 }
 
 /**
- * Um servidor de reuniões simulado com estado: filtra e pagina como a API real, mantém a ordem
- * recebida, grava a solicitação e informa a orientação em /auth/me.
+ * Um servidor de reuniões simulado com estado: lê por período como a API real, ordena pelo início, grava a solicitação e informa a orientação em /auth/me.
  */
 export function meetingsServer(
   initial: FakeMeeting[],
@@ -107,31 +106,23 @@ export function meetingsServer(
                 : 0,
             },
     }),
-    'GET /api/reunioes': (_body, url) => {
-      const situation = url.searchParams.get('situation');
-      const from = url.searchParams.get('date_from');
-      const to = url.searchParams.get('date_to');
-      const studentId = url.searchParams.get('student_id');
-      const limit = Number(url.searchParams.get('limit') ?? 20);
-      const offset = Number(url.searchParams.get('offset') ?? 0);
-      const matching = state.filter((item) => {
-        const day = item.scheduled_at.slice(0, 10);
-        return (
-          (situation === null || item.situation === situation) &&
-          (from === null || day >= from) &&
-          (to === null || day <= to) &&
-          (studentId === null || item.student_id === Number(studentId))
+    'GET /api/reunioes/calendario': (_body, url) => {
+      const from = url.searchParams.get('date_from') ?? '';
+      const to = url.searchParams.get('date_to') ?? '';
+      const matching = state
+        .filter((item) => {
+          const day = item.scheduled_at.slice(0, 10);
+          return day >= from && day <= to;
+        })
+        .sort(
+          (a, b) => a.scheduled_at.localeCompare(b.scheduled_at) || a.id - b.id,
         );
-      });
       return {
-        body: {
-          items: matching.slice(offset, offset + limit).map((item) => {
-            const { student_id: _studentId, ...contract } = item;
-            void _studentId;
-            return contract;
-          }),
-          count: matching.length,
-        },
+        body: matching.map((item) => {
+          const { student_id: _studentId, ...contract } = item;
+          void _studentId;
+          return contract;
+        }),
       };
     },
     'POST /api/reunioes': (body) => {

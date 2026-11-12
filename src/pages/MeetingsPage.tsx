@@ -1,27 +1,30 @@
+import { useCalendarController } from '@fullcalendar/react';
 import {
   Alert,
   Button,
-  Skeleton,
+  LinearProgress,
   Stack,
   Typography,
-  useMediaQuery,
 } from '@mui/material';
-import type { Theme } from '@mui/material';
-import { useRef, useState } from 'react';
-import { PagePagination } from '../components/PagePagination';
+import { useState } from 'react';
 import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
-import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
-import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
+import { CalendarToolbar } from '../meetings/calendar/CalendarToolbar';
+import { MeetingCalendar } from '../meetings/calendar/MeetingCalendar';
+import type { CalendarPeriod } from '../meetings/calendar/MeetingCalendar';
+import { capitalize } from '../meetings/calendar/periodDates';
+import {
+  loadViewPreference,
+  saveViewPreference,
+} from '../meetings/calendar/viewPreference';
+import type { CalendarView } from '../meetings/calendar/viewPreference';
 import { MeetingActions } from '../meetings/MeetingActions';
 import { REASON_ACTIONS } from '../meetings/reasonActions';
 import { MeetingReasonDialog } from '../meetings/MeetingReasonDialog';
-import { MeetingFiltersBar } from '../meetings/MeetingFiltersBar';
+import { MeetingDetailsDialog } from '../meetings/MeetingDetailsDialog';
 import { MeetingRequestDialog } from '../meetings/MeetingRequestDialog';
-import { MeetingCards, MeetingsTable } from '../meetings/MeetingsTable';
-import { useMeetingFilters } from '../meetings/useMeetingFilters';
 import { hasActiveAdvisingOf } from '../navigation/advisingState';
 import {
   ApiError,
@@ -30,16 +33,17 @@ import {
 } from '../services/apiError';
 import {
   answerMeeting,
-  listMeetings,
-  MEETINGS_PAGE_SIZE,
+  listMeetingsInPeriod,
 } from '../services/meetingService';
 import type { MeetingItem } from '../services/meetingService';
 
-function foundText(count: number): string {
-  return `${count} ${count === 1 ? 'reunião encontrada' : 'reuniões encontradas'}`;
-}
+const NO_MEETINGS: MeetingItem[] = [];
 
-/** As reuniões do aluno e do professor (RF19): a lista, e o diálogo de solicitar (RF17 e RF18). */
+/**
+ * As reuniões do aluno e do professor (RF19): o calendário do período exibido, o modal de cada
+ * reunião e o diálogo de solicitar (RF17 e RF18). As reuniões vêm da leitura por período, buscada a
+ * cada mudança de mês (RNF26).
+ */
 export function MeetingsPage() {
   const { user, refreshUser } = useSession();
   const { notify } = useFeedback();
@@ -50,62 +54,28 @@ export function MeetingsPage() {
     kind: 'reject' | 'cancel';
     item: MeetingItem;
   }>();
+  const detailsDialog = useDialogSlot<MeetingItem>();
   const isTeacher = user?.type === 'teacher';
-  const filters = useMeetingFilters(isTeacher);
-  const [page, setPage] = useUrlPage();
-  const [reload, setReload] = useState(0);
-  // A reunião com um pedido em curso: as ações de todas as linhas esperam por ele.
-  const [acting, setActing] = useState<number | null>(null);
-  const listTop = useRef<HTMLDivElement>(null);
-  const isNarrow = useMediaQuery((theme: Theme) =>
-    theme.breakpoints.down('md'),
+  const userId = user?.id ?? 0;
+  const controller = useCalendarController();
+  const [view, setView] = useState<CalendarView>(() =>
+    loadViewPreference(userId),
   );
-  // Sem orientação ativa a lista continua, como histórico, mas não há como solicitar (RN29).
+  // O período exibido só se conhece depois que o calendário monta; até lá a carga espera.
+  const [period, setPeriod] = useState<CalendarPeriod | null>(null);
+  const [reload, setReload] = useState(0);
+  // A reunião com um pedido em curso: as ações esperam por ele.
+  const [acting, setActing] = useState<number | null>(null);
+  // Sem orientação ativa o calendário continua, como histórico, mas não há como solicitar (RN29).
   const canRequest = user !== null && hasActiveAdvisingOf(user);
   const list = useLoad(
-    () =>
-      listMeetings({
-        page,
-        situation: filters.situation,
-        dateFrom: filters.dateFrom,
-        dateTo: filters.dateTo,
-        studentId: filters.studentId,
-      }),
-    // Datas fora de ordem não consultam o servidor: a chave nula deixa a carga parada.
-    filters.rangeError === null
-      ? `${page}|${filters.situation}|${filters.dateFrom}|${filters.dateTo}|${filters.studentId}|${reload}`
-      : null,
+    () => listMeetingsInPeriod(period?.from ?? '', period?.to ?? ''),
+    period === null ? null : `${period.from}|${period.to}|${reload}`,
   );
-  const { knownCount, lastPage, fallbackPage } = usePageBounds(
-    list,
-    MEETINGS_PAGE_SIZE,
-    page,
-  );
-  useReturnToLastPage(fallbackPage, page, setPage);
-
-  // O nome do aluno do filtro vem das reuniões carregadas; fica guardado para o campo não piscar.
-  const [studentNames, setStudentNames] = useState<Record<number, string>>({});
-  if (list.status === 'ready') {
-    for (const item of list.data.items) {
-      if (studentNames[item.counterpart.id] !== item.counterpart.fullName) {
-        setStudentNames((current) => ({
-          ...current,
-          [item.counterpart.id]: item.counterpart.fullName,
-        }));
-      }
-    }
-  }
-  const student =
-    filters.studentId === null
-      ? null
-      : {
-          id: filters.studentId,
-          name: studentNames[filters.studentId] ?? 'Aluno selecionado',
-        };
 
   const refresh = () => setReload((current) => current + 1);
   // 404 ou 409: a reunião mudou, expirou ou a orientação encerrou. Mostra a mensagem do servidor e
-  // lê de novo a lista e a sessão, para o menu refletir o fim da orientação.
+  // lê de novo o calendário e a sessão, para o menu refletir o fim da orientação.
   const handleStateChanged = (message: string) => {
     notify(message, 'error');
     refresh();
@@ -119,10 +89,12 @@ export function MeetingsPage() {
     setActing(item.id);
     try {
       await answerMeeting(item.id, 'accept');
+      detailsDialog.hide();
       notify('Reunião aceita.', 'success');
       refresh();
     } catch (error) {
       if (isStateChangedError(error)) {
+        detailsDialog.hide();
         handleStateChanged(error.message);
       } else {
         notify(
@@ -135,16 +107,34 @@ export function MeetingsPage() {
     }
   };
 
+  // Editar, recusar e cancelar abrem o próprio diálogo, no lugar do modal da reunião.
   const renderActions = (item: MeetingItem) => (
     <MeetingActions
       item={item}
       busy={acting !== null}
       onAccept={(target) => void accept(target)}
-      onReject={(target) => reasonDialog.show({ kind: 'reject', item: target })}
-      onEdit={(target) => dialog.show(target)}
-      onCancel={(target) => reasonDialog.show({ kind: 'cancel', item: target })}
+      onReject={(target) => {
+        detailsDialog.hide();
+        reasonDialog.show({ kind: 'reject', item: target });
+      }}
+      onEdit={(target) => {
+        detailsDialog.hide();
+        dialog.show(target);
+      }}
+      onCancel={(target) => {
+        detailsDialog.hide();
+        reasonDialog.show({ kind: 'cancel', item: target });
+      }}
     />
   );
+
+  const detailsSlot = detailsDialog.slot;
+  // Ao recarregar (outro mês, ou depois de uma ação) o calendário mantém as reuniões já lidas até
+  // as novas chegarem, em vez de esvaziar a grade.
+  const [meetings, setMeetings] = useState(NO_MEETINGS);
+  if (list.status === 'ready' && list.data !== meetings) {
+    setMeetings(list.data);
+  }
 
   return (
     <Stack spacing={3}>
@@ -161,90 +151,52 @@ export function MeetingsPage() {
           </Button>
         )}
       </Stack>
-      <MeetingFiltersBar
-        situation={filters.situation}
-        dateFrom={filters.dateFrom}
-        dateTo={filters.dateTo}
-        rangeError={filters.rangeError}
-        showStudent={isTeacher}
-        student={student}
-        onSituation={filters.setSituation}
-        onDateFrom={filters.setDateFrom}
-        onDateTo={filters.setDateTo}
-        onStudent={filters.setStudent}
-      />
-      <Typography role="status" aria-live="polite" color="text.secondary">
-        {list.status === 'ready' && list.data.count > 0
-          ? foundText(list.data.count)
-          : ''}
-      </Typography>
-      <div ref={listTop}>
-        {list.status === 'loading' && (
-          <Stack spacing={2} data-testid="meetings-skeleton" aria-hidden>
-            {[0, 1, 2].map((item) => (
-              <Skeleton key={item} variant="rounded" height={64} />
-            ))}
-          </Stack>
-        )}
-        {list.status === 'error' && (
-          <Stack spacing={2}>
-            <Alert severity="error">{list.message}</Alert>
-            <Button
-              onClick={() => setReload((current) => current + 1)}
-              sx={{ alignSelf: 'flex-start' }}
-            >
-              Tentar novamente
-            </Button>
-          </Stack>
-        )}
-        {list.status === 'ready' && list.data.count === 0 && (
-          <Alert
-            severity="info"
-            action={
-              filters.hasFilters ? (
-                <Button color="inherit" size="small" onClick={filters.clearAll}>
-                  Limpar filtros
-                </Button>
-              ) : undefined
-            }
-          >
-            {filters.hasFilters
-              ? 'Nenhuma reunião encontrada com esses filtros'
-              : 'Você ainda não tem reuniões.'}
-          </Alert>
-        )}
-        {list.status === 'ready' && list.data.items.length > 0 && (
-          <>
-            {isNarrow ? (
-              <MeetingCards
-                items={list.data.items}
-                userId={user?.id ?? 0}
-                renderActions={renderActions}
-              />
-            ) : (
-              <MeetingsTable
-                items={list.data.items}
-                userId={user?.id ?? 0}
-                renderActions={renderActions}
-              />
-            )}
-          </>
-        )}
-      </div>
-      <PagePagination
-        ariaLabel="Paginação das reuniões"
-        knownCount={knownCount}
-        pageSize={MEETINGS_PAGE_SIZE}
-        lastPage={lastPage}
-        page={page}
-        onChange={(next) => {
-          setPage(next);
-          listTop.current?.scrollIntoView?.({ block: 'start' });
+      <CalendarToolbar
+        title={capitalize(period?.title ?? '')}
+        view={view}
+        onToday={() => controller.today()}
+        onPrevious={() => controller.prev()}
+        onNext={() => controller.next()}
+        onView={(next) => {
+          setView(next);
+          saveViewPreference(userId, next);
         }}
       />
+      {list.status === 'loading' && (
+        <LinearProgress aria-label="Carregando as reuniões do período" />
+      )}
+      {list.status === 'error' && (
+        <Stack spacing={2}>
+          <Alert severity="error">{list.message}</Alert>
+          <Button onClick={refresh} sx={{ alignSelf: 'flex-start' }}>
+            Tentar novamente
+          </Button>
+        </Stack>
+      )}
+      {list.status === 'ready' && list.data.length === 0 && (
+        <Alert severity="info">Nenhuma reunião neste período.</Alert>
+      )}
+      <MeetingCalendar
+        controller={controller}
+        view={view}
+        meetings={meetings}
+        onPeriod={setPeriod}
+        onOpen={(item) => detailsDialog.show(item)}
+      />
+      {detailsSlot && (
+        <MeetingDetailsDialog
+          key={`details-${detailsSlot.openCount}`}
+          open={detailsSlot.open}
+          item={detailsSlot.payload}
+          userId={userId}
+          actions={renderActions(detailsSlot.payload)}
+          onClose={detailsDialog.hide}
+          onExited={detailsDialog.unmount}
+        />
+      )}
       {reasonSlot && reasonAction && (
         <MeetingReasonDialog
-          key={reasonSlot.openCount}
+          key={`reason-${reasonSlot.openCount}`}
           open={reasonSlot.open}
           title={reasonAction.title}
           intro={reasonAction.intro}
@@ -269,10 +221,10 @@ export function MeetingsPage() {
       )}
       {dialog.slot && (
         <MeetingRequestDialog
-          key={dialog.slot.openCount}
+          key={`form-${dialog.slot.openCount}`}
           open={dialog.slot.open}
           isTeacher={isTeacher}
-          preselectedStudent={student}
+          preselectedStudent={null}
           meeting={dialog.slot.payload}
           onSaved={() => {
             dialog.hide();
