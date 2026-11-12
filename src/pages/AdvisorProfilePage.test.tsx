@@ -487,7 +487,7 @@ describe('AdvisorProfilePage: o "Voltar"', () => {
       {},
       {
         entries: FROM_ENTRY(
-          '/aluno/orientadores?nome=Marta&indisponiveis=1&pagina=2',
+          '/aluno/orientadores?nome=Marta&show_all=true&pagina=2',
         ),
       },
     );
@@ -495,7 +495,7 @@ describe('AdvisorProfilePage: o "Voltar"', () => {
 
     expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
       'href',
-      '/aluno/orientadores?nome=Marta&indisponiveis=1&pagina=2',
+      '/aluno/orientadores?nome=Marta&show_all=true&pagina=2',
     );
   });
 

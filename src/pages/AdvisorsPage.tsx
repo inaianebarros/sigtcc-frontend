@@ -28,7 +28,7 @@ import type { AdvisorPage } from '../services/advisorService';
 
 const SEARCH_DEBOUNCE_MS = 400;
 const NAME_PARAM = 'nome';
-const SHOW_ALL_PARAM = 'indisponiveis';
+const SHOW_ALL_PARAM = 'show_all';
 
 function ListSkeleton() {
   return (
@@ -40,35 +40,34 @@ function ListSkeleton() {
   );
 }
 
-function foundText(count: number, onlyAvailable: boolean): string {
+function foundText(count: number, showAll: boolean): string {
   const one = count === 1;
-  if (onlyAvailable) {
-    return `${count} ${one ? 'professor disponível encontrado' : 'professores disponíveis encontrados'}`;
+  if (showAll) {
+    return `${count} ${one ? 'professor encontrado' : 'professores encontrados'}`;
   }
-  return `${count} ${one ? 'professor encontrado' : 'professores encontrados'}`;
+  return `${count} ${one ? 'professor com áreas em comum encontrado' : 'professores com áreas em comum encontrados'}`;
 }
 
-function emptyMessage(name: string, onlyAvailable: boolean): string {
-  if (onlyAvailable) {
+function emptyMessage(name: string, showAll: boolean): string {
+  if (showAll) {
     return name
-      ? `Nenhum professor disponível encontrado para “${name}”.`
-      : 'Nenhum professor disponível no momento.';
+      ? `Nenhum professor encontrado para “${name}”.`
+      : 'Ainda não há professores cadastrados para o seu curso.';
   }
   return name
-    ? `Nenhum professor encontrado para “${name}”.`
-    : 'Ainda não há professores cadastrados para o seu curso.';
+    ? `Nenhum professor com áreas em comum encontrado para “${name}”.`
+    : 'Nenhum professor do seu curso tem áreas em comum com as suas.';
 }
 
 export function AdvisorsPage() {
   // Cada carga tem o seu contador: refazer a elegibilidade não recarrega a lista, e vice-versa.
   const [listReload, setListReload] = useState(0);
-  // O nome, a chave e a página vivem na URL (?nome=, ?indisponiveis=1 e ?pagina=): recarregar ou
+  // O nome, a chave e a página vivem na URL (?nome=, ?show_all=true e ?pagina=): recarregar ou
   // voltar do perfil de um professor restaura a mesma lista. Um filtro novo apaga a página, e a
   // chave não é guardada entre visitas: sem parâmetros, cada visita começa pelo padrão.
   const [searchParams, setSearchParams] = useSearchParams();
   const name = (searchParams.get(NAME_PARAM) ?? '').trim();
-  const showAll = searchParams.get(SHOW_ALL_PARAM) === '1';
-  const onlyAvailable = !showAll;
+  const showAll = searchParams.get(SHOW_ALL_PARAM) === 'true';
   const [page, setPage] = useUrlPage();
   const [typed, setTyped] = useState(name);
   const debounced = useDebouncedValue(typed, SEARCH_DEBOUNCE_MS).trim();
@@ -97,19 +96,18 @@ export function AdvisorsPage() {
     setSearchParams((current) => {
       const params = new URLSearchParams(current);
       params.delete(PAGE_PARAM);
-      if (next) params.set(SHOW_ALL_PARAM, '1');
+      if (next) params.set(SHOW_ALL_PARAM, 'true');
       else params.delete(SHOW_ALL_PARAM);
       return params;
     });
-  const switchInput = useRef<HTMLInputElement>(null);
   const listTop = useRef<HTMLDivElement>(null);
   // A solicitação de orientação é a mesma do perfil do professor; um 409 relê a lista também.
   const request = useRequestAdvising({
     onConflict: () => setListReload((current) => current + 1),
   });
   const list = useLoad<AdvisorPage>(
-    () => searchAdvisors({ name, page, onlyAvailable }),
-    `${name}|${onlyAvailable}|${page}|${listReload}`,
+    () => searchAdvisors({ name, page, showAll }),
+    `${name}|${showAll}|${page}|${listReload}`,
   );
   const { knownCount, lastPage, fallbackPage } = usePageBounds(
     list,
@@ -136,12 +134,11 @@ export function AdvisorsPage() {
           sx={{ flexGrow: 1 }}
         />
         <FormControlLabel
-          label="Mostrar indisponíveis"
+          label="Mostrar todos"
           control={
             <Switch
               checked={showAll}
               onChange={(event) => chooseShowAll(event.target.checked)}
-              slotProps={{ input: { ref: switchInput } }}
             />
           }
         />
@@ -150,7 +147,7 @@ export function AdvisorsPage() {
       {/* Uma frase curta numa região própria: reler os 20 cards a cada busca seria ruído. */}
       <Typography role="status" aria-live="polite" color="text.secondary">
         {list.status === 'ready' && list.data.count > 0
-          ? foundText(list.data.count, onlyAvailable)
+          ? foundText(list.data.count, showAll)
           : ''}
       </Typography>
       <div ref={listTop}>
@@ -167,24 +164,7 @@ export function AdvisorsPage() {
           </Stack>
         )}
         {list.status === 'ready' && list.data.count === 0 && (
-          <Alert
-            severity="info"
-            action={
-              onlyAvailable ? (
-                <Button
-                  onClick={() => {
-                    chooseShowAll(true);
-                    // O alerta some ao recarregar: o foco vai para a chave, que anuncia o novo estado.
-                    switchInput.current?.focus();
-                  }}
-                >
-                  Ver também os indisponíveis
-                </Button>
-              ) : undefined
-            }
-          >
-            {emptyMessage(name, onlyAvailable)}
-          </Alert>
+          <Alert severity="info">{emptyMessage(name, showAll)}</Alert>
         )}
         {list.status === 'ready' && list.data.items.length > 0 && (
           <Stack spacing={2}>

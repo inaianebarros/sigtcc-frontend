@@ -33,16 +33,16 @@ interface ApiAdvisor {
 export async function searchAdvisors({
   name,
   page,
-  onlyAvailable,
+  showAll,
 }: {
   name: string;
   page: number;
-  /** Verdadeiro é o padrão do servidor e não vai na requisição; falso pede todos. */
-  onlyAvailable: boolean;
+  /** Falso é o padrão do servidor (só com área em comum) e não vai na requisição. */
+  showAll: boolean;
 }): Promise<AdvisorPage> {
   const params = new URLSearchParams();
   if (name) params.set('name', name);
-  if (!onlyAvailable) params.set('only_available', 'false');
+  if (showAll) params.set('show_all', 'true');
   params.set('limit', String(ADVISORS_PAGE_SIZE));
   params.set('offset', String((page - 1) * ADVISORS_PAGE_SIZE));
   const response = await httpClient.get<{ items: ApiAdvisor[]; count: number }>(

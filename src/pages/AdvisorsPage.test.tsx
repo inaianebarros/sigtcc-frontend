@@ -29,7 +29,11 @@ const THREE = [
     compatibility: 1,
     common_areas: [AREA_B],
   }),
-  makeAdvisor(3, { full_name: 'Carla Dias', is_available: false }),
+  makeAdvisor(3, {
+    full_name: 'Carla Dias',
+    compatibility: 0,
+    is_available: false,
+  }),
 ];
 
 describe('AdvisorsPage: a lista', () => {
@@ -59,9 +63,7 @@ describe('AdvisorsPage: a lista', () => {
     const user = userEvent.setup();
     renderApp('/aluno/orientadores');
     await screen.findByText('Ana Pereira');
-    await user.click(
-      screen.getByRole('switch', { name: 'Mostrar indisponíveis' }),
-    );
+    await user.click(screen.getByRole('switch', { name: 'Mostrar todos' }));
     await screen.findByText('Carla Dias');
 
     const ana = screen.getByRole('article', { name: 'Ana Pereira' });
@@ -120,13 +122,15 @@ describe('AdvisorsPage: a lista', () => {
     expect(await screen.findByText('Ana Pereira')).toBeInTheDocument();
   });
 
-  it('explica o estado vazio do padrão quando não há professores disponíveis', async () => {
+  it('explica o estado vazio do padrão quando nenhum professor tem área em comum', async () => {
     mockApi(advisorRoutes([]));
 
     renderApp('/aluno/orientadores');
 
     expect(
-      await screen.findByText('Nenhum professor disponível no momento.'),
+      await screen.findByText(
+        'Nenhum professor do seu curso tem áreas em comum com as suas.',
+      ),
     ).toBeVisible();
   });
 });
@@ -214,7 +218,7 @@ describe('AdvisorsPage: filtro por nome', { timeout: 15000 }, () => {
 
     expect(
       await screen.findByText(
-        'Nenhum professor disponível encontrado para “zzz”.',
+        'Nenhum professor com áreas em comum encontrado para “zzz”.',
         {},
         { timeout: 3000 },
       ),
@@ -361,9 +365,7 @@ describe('AdvisorsPage: o botão de solicitar e as razões para ele estar desabi
     const user = userEvent.setup();
     renderApp('/aluno/orientadores');
     await screen.findByText('Ana Pereira');
-    await user.click(
-      screen.getByRole('switch', { name: 'Mostrar indisponíveis' }),
-    );
+    await user.click(screen.getByRole('switch', { name: 'Mostrar todos' }));
     await screen.findByText('Carla Dias');
 
     const ana = within(cardOf('Ana Pereira')).getByRole('button', {
@@ -672,11 +674,15 @@ describe(
 
       const regions = container.querySelectorAll('[aria-live="polite"]');
       const status = [...regions].find((region) =>
-        region.textContent?.includes('2 professores disponíveis encontrados'),
+        region.textContent?.includes(
+          '2 professores com áreas em comum encontrados',
+        ),
       );
 
       expect(status).toBeDefined();
-      expect(status?.textContent).toBe('2 professores disponíveis encontrados');
+      expect(status?.textContent).toBe(
+        '2 professores com áreas em comum encontrados',
+      );
       for (const region of regions) {
         expect(region).not.toContainElement(screen.getByText('Ana Pereira'));
       }
@@ -837,23 +843,20 @@ describe(
 
 function availabilityParams(fetchMock: ReturnType<typeof mockApi>) {
   return requestsTo(fetchMock, SEARCH).map(([input]) =>
-    new URL(String(input), 'http://localhost').searchParams.get(
-      'only_available',
-    ),
+    new URL(String(input), 'http://localhost').searchParams.get('show_all'),
   );
 }
 
-const SWITCH = { name: 'Mostrar indisponíveis' };
-const ACTION = { name: 'Ver também os indisponíveis' };
+const SWITCH = { name: 'Mostrar todos' };
 
-describe('AdvisorsPage: filtro de disponibilidade', () => {
+describe('AdvisorsPage: filtro Mostrar todos', () => {
   beforeEach(() => {
     tokenStore.clear();
     vi.unstubAllGlobals();
     setViewportWidth(DESKTOP_WIDTH);
   });
 
-  it('tem a chave "Mostrar indisponíveis" desligada por padrão e não manda o parâmetro ao servidor', async () => {
+  it('tem a chave "Mostrar todos" desligada por padrão e não manda o parâmetro ao servidor', async () => {
     const fetchMock = mockApi(advisorRoutes(THREE));
     renderApp('/aluno/orientadores');
     await screen.findByText('Ana Pereira');
@@ -874,7 +877,7 @@ describe('AdvisorsPage: filtro de disponibilidade', () => {
     await user.click(screen.getByRole('switch', SWITCH));
 
     expect(await screen.findByText('Carla Dias')).toBeInTheDocument();
-    expect(availabilityParams(fetchMock).at(-1)).toBe('false');
+    expect(availabilityParams(fetchMock).at(-1)).toBe('true');
     expect(
       within(cardOf('Carla Dias')).getByRole('button', {
         name: 'Solicitar orientação',
@@ -935,7 +938,7 @@ describe('AdvisorsPage: filtro de disponibilidade', () => {
     await user.click(screen.getByRole('switch', SWITCH));
 
     await waitFor(() =>
-      expect(availabilityParams(fetchMock).at(-1)).toBe('false'),
+      expect(availabilityParams(fetchMock).at(-1)).toBe('true'),
     );
     expect(pageRequests(fetchMock).at(-1)).toEqual({
       name: 'profess',
@@ -965,57 +968,13 @@ describe('AdvisorsPage: filtro de disponibilidade', () => {
     expect(screen.queryByText('Carla Dias')).not.toBeInTheDocument();
   });
 
-  it('com o padrão ligado e ninguém disponível, explica e oferece mostrar os indisponíveis', async () => {
-    mockApi(
-      advisorRoutes([
-        makeAdvisor(1, { full_name: 'Ana Pereira', is_available: false }),
-        makeAdvisor(2, { full_name: 'Bruno Lima', is_available: false }),
-      ]),
-    );
-    const user = userEvent.setup();
-    renderApp('/aluno/orientadores');
-
-    expect(
-      await screen.findByText('Nenhum professor disponível no momento.'),
-    ).toBeVisible();
-    await user.click(screen.getByRole('button', ACTION));
-
-    expect(await screen.findByText('Ana Pereira')).toBeInTheDocument();
-    expect(screen.getByRole('switch', SWITCH)).toBeChecked();
-    expect(
-      screen.queryByText('Nenhum professor disponível no momento.'),
-    ).not.toBeInTheDocument();
-  });
-
-  it('com um nome digitado e ninguém disponível, a mensagem cita o nome e oferece a mesma ação', async () => {
-    mockApi(
-      advisorRoutes([
-        makeAdvisor(1, { full_name: 'Ana Pereira', is_available: false }),
-        makeAdvisor(2, { full_name: 'Bruno Lima' }),
-      ]),
-    );
-    const user = userEvent.setup();
-    renderApp('/aluno/orientadores');
-    await screen.findByText('Bruno Lima');
-
-    await user.type(screen.getByLabelText('Buscar por nome'), 'ana');
-
-    expect(
-      await screen.findByText(
-        'Nenhum professor disponível encontrado para “ana”.',
-        {},
-        { timeout: 3000 },
-      ),
-    ).toBeVisible();
-    await user.click(screen.getByRole('button', ACTION));
-    expect(await screen.findByText('Ana Pereira')).toBeInTheDocument();
-  });
-
   it('com a chave ligada e nenhum professor, volta a valer a mensagem de lista vazia comum', async () => {
     mockApi(advisorRoutes([]));
     const user = userEvent.setup();
     renderApp('/aluno/orientadores');
-    await screen.findByText('Nenhum professor disponível no momento.');
+    await screen.findByText(
+      'Nenhum professor do seu curso tem áreas em comum com as suas.',
+    );
 
     await user.click(screen.getByRole('switch', SWITCH));
 
@@ -1026,7 +985,7 @@ describe('AdvisorsPage: filtro de disponibilidade', () => {
     ).toBeVisible();
   });
 
-  it('anuncia a contagem conforme o filtro: "disponíveis" com a chave desligada e só "encontrados" com ela ligada', async () => {
+  it('anuncia a contagem conforme o filtro: "com áreas em comum" com a chave desligada e só "encontrados" com ela ligada', async () => {
     mockApi(advisorRoutes(THREE));
     const user = userEvent.setup();
     const { container } = renderApp('/aluno/orientadores');
@@ -1035,7 +994,7 @@ describe('AdvisorsPage: filtro de disponibilidade', () => {
       [...container.querySelectorAll('[role="status"]')].find((region) =>
         region.textContent?.includes('encontrado'),
       )?.textContent;
-    expect(status()).toBe('2 professores disponíveis encontrados');
+    expect(status()).toBe('2 professores com áreas em comum encontrados');
 
     await user.click(screen.getByRole('switch', SWITCH));
     await screen.findByText('Carla Dias');
@@ -1053,42 +1012,6 @@ describe('AdvisorsPage: filtro de disponibilidade', () => {
     await user.click(screen.getByRole('switch', SWITCH));
 
     expect(await screen.findByText('Carla Dias')).toBeInTheDocument();
-  });
-});
-
-describe('AdvisorsPage: foco e nomes dos controles do filtro', () => {
-  beforeEach(() => {
-    tokenStore.clear();
-    vi.unstubAllGlobals();
-    setViewportWidth(DESKTOP_WIDTH);
-  });
-
-  it('leva o foco à chave quando a ação do estado vazio é usada, para o novo estado ser anunciado', async () => {
-    mockApi(
-      advisorRoutes([
-        makeAdvisor(1, { full_name: 'Ana Pereira', is_available: false }),
-      ]),
-    );
-    const user = userEvent.setup();
-    renderApp('/aluno/orientadores');
-    await user.click(await screen.findByRole('button', ACTION));
-
-    await screen.findByText('Ana Pereira');
-
-    expect(screen.getByRole('switch', SWITCH)).toHaveFocus();
-    expect(screen.getByRole('switch', SWITCH)).toBeChecked();
-  });
-
-  it('não repete o nome da chave na ação do estado vazio: só um controle se chama "Mostrar indisponíveis"', async () => {
-    mockApi(advisorRoutes([makeAdvisor(1, { is_available: false })]));
-    renderApp('/aluno/orientadores');
-    await screen.findByText('Nenhum professor disponível no momento.');
-
-    expect(screen.getAllByLabelText('Mostrar indisponíveis')).toHaveLength(1);
-    expect(
-      screen.queryByRole('button', { name: 'Mostrar indisponíveis' }),
-    ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', ACTION)).toBeInTheDocument();
   });
 });
 
@@ -1133,6 +1056,7 @@ describe('AdvisorsPage: busca, página e chave na URL', () => {
     ...Array.from({ length: 25 }, (_, index) =>
       makeAdvisor(100 + index, {
         full_name: `Docente ${String(index + 1).padStart(2, '0')}`,
+        compatibility: 0,
         is_available: false,
       }),
     ),
@@ -1150,7 +1074,7 @@ describe('AdvisorsPage: busca, página e chave na URL', () => {
       return {
         name: params.get('name'),
         offset: params.get('offset'),
-        onlyAvailable: params.get('only_available'),
+        showAll: params.get('show_all'),
       };
     });
   }
@@ -1170,26 +1094,24 @@ describe('AdvisorsPage: busca, página e chave na URL', () => {
 
     expect(location()).toHaveTextContent(/^\/aluno\/orientadores$/);
     expect(listParams(fetchMock)).toEqual([
-      { name: null, offset: '0', onlyAvailable: null },
+      { name: null, offset: '0', showAll: null },
     ]);
   });
 
   it('abre direto no nome, na página e na chave da URL, com um único pedido', async () => {
     const { fetchMock } = open(
-      '/aluno/orientadores?nome=Docente&pagina=2&indisponiveis=1',
+      '/aluno/orientadores?nome=Docente&pagina=2&show_all=true',
     );
 
     expect(await screen.findByText('Docente 21')).toBeInTheDocument();
 
     expect(screen.getByLabelText('Buscar por nome')).toHaveValue('Docente');
-    expect(
-      screen.getByRole('switch', { name: 'Mostrar indisponíveis' }),
-    ).toBeChecked();
+    expect(screen.getByRole('switch', { name: 'Mostrar todos' })).toBeChecked();
     expect(
       screen.getByRole('button', { name: 'Página 2, atual' }),
     ).toBeInTheDocument();
     expect(listParams(fetchMock)).toEqual([
-      { name: 'Docente', offset: '20', onlyAvailable: 'false' },
+      { name: 'Docente', offset: '20', showAll: 'true' },
     ]);
   });
 
@@ -1213,7 +1135,7 @@ describe('AdvisorsPage: busca, página e chave na URL', () => {
     await screen.findByText('Professor 01');
 
     await act(async () => {
-      await router.navigate('/aluno/orientadores?nome=Docente&indisponiveis=1');
+      await router.navigate('/aluno/orientadores?nome=Docente&show_all=true');
     });
 
     expect(await screen.findByText('Docente 01')).toBeInTheDocument();
@@ -1221,7 +1143,7 @@ describe('AdvisorsPage: busca, página e chave na URL', () => {
     // Espera mais que a pausa da digitação: a URL nova não pode ser sobrescrita pelo valor antigo.
     await new Promise((resolve) => setTimeout(resolve, 600));
     expect(location()).toHaveTextContent(
-      /^\/aluno\/orientadores\?nome=Docente&indisponiveis=1$/,
+      /^\/aluno\/orientadores\?nome=Docente&show_all=true$/,
     );
     expect(listParams(fetchMock).at(-1)).toMatchObject({ name: 'Docente' });
   });
@@ -1241,14 +1163,14 @@ describe('AdvisorsPage: busca, página e chave na URL', () => {
     const { user } = open('/aluno/orientadores?pagina=2');
     await screen.findByText('Professor 21');
     const toggle = screen.getByRole('switch', {
-      name: 'Mostrar indisponíveis',
+      name: 'Mostrar todos',
     });
 
     await user.click(toggle);
 
     await waitFor(() =>
       expect(location()).toHaveTextContent(
-        /^\/aluno\/orientadores\?indisponiveis=1$/,
+        /^\/aluno\/orientadores\?show_all=true$/,
       ),
     );
     await user.click(toggle);
@@ -1258,7 +1180,7 @@ describe('AdvisorsPage: busca, página e chave na URL', () => {
   });
 
   it('mudar de página guarda a página na URL e mantém o nome e a chave', async () => {
-    const { user } = open('/aluno/orientadores?nome=Docente&indisponiveis=1');
+    const { user } = open('/aluno/orientadores?nome=Docente&show_all=true');
     await screen.findByText('Docente 01');
 
     await user.click(
@@ -1267,7 +1189,7 @@ describe('AdvisorsPage: busca, página e chave na URL', () => {
 
     await screen.findByText('Docente 21');
     expect(location()).toHaveTextContent(
-      /^\/aluno\/orientadores\?nome=Docente&indisponiveis=1&pagina=2$/,
+      /^\/aluno\/orientadores\?nome=Docente&show_all=true&pagina=2$/,
     );
   });
 
@@ -1291,14 +1213,14 @@ describe('AdvisorsPage: busca, página e chave na URL', () => {
     expect(listParams(fetchMock).at(-1)?.offset).toBe('20');
   });
 
-  it('uma chave com outro valor que não "1" na URL vale como desligada', async () => {
-    const { fetchMock } = open('/aluno/orientadores?indisponiveis=sim');
+  it('uma chave com outro valor que não "true" na URL vale como desligada', async () => {
+    const { fetchMock } = open('/aluno/orientadores?show_all=sim');
 
     expect(await screen.findByText('Professor 01')).toBeInTheDocument();
 
     expect(
-      screen.getByRole('switch', { name: 'Mostrar indisponíveis' }),
+      screen.getByRole('switch', { name: 'Mostrar todos' }),
     ).not.toBeChecked();
-    expect(listParams(fetchMock)[0]?.onlyAvailable).toBeNull();
+    expect(listParams(fetchMock)[0]?.showAll).toBeNull();
   });
 });
