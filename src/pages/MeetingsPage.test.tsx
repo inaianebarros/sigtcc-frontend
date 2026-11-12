@@ -57,7 +57,7 @@ describe('MeetingsPage: a lista', () => {
 
     const row = rowOf(/Revisar o capítulo 2/);
     expect(
-      within(row).getByText('31 de dezembro de 2099, às 14:30'),
+      within(row).getByText('31 de dezembro de 2099, das 14:30 às 15:30'),
     ).toBeVisible();
     expect(within(row).getByText('Carlos Lima')).toBeVisible();
     expect(within(row).getByText('Pendente')).toBeVisible();

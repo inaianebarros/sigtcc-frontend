@@ -1,3 +1,4 @@
+import { plusOneHour } from './plusOneHour';
 import type { MockResponse } from './mockApi';
 
 export interface FakeDashboardActivity {
@@ -11,6 +12,7 @@ export interface FakeDashboardActivity {
 export interface FakeStudentMeeting {
   id: number;
   scheduled_at: string;
+  ends_at: string;
   teacher: { id: number; full_name: string };
   description: string;
 }
@@ -18,6 +20,7 @@ export interface FakeStudentMeeting {
 export interface FakeTeacherMeeting {
   id: number;
   scheduled_at: string;
+  ends_at: string;
   student: { id: number; full_name: string };
   description: string;
 }
@@ -26,9 +29,11 @@ export function makeStudentMeeting(
   id: number,
   overrides: Partial<FakeStudentMeeting> = {},
 ): FakeStudentMeeting {
+  const scheduledAt = overrides.scheduled_at ?? '2099-12-10T14:30:00-03:00';
   return {
     id,
-    scheduled_at: '2099-12-10T14:30:00-03:00',
+    scheduled_at: scheduledAt,
+    ends_at: plusOneHour(scheduledAt),
     teacher: { id: 9, full_name: 'Carlos Lima' },
     description: `Reunião ${id}`,
     ...overrides,
@@ -39,9 +44,11 @@ export function makeTeacherMeeting(
   id: number,
   overrides: Partial<FakeTeacherMeeting> = {},
 ): FakeTeacherMeeting {
+  const scheduledAt = overrides.scheduled_at ?? '2099-12-10T14:30:00-03:00';
   return {
     id,
-    scheduled_at: '2099-12-10T14:30:00-03:00',
+    scheduled_at: scheduledAt,
+    ends_at: plusOneHour(scheduledAt),
     student: { id: 101, full_name: 'Maria Lima' },
     description: `Reunião ${id}`,
     ...overrides,

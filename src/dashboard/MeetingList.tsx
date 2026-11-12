@@ -1,6 +1,6 @@
 import { Link, Paper, Stack, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { formatDateTime } from '../formatters/dateTime';
+import { formatDateTimeRange } from '../formatters/dateTime';
 import type { DashboardMeeting } from '../services/dashboardService';
 import { DashboardEmptyState } from './DashboardEmptyState';
 
@@ -45,7 +45,7 @@ export function MeetingList({
                   dateTime={meeting.scheduledAt}
                   sx={{ fontWeight: 'medium' }}
                 >
-                  {formatDateTime(meeting.scheduledAt)}
+                  {formatDateTimeRange(meeting.scheduledAt, meeting.endsAt)}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   {partyLabel}: {meeting.partyName}

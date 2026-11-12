@@ -31,6 +31,18 @@ export function formatDateTime(iso: string): string {
     : UNAVAILABLE;
 }
 
+/**
+ * O intervalo de uma reunião (RN45), por exemplo, "2 de novembro de 2026, das 11:30 às 12:30". Se o
+ * término não puder ser lido, vale só o início.
+ */
+export function formatDateTimeRange(startIso: string, endIso: string): string {
+  const start = parse(startIso);
+  const end = parse(endIso);
+  if (!start) return UNAVAILABLE;
+  if (!end) return formatDateTime(startIso);
+  return `${dateFormat.format(start)}, das ${timeFormat.format(start)} às ${timeFormat.format(end)}`;
+}
+
 const deadlineFormat = new Intl.DateTimeFormat('pt-BR', {
   dateStyle: 'long',
   timeZone: 'UTC',

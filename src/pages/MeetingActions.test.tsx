@@ -575,7 +575,9 @@ describe('Reuniões: editar (RF21, RN39)', () => {
     );
 
     expect(within(dialog).getByLabelText(/Data/)).toHaveValue('2099-12-31');
-    expect(within(dialog).getByLabelText(/Hora/)).toHaveValue('14:30');
+    expect(within(dialog).getByLabelText(/Hora de início/)).toHaveValue(
+      '14:30',
+    );
     expect(within(dialog).getByLabelText(/Descrição/)).toHaveValue(
       'Pauta minha',
     );
@@ -634,11 +636,63 @@ describe('Reuniões: editar (RF21, RN39)', () => {
       'Editar reunião',
     );
 
-    change(dialog, /Hora/, '16:00');
+    change(dialog, /Hora de início/, '16:00');
+    change(dialog, /Hora de término/, '17:00');
     await events.click(save(dialog));
 
     await screen.findByText('Reunião atualizada.');
-    expect(bodiesTo(fetchMock, 'PATCH', '/2')).toEqual([{ time: '16:00' }]);
+    expect(bodiesTo(fetchMock, 'PATCH', '/2')).toEqual([
+      { time: '16:00', end_time: '17:00' },
+    ]);
+  });
+
+  it('mudar só o término manda só o término', async () => {
+    const { fetchMock, events } = setup([OWN]);
+    const dialog = await openReason(
+      events,
+      /Editar a reunião/,
+      'Editar reunião',
+    );
+    expect(within(dialog).getByLabelText(/Hora de término/)).toHaveValue(
+      '15:30',
+    );
+
+    change(dialog, /Hora de término/, '16:00');
+    await events.click(save(dialog));
+
+    await screen.findByText('Reunião atualizada.');
+    expect(bodiesTo(fetchMock, 'PATCH', '/2')).toEqual([{ end_time: '16:00' }]);
+  });
+
+  it('um término que não é depois do início mostra o erro e impede salvar', async () => {
+    const { events } = setup([OWN]);
+    const dialog = await openReason(
+      events,
+      /Editar a reunião/,
+      'Editar reunião',
+    );
+
+    change(dialog, /Hora de término/, '14:00');
+
+    expect(
+      await within(dialog).findByText(
+        'A hora de término deve ser depois da hora de início.',
+      ),
+    ).toBeVisible();
+    expect(save(dialog)).toBeDisabled();
+  });
+
+  it('numa reunião aceita, mudar só o término avisa que volta a pendente (RN39)', async () => {
+    const { events } = setup([ACCEPTED_OWN]);
+    const dialog = await openReason(
+      events,
+      /Editar a reunião/,
+      'Editar reunião',
+    );
+
+    change(dialog, /Hora de término/, '16:00');
+
+    expect(await within(dialog).findByText(RN39)).toBeVisible();
   });
 
   it('numa reunião aceita, mudar a data ou a hora avisa antes de salvar que volta a pendente (RN39)', async () => {
@@ -650,10 +704,10 @@ describe('Reuniões: editar (RF21, RN39)', () => {
     );
     expect(within(dialog).queryByText(RN39)).not.toBeInTheDocument();
 
-    change(dialog, /Hora/, '16:00');
+    change(dialog, /Hora de início/, '16:00');
 
     expect(await within(dialog).findByText(RN39)).toBeVisible();
-    change(dialog, /Hora/, '14:30');
+    change(dialog, /Hora de início/, '14:30');
     await waitFor(() =>
       expect(within(dialog).queryByText(RN39)).not.toBeInTheDocument(),
     );
@@ -697,7 +751,8 @@ describe('Reuniões: editar (RF21, RN39)', () => {
       'Editar reunião',
     );
 
-    change(dialog, /Hora/, '16:00');
+    change(dialog, /Hora de início/, '16:00');
+    change(dialog, /Hora de término/, '17:00');
     await events.click(save(dialog));
 
     await screen.findByText('Reunião atualizada.');
@@ -940,10 +995,13 @@ describe('Reuniões: editar uma descrição com espaços nas pontas', () => {
       within(dialog).queryByText(/Você tem alterações não salvas/),
     ).not.toBeInTheDocument();
 
-    change(dialog, /Hora/, '16:00');
+    change(dialog, /Hora de início/, '16:00');
+    change(dialog, /Hora de término/, '17:00');
     await events.click(save(dialog));
 
     await screen.findByText('Reunião atualizada.');
-    expect(bodiesTo(fetchMock, 'PATCH', '/7')).toEqual([{ time: '16:00' }]);
+    expect(bodiesTo(fetchMock, 'PATCH', '/7')).toEqual([
+      { time: '16:00', end_time: '17:00' },
+    ]);
   });
 });

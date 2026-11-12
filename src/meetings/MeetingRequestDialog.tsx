@@ -31,6 +31,7 @@ import type { MeetingFormValues } from './meetingForm';
 const FIELD_BY_API_FIELD = {
   date: 'date',
   time: 'time',
+  end_time: 'endTime',
   description: 'description',
   student_id: 'student',
 } as const;
@@ -76,7 +77,13 @@ export function MeetingRequestDialog({
   const id = useId();
   const editing = meeting !== undefined;
   const original = useMemo(
-    () => (meeting ? santaremParts(meeting.scheduledAt) : undefined),
+    () =>
+      meeting
+        ? {
+            ...santaremParts(meeting.scheduledAt),
+            endTime: santaremParts(meeting.endsAt).time,
+          }
+        : undefined,
     [meeting],
   );
   const schema = useMemo(
@@ -87,6 +94,7 @@ export function MeetingRequestDialog({
     student: isTeacher && !editing ? preselectedStudent : null,
     date: original?.date ?? '',
     time: original?.time ?? '',
+    endTime: original?.endTime ?? '',
     description: meeting?.description ?? '',
   };
   // O formulário entrega a descrição aparada; a original pode trazer espaços nas pontas.
@@ -95,6 +103,8 @@ export function MeetingRequestDialog({
     control,
     register,
     handleSubmit,
+    getValues,
+    trigger,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<MeetingFormValues>({
@@ -105,23 +115,33 @@ export function MeetingRequestDialog({
   const student = useWatch({ control, name: 'student' });
   const date = useWatch({ control, name: 'date' });
   const time = useWatch({ control, name: 'time' });
+  const endTime = useWatch({ control, name: 'endTime' });
   const description = useWatch({ control, name: 'description' });
   const [ended, setEnded] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
 
-  const current: MeetingFormValues = { student, date, time, description };
+  const current: MeetingFormValues = {
+    student,
+    date,
+    time,
+    endTime,
+    description,
+  };
   const valid = schema.safeParse(current).success;
   // Há alteração pendente quando o formulário recebeu conteúdo ainda não enviado (RNF28); o
   // aluno que já veio escolhido do filtro não conta.
   const pending =
     current.date !== initial.date ||
     current.time !== initial.time ||
+    current.endTime !== initial.endTime ||
     current.description.trim() !== initialDescription ||
     current.student?.id !== initial.student?.id;
-  // RN39: uma reunião aceita volta a pendente se a data ou a hora mudarem.
+  // RN39: uma reunião aceita volta a pendente se a data, o início ou o término mudarem.
   const returnsToPending =
     meeting?.situation === 'accepted' &&
-    (current.date !== initial.date || current.time !== initial.time);
+    (current.date !== initial.date ||
+      current.time !== initial.time ||
+      current.endTime !== initial.endTime);
   const { requestClose, dialogs } = useDiscardGuard({
     pending: pending && !ended,
     open,
@@ -136,6 +156,7 @@ export function MeetingRequestDialog({
         const changes: Partial<MeetingInput> = {};
         if (form.date !== initial.date) changes.date = form.date;
         if (form.time !== initial.time) changes.time = form.time;
+        if (form.endTime !== initial.endTime) changes.endTime = form.endTime;
         if (form.description !== initialDescription)
           changes.description = form.description;
         if (Object.keys(changes).length === 0) {
@@ -150,6 +171,7 @@ export function MeetingRequestDialog({
         {
           date: form.date,
           time: form.time,
+          endTime: form.endTime,
           // Já vem aparada: o resolver entrega o valor depois do `trim` do esquema.
           description: form.description,
         },
@@ -200,9 +222,9 @@ export function MeetingRequestDialog({
               <Box role="status" aria-live="polite">
                 {returnsToPending && (
                   <Alert severity="warning" role="presentation">
-                    Esta reunião já foi aceita. Se você mudar a data ou a hora,
-                    ela voltará a ficar pendente e a outra parte precisará
-                    aceitar de novo.
+                    Esta reunião já foi aceita. Se você mudar a data, o início
+                    ou o término, ela voltará a ficar pendente e a outra parte
+                    precisará aceitar de novo.
                   </Alert>
                 )}
               </Box>
@@ -236,7 +258,7 @@ export function MeetingRequestDialog({
                   {...register('date', { deps: ['time'] })}
                 />
                 <TextField
-                  label="Hora"
+                  label="Hora de início"
                   type="time"
                   required
                   disabled={locked}
@@ -244,7 +266,24 @@ export function MeetingRequestDialog({
                   helperText={errors.time?.message}
                   slotProps={{ inputLabel: { shrink: true } }}
                   sx={{ flex: 1 }}
-                  {...register('time')}
+                  // O término é comparado com o início: mudar o início o revalida, mas só depois
+                  // de o término ter sido preenchido, para não cobrá-lo antes da hora.
+                  {...register('time', {
+                    onChange: () => {
+                      if (getValues('endTime')) void trigger('endTime');
+                    },
+                  })}
+                />
+                <TextField
+                  label="Hora de término"
+                  type="time"
+                  required
+                  disabled={locked}
+                  error={Boolean(errors.endTime)}
+                  helperText={errors.endTime?.message}
+                  slotProps={{ inputLabel: { shrink: true } }}
+                  sx={{ flex: 1 }}
+                  {...register('endTime')}
                 />
               </Stack>
               <TextField
