@@ -100,6 +100,7 @@ export function AdvisorsPage() {
       else params.delete(SHOW_ALL_PARAM);
       return params;
     });
+  const switchInput = useRef<HTMLInputElement>(null);
   const listTop = useRef<HTMLDivElement>(null);
   // A solicitação de orientação é a mesma do perfil do professor; um 409 relê a lista também.
   const request = useRequestAdvising({
@@ -139,6 +140,7 @@ export function AdvisorsPage() {
             <Switch
               checked={showAll}
               onChange={(event) => chooseShowAll(event.target.checked)}
+              slotProps={{ input: { ref: switchInput } }}
             />
           }
         />
@@ -164,7 +166,24 @@ export function AdvisorsPage() {
           </Stack>
         )}
         {list.status === 'ready' && list.data.count === 0 && (
-          <Alert severity="info">{emptyMessage(name, showAll)}</Alert>
+          <Alert
+            severity="info"
+            action={
+              showAll ? undefined : (
+                <Button
+                  onClick={() => {
+                    chooseShowAll(true);
+                    // O alerta some ao recarregar: o foco vai para a chave, que anuncia o novo estado.
+                    switchInput.current?.focus();
+                  }}
+                >
+                  Ver todos os professores do curso
+                </Button>
+              )
+            }
+          >
+            {emptyMessage(name, showAll)}
+          </Alert>
         )}
         {list.status === 'ready' && list.data.items.length > 0 && (
           <Stack spacing={2}>
