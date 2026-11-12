@@ -12,6 +12,8 @@ import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { useSession } from '../hooks/useSession';
 import { CalendarToolbar } from '../meetings/calendar/CalendarToolbar';
+import { prefillFromClick } from '../meetings/calendar/clickedSlot';
+import type { SlotPrefill } from '../meetings/calendar/clickedSlot';
 import { MeetingCalendar } from '../meetings/calendar/MeetingCalendar';
 import type { CalendarPeriod } from '../meetings/calendar/MeetingCalendar';
 import { capitalize } from '../meetings/calendar/periodDates';
@@ -39,6 +41,9 @@ import type { MeetingItem } from '../services/meetingService';
 
 const NO_MEETINGS: MeetingItem[] = [];
 
+const NO_ADVISING_REASON =
+  'Você precisa ter uma orientação ativa para solicitar reuniões.';
+
 /**
  * As reuniões do aluno e do professor (RF19): o calendário do período exibido, o modal de cada
  * reunião e o diálogo de solicitar (RF17 e RF18). As reuniões vêm da leitura por período, buscada a
@@ -48,7 +53,9 @@ export function MeetingsPage() {
   const { user, refreshUser } = useSession();
   const { notify } = useFeedback();
   // Sem payload o diálogo solicita uma reunião; com a reunião, a edita (RF21).
-  const dialog = useDialogSlot<MeetingItem | undefined>();
+  const dialog = useDialogSlot<
+    { meeting?: MeetingItem; prefill?: SlotPrefill } | undefined
+  >();
   // Recusar e cancelar pedem um motivo: a reunião escolhida fica guardada para o diálogo sair com ela.
   const reasonDialog = useDialogSlot<{
     kind: 'reject' | 'cancel';
@@ -73,6 +80,12 @@ export function MeetingsPage() {
     period === null ? null : `${period.from}|${period.to}|${reload}`,
   );
 
+  // Clicar num dia ou numa faixa de horário futura abre a solicitação já preenchida (RF60); o clique
+  // em data ou horário passado não faz nada.
+  const openFromClick = (dateStr: string) => {
+    const prefill = prefillFromClick(dateStr);
+    if (prefill) dialog.show({ prefill });
+  };
   const chooseView = (next: CalendarView) => {
     setView(next);
     saveViewPreference(userId, next);
@@ -123,7 +136,7 @@ export function MeetingsPage() {
       }}
       onEdit={(target) => {
         detailsDialog.hide();
-        dialog.show(target);
+        dialog.show({ meeting: target });
       }}
       onCancel={(target) => {
         detailsDialog.hide();
@@ -142,19 +155,9 @@ export function MeetingsPage() {
 
   return (
     <Stack spacing={3}>
-      <Stack
-        direction="row"
-        sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
-      >
-        <Typography variant="h4" component="h1">
-          Reuniões
-        </Typography>
-        {canRequest && (
-          <Button variant="contained" onClick={() => dialog.show()}>
-            Solicitar reunião
-          </Button>
-        )}
-      </Stack>
+      <Typography variant="h4" component="h1">
+        Reuniões
+      </Typography>
       <CalendarToolbar
         title={capitalize(period?.title ?? '')}
         view={view}
@@ -162,6 +165,10 @@ export function MeetingsPage() {
         onPrevious={() => controller.prev()}
         onNext={() => controller.next()}
         onView={chooseView}
+        onRequest={() => dialog.show()}
+        requestDisabledReason={
+          user === null || canRequest ? null : NO_ADVISING_REASON
+        }
       />
       {list.status === 'loading' && (
         <LinearProgress aria-label="Carregando as reuniões do período" />
@@ -184,6 +191,7 @@ export function MeetingsPage() {
         onPeriod={setPeriod}
         onOpen={(item) => detailsDialog.show(item)}
         onMoreLink={() => chooseView('day')}
+        onSlotClick={canRequest ? openFromClick : undefined}
       />
       {detailsSlot && (
         <MeetingDetailsDialog
@@ -227,11 +235,12 @@ export function MeetingsPage() {
           open={dialog.slot.open}
           isTeacher={isTeacher}
           preselectedStudent={null}
-          meeting={dialog.slot.payload}
+          meeting={dialog.slot.payload?.meeting}
+          prefill={dialog.slot.payload?.prefill}
           onSaved={() => {
             dialog.hide();
             notify(
-              dialog.slot?.payload
+              dialog.slot?.payload?.meeting
                 ? 'Reunião atualizada.'
                 : 'Reunião solicitada.',
               'success',

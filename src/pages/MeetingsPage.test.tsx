@@ -555,6 +555,37 @@ describe('MeetingsPage: ao recarregar', () => {
   });
 });
 
+describe('MeetingsPage: o botão Solicitar reunião da barra', () => {
+  it('abre o formulário vazio e é acessível por teclado, com nome acessível', async () => {
+    const { events } = setup([], 'student');
+    const request = await screen.findByRole('button', {
+      name: 'Solicitar reunião',
+    });
+
+    request.focus();
+    await events.keyboard('{Enter}');
+
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Solicitar reunião',
+    });
+    expect(within(dialog).getByLabelText(/Data/)).toHaveValue('');
+    expect(within(dialog).getByLabelText(/Hora de início/)).toHaveValue('');
+    expect(within(dialog).getByLabelText(/Hora de término/)).toHaveValue('');
+  });
+
+  it('está na barra do calendário, junto do seletor de visão', async () => {
+    setup([], 'teacher');
+    const request = await screen.findByRole('button', {
+      name: 'Solicitar reunião',
+    });
+
+    expect(request.closest('h1')).toBeNull();
+    expect(
+      screen.getByRole('group', { name: 'Visão do calendário' }).parentElement,
+    ).toContainElement(request);
+  });
+});
+
 describe('MeetingsPage: a visão salva', () => {
   it('abre no Mês sem preferência, com o seletor oferecendo as três visões', async () => {
     setup([], 'student');
@@ -646,7 +677,7 @@ describe('MeetingsPage: estados', () => {
     ).toBeVisible();
   });
 
-  it('sem orientação ativa mas com histórico o calendário é só de leitura, sem o botão de solicitar', async () => {
+  it('sem orientação ativa mas com histórico o calendário é só de leitura, com o botão desabilitado e o motivo explicado (RN29)', async () => {
     setup(
       [
         makeMeeting(1, {
@@ -663,9 +694,13 @@ describe('MeetingsPage: estados', () => {
 
     await screen.findByRole('button', { name: /Histórico/ });
 
-    expect(
-      screen.queryByRole('button', { name: 'Solicitar reunião' }),
-    ).not.toBeInTheDocument();
+    const request = screen.getByRole('button', { name: 'Solicitar reunião' });
+    expect(request).toBeDisabled();
+    const reason = screen.getByText(
+      'Você precisa ter uma orientação ativa para solicitar reuniões.',
+    );
+    expect(reason).toBeVisible();
+    expect(request).toHaveAccessibleDescription(reason.textContent ?? '');
   });
 
   it('mostra o andamento enquanto carrega e oferece Tentar novamente quando falha', async () => {

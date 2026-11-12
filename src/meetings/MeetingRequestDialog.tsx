@@ -20,6 +20,7 @@ import { ApiError, isStateChangedError } from '../services/apiError';
 import { createMeeting, updateMeeting } from '../services/meetingService';
 import type { MeetingInput, MeetingItem } from '../services/meetingService';
 import { AdviseeSearchField } from './AdviseeSearchField';
+import type { SlotPrefill } from './calendar/clickedSlot';
 import {
   DESCRIPTION_MAX,
   ENDED_MESSAGE,
@@ -44,6 +45,8 @@ interface MeetingRequestDialogProps {
   preselectedStudent: { id: number; name: string } | null;
   /** A reunião que se edita (RF21); sem ela, o diálogo solicita uma nova. */
   meeting?: MeetingItem;
+  /** Numa solicitação nova, o que o clique no calendário já preencheu (RF60); conta como o estado inicial. */
+  prefill?: SlotPrefill;
   onSaved: () => void;
   /** Editar sem mudar nada: quem usa avisa e fecha, sem chamar o servidor. */
   onNoChanges: () => void;
@@ -67,6 +70,7 @@ export function MeetingRequestDialog({
   isTeacher,
   preselectedStudent,
   meeting,
+  prefill,
   onSaved,
   onNoChanges,
   onStateChanged,
@@ -92,9 +96,9 @@ export function MeetingRequestDialog({
   );
   const initial: MeetingFormValues = {
     student: isTeacher && !editing ? preselectedStudent : null,
-    date: original?.date ?? '',
-    time: original?.time ?? '',
-    endTime: original?.endTime ?? '',
+    date: original?.date ?? prefill?.date ?? '',
+    time: original?.time ?? prefill?.time ?? '',
+    endTime: original?.endTime ?? prefill?.endTime ?? '',
     description: meeting?.description ?? '',
   };
   // O formulário entrega a descrição aparada; a original pode trazer espaços nas pontas.

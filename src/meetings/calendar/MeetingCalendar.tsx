@@ -1,6 +1,7 @@
 import FullCalendar from '@fullcalendar/react';
 import type { CalendarController, EventInput } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/react/daygrid';
+import interactionPlugin from '@fullcalendar/react/interaction';
 import ptBrLocale from '@fullcalendar/react/locales/pt-br';
 import classicThemePlugin from '@fullcalendar/react/themes/classic';
 import timeGridPlugin from '@fullcalendar/react/timegrid';
@@ -60,6 +61,8 @@ interface MeetingCalendarProps {
   onOpen: (item: MeetingItem) => void;
   /** O "+N mais" do Mês leva à visão Dia daquele dia: quem usa acompanha a mudança de visão. */
   onMoreLink: () => void;
+  /** O clique num dia ou numa faixa de horário (RF60), com o texto do instante; sem ele o clique não faz nada. */
+  onSlotClick?: (dateStr: string) => void;
 }
 
 /**
@@ -75,6 +78,7 @@ export function MeetingCalendar({
   onPeriod,
   onOpen,
   onMoreLink,
+  onSlotClick,
 }: MeetingCalendarProps) {
   // A visão muda por fora (o seletor): o calendário só a troca se ainda não estiver nela.
   useEffect(() => {
@@ -94,7 +98,12 @@ export function MeetingCalendar({
   );
   return (
     <FullCalendar
-      plugins={[dayGridPlugin, timeGridPlugin, classicThemePlugin]}
+      plugins={[
+        dayGridPlugin,
+        timeGridPlugin,
+        interactionPlugin,
+        classicThemePlugin,
+      ]}
       controller={controller}
       locale={ptBrLocale}
       timeZone="America/Santarem"
@@ -107,6 +116,7 @@ export function MeetingCalendar({
         onMoreLink();
         return 'timeGridDay';
       }}
+      dateClick={(info) => onSlotClick?.(info.dateStr)}
       // O eixo de 24 horas abre rolado às 07:00, em faixas de 30 minutos, e as reuniões que se
       // sobrepõem ficam lado a lado, sem esconder nenhuma.
       scrollTime="07:00:00"
