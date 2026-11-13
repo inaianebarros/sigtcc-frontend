@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Container,
+  GlobalStyles,
   Toolbar,
   Typography,
   useMediaQuery,
@@ -17,6 +18,9 @@ import { useSession } from '../hooks/useSession';
 import { hasActiveAdvisingOf } from '../navigation/advisingState';
 import { areas } from '../navigation/areas';
 import { paths } from '../navigation/paths';
+
+// A altura da barra superior do MUI: 56 no celular e 64 a partir de 600px de largura.
+const APP_BAR_HEIGHT = { xs: 56, sm: 64 } as const;
 
 export function Layout() {
   const { status, user, signOut } = useSession();
@@ -39,10 +43,30 @@ export function Layout() {
 
   return (
     <NotificationsProvider>
+      {/* O foco que o teclado leva a um campo não pode parar escondido atrás da barra fixa. */}
+      <GlobalStyles
+        styles={{
+          html: {
+            scrollPaddingTop: APP_BAR_HEIGHT.xs,
+            '@media (min-width:600px)': {
+              scrollPaddingTop: APP_BAR_HEIGHT.sm,
+            },
+          },
+        }}
+      />
       <Box
         sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
       >
-        <AppBar position="static">
+        {/* A barra acompanha a rolagem. No desktop o menu fixo começa abaixo dela, então ela fica por
+            cima do menu; no celular o menu é uma gaveta e continua por cima da barra. */}
+        <AppBar
+          position="sticky"
+          sx={
+            isDesktop
+              ? { zIndex: (theme) => theme.zIndex.drawer + 1 }
+              : undefined
+          }
+        >
           <Toolbar sx={{ gap: 2 }}>
             {menuItems.length > 0 && !isDesktop && (
               <Button

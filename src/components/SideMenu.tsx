@@ -8,6 +8,7 @@ import {
   ListItemIcon,
   ListItemText,
   SvgIcon,
+  Toolbar,
 } from '@mui/material';
 import { Link as RouterLink, useLocation, useMatch } from 'react-router-dom';
 import type { NavigationItem } from '../navigation/areas';
@@ -110,10 +111,13 @@ export function SideMenu({
         '& .MuiDrawer-paper': {
           width: DRAWER_WIDTH,
           boxSizing: 'border-box',
-          position: temporary ? 'fixed' : 'relative',
+          // Fixo nos dois casos: o menu acompanha a rolagem da página.
+          position: 'fixed',
         },
       }}
     >
+      {/* No desktop o menu fica abaixo da barra superior, que é fixa e cobre o topo dele. */}
+      {!temporary && <Toolbar />}
       {temporary && (
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
           <Button onClick={onClose}>Fechar menu</Button>
