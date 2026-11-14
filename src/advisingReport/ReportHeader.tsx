@@ -21,7 +21,12 @@ export function ReportHeader({ report }: { report: AdvisingReport }) {
       <Stack spacing={2}>
         <Stack
           direction="row"
-          sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 2 }}
+          sx={{
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
         >
           <Typography
             variant="h4"
