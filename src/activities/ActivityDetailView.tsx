@@ -83,7 +83,7 @@ export interface ReviewActions {
 /** O painel da revisão: a decisão do orientador, com o material já na seção Entregas. */
 function ReviewPanel({ onAccept, onRefuse }: ReviewActions) {
   return (
-    <Section title="Revisão">
+    <Section title="Revisão" nested>
       <Typography sx={{ fontWeight: 'medium' }}>
         Aguardando a sua revisão
       </Typography>
@@ -132,34 +132,66 @@ export function ActivityDetailView({
   onDelete,
 }: ActivityDetailViewProps) {
   const facts: (readonly [string, ReactNode])[] = [
-    ['Aluno', activity.student.fullName],
-    ...(activity.teacher
-      ? ([['Orientador', activity.teacher.fullName]] as const)
-      : []),
-    ['Prazo', formatDeadline(activity.deadline)],
     [
       'Situação',
       <StatusWithBadge
         key="status"
         status={activity.status}
         overdue={activity.overdue}
+        pill
       />,
     ],
+    ['Prazo', formatDeadline(activity.deadline)],
+    ['Aluno', activity.student.fullName],
+    ...(activity.teacher
+      ? ([['Orientador', activity.teacher.fullName]] as const)
+      : []),
     ['Criada em', formatDate(activity.createdAt)],
   ];
   return (
     <>
-      {canManage && (
-        <ActivityActions
-          completed={activity.status === 'completed'}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
-      )}
-      <Typography sx={{ whiteSpace: 'pre-wrap' }}>
-        {activity.description}
-      </Typography>
-      <ReadOnlyFacts facts={facts} />
+      <Box component="section" aria-label="Resumo da atividade">
+        <ReadOnlyFacts facts={facts} />
+      </Box>
+      <Section title="Descrição">
+        <Typography
+          sx={{
+            whiteSpace: 'pre-wrap',
+            overflowWrap: 'anywhere',
+            bgcolor: 'action.hover',
+            borderLeft: 4,
+            borderColor: 'primary.main',
+            borderRadius: 1,
+            p: 2,
+          }}
+        >
+          {activity.description}
+        </Typography>
+      </Section>
+      <Section title="Ações">
+        {canManage && (
+          <ActivityActions
+            completed={activity.status === 'completed'}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        )}
+        {student && (
+          <Section title="Status e entrega" nested>
+            <StatusAndDelivery
+              status={activity.status}
+              statusBusy={student.statusBusy}
+              hasDelivery={activity.submissions.length > 0}
+              onChangeStatus={student.onChangeStatus}
+              onDeliver={student.onDeliver}
+              onSendForReview={student.onSendForReview}
+            />
+          </Section>
+        )}
+        {review && activity.status === 'in_review' && (
+          <ReviewPanel {...review} />
+        )}
+      </Section>
       <Section title="Entregas">
         {activity.submissions.length === 0 && (
           <Typography>Nenhuma entrega ainda.</Typography>
@@ -220,18 +252,6 @@ export function ActivityDetailView({
           </Box>
         )}
       </Section>
-      {student && (
-        <Section title="Status e entrega">
-          <StatusAndDelivery
-            status={activity.status}
-            statusBusy={student.statusBusy}
-            hasDelivery={activity.submissions.length > 0}
-            onChangeStatus={student.onChangeStatus}
-            onDeliver={student.onDeliver}
-            onSendForReview={student.onSendForReview}
-          />
-        </Section>
-      )}
       <CommentsSection
         activityId={activity.id}
         currentUserId={comments.currentUserId}
@@ -239,7 +259,6 @@ export function ActivityDetailView({
         text={comments.text}
         onTextChange={comments.onTextChange}
       />
-      {review && activity.status === 'in_review' && <ReviewPanel {...review} />}
     </>
   );
 }
