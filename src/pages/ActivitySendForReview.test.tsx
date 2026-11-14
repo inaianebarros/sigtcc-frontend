@@ -268,8 +268,10 @@ describe('Enviar para revisão: depois de uma recusa', () => {
       ],
     });
 
-    const section = await screen.findByRole('region', { name: 'Entregas' });
-    expect(within(section).getByText('capitulo2.pdf')).toBeVisible();
+    const section = await screen.findByRole('region', {
+      name: 'Linha do tempo',
+    });
+    expect(await within(section).findByText('capitulo2.pdf')).toBeVisible();
     await events.click(await sendButton());
     await events.click(
       within(await confirmDialog()).getByRole('button', {

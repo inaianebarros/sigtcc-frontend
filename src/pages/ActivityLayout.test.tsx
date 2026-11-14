@@ -189,9 +189,9 @@ describe('Detalhe da atividade: a faixa Ações', () => {
   });
 });
 
-describe('Detalhe da atividade: a ordem e o que continua abaixo', () => {
+describe('Detalhe da atividade: a ordem das áreas', () => {
   it.each(['student', 'teacher'] as const)(
-    'o %s vê cabeçalho, Descrição, Ações e depois Entregas, Revisões e Comentários',
+    'o %s vê cabeçalho, Descrição, Ações e depois a Linha do tempo',
     async (user) => {
       setup(user);
 
@@ -199,9 +199,7 @@ describe('Detalhe da atividade: a ordem e o que continua abaixo', () => {
         await header(),
         await description(),
         await actions(),
-        await screen.findByRole('region', { name: 'Entregas' }),
-        await screen.findByRole('region', { name: 'Revisões' }),
-        await screen.findByRole('region', { name: 'Comentários' }),
+        await screen.findByRole('region', { name: 'Linha do tempo' }),
       ];
 
       regions.slice(1).forEach((region, index) => {

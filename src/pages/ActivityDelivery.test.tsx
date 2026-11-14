@@ -324,7 +324,9 @@ describe('Entregar arquivos: o envio', () => {
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
-    const section = await screen.findByRole('region', { name: 'Entregas' });
+    const section = await screen.findByRole('region', {
+      name: 'Linha do tempo',
+    });
     expect(await within(section).findByText('primeiro.pdf')).toBeVisible();
     expect(within(section).getByText('segundo.pdf')).toBeVisible();
   });
