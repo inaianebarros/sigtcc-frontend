@@ -8,6 +8,7 @@ import { UrlSearchField } from '../components/UrlSearchField';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
+import { studentAdvisorPath, teacherStudentPath } from '../navigation/paths';
 import {
   PAGE_PARAM,
   useReturnToLastPage,
@@ -135,7 +136,15 @@ export function AdvisingHistoryPage() {
         {list.status === 'ready' && list.data.items.length > 0 && (
           <Stack spacing={2}>
             {list.data.items.map((advising) => (
-              <EndedAdvisingCard key={advising.id} advising={advising} />
+              <EndedAdvisingCard
+                key={advising.id}
+                advising={advising}
+                counterpartPath={
+                  isStudent
+                    ? studentAdvisorPath(advising.counterpart.id)
+                    : teacherStudentPath(advising.counterpart.id)
+                }
+              />
             ))}
           </Stack>
         )}

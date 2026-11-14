@@ -97,6 +97,21 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('o nome do professor leva ao perfil dele', async () => {
+    setup([
+      makeEndedAdvising(1, {
+        counterpart: { id: 50, full_name: 'Paulo Professor' },
+      }),
+    ]);
+    await screen.findByText('Paulo Professor');
+
+    expect(
+      within(cardOf('Paulo Professor')).getByRole('link', {
+        name: 'Paulo Professor',
+      }),
+    ).toHaveAttribute('href', '/aluno/orientadores/50');
+  });
+
   it('mostra "Ver relatório" só como texto, sem link nem botão', async () => {
     setup([makeEndedAdvising(1)]);
     await screen.findByText('Pessoa 1');
@@ -104,7 +119,9 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     const card = cardOf('Pessoa 1');
 
     expect(within(card).getByText('Ver relatório')).toBeVisible();
-    expect(within(card).queryByRole('link')).not.toBeInTheDocument();
+    expect(
+      within(card).queryByRole('link', { name: /Ver relatório/ }),
+    ).not.toBeInTheDocument();
     expect(within(card).queryByRole('button')).not.toBeInTheDocument();
   });
 
@@ -214,6 +231,22 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
         name: 'Histórico de orientações',
       }),
     ).toBeInTheDocument();
+  });
+
+  it('o nome do aluno leva ao perfil dele', async () => {
+    setup(
+      [
+        makeEndedAdvising(1, {
+          counterpart: { id: 70, full_name: 'Ana Souza' },
+        }),
+      ],
+      { user: 'teacher' },
+    );
+    await screen.findByText('Ana Souza');
+
+    expect(
+      within(cardOf('Ana Souza')).getByRole('link', { name: 'Ana Souza' }),
+    ).toHaveAttribute('href', '/professor/alunos/70');
   });
 
   it('mostra os totais de orientações encerradas e de orientandos', async () => {

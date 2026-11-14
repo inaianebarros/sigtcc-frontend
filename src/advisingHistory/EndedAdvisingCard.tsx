@@ -8,10 +8,13 @@ import {
 } from '@mui/material';
 import { useId } from 'react';
 import { formatShortDate } from '../formatters/dateTime';
+import { OriginLink } from '../navigation/OriginLink';
 import type { EndedAdvising } from '../services/advisingHistoryService';
 
 interface EndedAdvisingCardProps {
   advising: EndedAdvising;
+  /** O perfil da outra parte: o do professor, para o aluno, e o do aluno, para o professor. */
+  counterpartPath: string;
 }
 
 function DateRow({ label, value }: { label: string; value: string }) {
@@ -28,7 +31,10 @@ function DateRow({ label, value }: { label: string; value: string }) {
  * o tema congelado e as datas (RF49). O motivo do encerramento fica fora do cartão. O "Ver
  * relatório" é só um texto, sem link, até a tela dos relatórios existir.
  */
-export function EndedAdvisingCard({ advising }: EndedAdvisingCardProps) {
+export function EndedAdvisingCard({
+  advising,
+  counterpartPath,
+}: EndedAdvisingCardProps) {
   const titleId = useId();
   return (
     <Card component="article" aria-labelledby={titleId} variant="outlined">
@@ -43,7 +49,9 @@ export function EndedAdvisingCard({ advising }: EndedAdvisingCardProps) {
             }}
           >
             <Typography id={titleId} variant="h6" component="h2">
-              {advising.counterpart.fullName}
+              <OriginLink to={counterpartPath}>
+                {advising.counterpart.fullName}
+              </OriginLink>
             </Typography>
             <Chip
               label="Encerrada"
