@@ -1,6 +1,6 @@
 import { httpClient } from './httpClient';
 
-export const ADVISEES_PAGE_SIZE = 20;
+export const ADVISEES_PAGE_SIZE = 10;
 
 export interface Advisee {
   advisingId: number;

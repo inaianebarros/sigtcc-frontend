@@ -58,7 +58,7 @@ export function adviseeRoutes(
       },
     }),
     'GET /api/orientacao/orientandos': (_body, url) => {
-      const limit = Number(url.searchParams.get('limit') ?? 20);
+      const limit = Number(url.searchParams.get('limit') ?? 10);
       const offset = Number(url.searchParams.get('offset') ?? 0);
       return {
         body: {

@@ -39,7 +39,10 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
     setup([makeAdvisee(7), makeAdvisee(3), makeAdvisee(5)]);
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Orientandos' }),
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Meus orientandos',
+      }),
     ).toBeInTheDocument();
     await screen.findByText('Orientando 7');
 
@@ -47,6 +50,21 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
       screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent),
     ).toEqual(['Orientando 7', 'Orientando 3', 'Orientando 5']);
     expect(screen.getByText('3 orientandos encontrados')).toBeVisible();
+  });
+
+  it('mostra o subtítulo e o chip com o total geral de orientandos ativos', async () => {
+    setup([makeAdvisee(1), makeAdvisee(2), makeAdvisee(3)]);
+
+    expect(
+      await screen.findByText('Acompanhe suas orientações ativas.'),
+    ).toBeVisible();
+    expect(await screen.findByText('3 orientandos')).toBeVisible();
+  });
+
+  it('o chip do total diz "1 orientando" no singular', async () => {
+    setup([makeAdvisee(1)]);
+
+    expect(await screen.findByText('1 orientando')).toBeVisible();
   });
 
   it('mostra no cartão o nome, o curso, o início, o tema e as quatro contagens em texto rotulado', async () => {
@@ -153,7 +171,7 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
 describe('TeacherAdviseesPage: paginação com a página na URL', () => {
   const FORTY_FIVE = Array.from({ length: 45 }, (_, i) => makeAdvisee(i + 1));
 
-  it('pede 20 por vez, mostra a navegação numerada e não põe nada na URL na página 1', async () => {
+  it('pede 10 por vez, mostra a navegação numerada e não põe nada na URL na página 1', async () => {
     const { fetchMock } = setup(FORTY_FIVE);
     await screen.findByText('Orientando 1');
 
@@ -161,11 +179,11 @@ describe('TeacherAdviseesPage: paginação com a página na URL', () => {
       name: 'Paginação dos orientandos',
     });
 
-    expect(screen.getAllByRole('article')).toHaveLength(20);
+    expect(screen.getAllByRole('article')).toHaveLength(10);
     expect(
       within(pages).getAllByRole('button', { name: /^Ir para a página \d+$/ }),
-    ).toHaveLength(2);
-    expect(listParams(fetchMock)).toEqual([{ limit: '20', offset: '0' }]);
+    ).toHaveLength(4);
+    expect(listParams(fetchMock)).toEqual([{ limit: '10', offset: '0' }]);
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/professor\/orientandos$/,
     );
@@ -178,24 +196,24 @@ describe('TeacherAdviseesPage: paginação com a página na URL', () => {
     await screen.findByText('Orientando 1');
 
     await user.click(
-      screen.getByRole('button', { name: 'Ir para a página 3' }),
+      screen.getByRole('button', { name: 'Ir para a página 5' }),
     );
 
     expect(await screen.findByText('Orientando 41')).toBeInTheDocument();
     expect(screen.getAllByRole('article')).toHaveLength(5);
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '/professor/orientandos?pagina=3',
+      '/professor/orientandos?pagina=5',
     );
-    expect(listParams(fetchMock).at(-1)).toEqual({ limit: '20', offset: '40' });
+    expect(listParams(fetchMock).at(-1)).toEqual({ limit: '10', offset: '40' });
     expect(scrollIntoView).toHaveBeenCalled();
   });
 
   it('abre direto na página da URL, como ao recarregar ou voltar de outra tela', async () => {
     const { fetchMock } = setup(FORTY_FIVE, `${PATH}?pagina=2`);
 
-    expect(await screen.findByText('Orientando 21')).toBeInTheDocument();
+    expect(await screen.findByText('Orientando 11')).toBeInTheDocument();
 
-    expect(listParams(fetchMock)).toEqual([{ limit: '20', offset: '20' }]);
+    expect(listParams(fetchMock)).toEqual([{ limit: '10', offset: '10' }]);
     expect(
       screen.getByRole('button', { name: 'Página 2, atual' }),
     ).toHaveAttribute('aria-current', 'page');
@@ -207,7 +225,7 @@ describe('TeacherAdviseesPage: paginação com a página na URL', () => {
     await user.click(
       screen.getByRole('button', { name: 'Ir para a página 2' }),
     );
-    await screen.findByText('Orientando 21');
+    await screen.findByText('Orientando 11');
 
     await user.click(
       screen.getByRole('button', { name: 'Ir para a página 1' }),
@@ -226,7 +244,7 @@ describe('TeacherAdviseesPage: paginação com a página na URL', () => {
 
       expect(await screen.findByText('Orientando 1')).toBeInTheDocument();
 
-      expect(listParams(fetchMock)).toEqual([{ limit: '20', offset: '0' }]);
+      expect(listParams(fetchMock)).toEqual([{ limit: '10', offset: '0' }]);
     },
   );
 
@@ -236,14 +254,14 @@ describe('TeacherAdviseesPage: paginação com a página na URL', () => {
     expect(await screen.findByText('Orientando 41')).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', { name: 'Página 3, atual' }),
+      screen.getByRole('button', { name: 'Página 5, atual' }),
     ).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent(
-        '/professor/orientandos?pagina=3',
+        '/professor/orientandos?pagina=5',
       ),
     );
-    expect(listParams(fetchMock).at(-1)).toEqual({ limit: '20', offset: '40' });
+    expect(listParams(fetchMock).at(-1)).toEqual({ limit: '10', offset: '40' });
   });
 
   it('não mostra a paginação quando tudo cabe em uma página', async () => {
@@ -361,14 +379,16 @@ describe('TeacherAdviseesPage: atalho para as atividades do orientando', () => {
     const { user } = setup([makeAdvisee(1), makeAdvisee(2)]);
     await screen.findByText('Orientando 2');
 
-    await user.click(
-      within(cardOf('Orientando 2')).getByRole('link', {
-        name: 'Ver atividades de Orientando 2',
-      }),
-    );
+    const link = within(cardOf('Orientando 2')).getByRole('link', {
+      name: 'Ver atividades de Orientando 2',
+    });
 
+    // A tela de atividades pode tirar o `aluno` da URL depois de chegar (aluno que não carrega):
+    // o que este teste garante é o destino do link e a navegação para a lista.
+    expect(link).toHaveAttribute('href', '/professor/atividades?aluno=102');
+    await user.click(link);
     expect(screen.getByTestId('location')).toHaveTextContent(
-      '/professor/atividades?aluno=102',
+      '/professor/atividades',
     );
   });
 });
