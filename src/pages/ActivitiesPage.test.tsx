@@ -321,9 +321,9 @@ describe('ActivitiesPage: filtros e página na URL (RNF30)', () => {
     const params = listRequests(fetchMock).at(-1)!;
     expect(params.get('status')).toBe('pending');
     expect(params.get('overdue')).toBe('true');
-    expect(
-      screen.getByRole('combobox', { name: 'Situação' }),
-    ).toHaveTextContent('Pendente');
+    expect(screen.getByRole('combobox', { name: 'Situação' })).toHaveValue(
+      'Pendente',
+    );
     expect(
       screen.getByRole('switch', { name: 'Somente atrasadas' }),
     ).toBeChecked();
@@ -1084,4 +1084,182 @@ describe('ActivitiesPage: o filtro por Aluno do professor', () => {
       expect(await screen.findByText('Do João')).toBeVisible();
     },
   );
+});
+
+describe('ActivitiesPage: o filtro por Situação e o interruptor Somente atrasadas', () => {
+  const STATUS_ACTIVITIES = [
+    makeActivity(1, { title: 'Aberta', status: 'pending' }),
+    makeActivity(2, { title: 'Andando', status: 'in_progress' }),
+    makeActivity(3, { title: 'Revisando', status: 'in_review' }),
+    makeActivity(4, { title: 'Pronta', status: 'completed' }),
+  ];
+
+  it('começa em Todas e lista só as quatro situações, sem Atrasada', async () => {
+    const { events } = setup(STATUS_ACTIVITIES, 'student');
+    const field = await screen.findByRole('combobox', { name: 'Situação' });
+    expect(field).toHaveValue('Todas');
+
+    await events.click(field);
+
+    const names = (await screen.findAllByRole('option')).map(
+      (option) => option.textContent,
+    );
+    expect(names).toEqual([
+      'Todas',
+      'Pendente',
+      'Em andamento',
+      'Em revisão',
+      'Concluída',
+    ]);
+  });
+
+  it('busca entre as situações sem diferenciar acentos, esconde Todas ao digitar e mostra tudo ao reabrir com uma escolhida', async () => {
+    const { events } = setup(STATUS_ACTIVITIES, 'student');
+    const field = await screen.findByRole('combobox', { name: 'Situação' });
+    await events.click(field);
+    await screen.findAllByRole('option');
+
+    (field as HTMLInputElement).select();
+    await events.keyboard('revisao');
+
+    expect(
+      await screen.findByRole('option', { name: 'Em revisão' }),
+    ).toBeVisible();
+    expect(screen.getAllByRole('option')).toHaveLength(1);
+    expect(
+      screen.queryByRole('option', { name: 'Todas' }),
+    ).not.toBeInTheDocument();
+
+    await events.click(screen.getByRole('option', { name: 'Em revisão' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/aluno/atividades?situacao=in_review',
+      ),
+    );
+    await events.click(screen.getByRole('combobox', { name: 'Situação' }));
+
+    expect(await screen.findAllByRole('option')).toHaveLength(5);
+  });
+
+  it('escolher Todas tira a situação da URL', async () => {
+    const { fetchMock, events } = setup(
+      STATUS_ACTIVITIES,
+      'student',
+      '/aluno/atividades?situacao=completed',
+    );
+    await screen.findByText('Pronta');
+
+    await events.click(screen.getByRole('combobox', { name: 'Situação' }));
+    await events.click(await screen.findByRole('option', { name: 'Todas' }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        /^\/aluno\/atividades$/,
+      ),
+    );
+    expect(await screen.findByText('Aberta')).toBeVisible();
+    expect(listRequests(fetchMock).at(-1)?.has('status')).toBe(false);
+  });
+
+  it('combina busca, aluno, situação e atrasadas, e mudar qualquer filtro volta à primeira página', async () => {
+    const many = Array.from({ length: 25 }, (_, index) =>
+      makeActivity(index + 1, {
+        title: `Texto ${String(index + 1).padStart(2, '0')}`,
+        status: 'pending',
+        overdue: true,
+        student: { id: 101, full_name: 'Orientando 01' },
+      }),
+    );
+    const { fetchMock, events } = setup(
+      many,
+      'teacher',
+      '/professor/atividades?busca=texto&aluno=101&situacao=pending&pagina=2',
+      [makeAdvisee(1)],
+    );
+    await screen.findByText('Texto 21');
+
+    await events.click(
+      screen.getByRole('switch', { name: 'Somente atrasadas' }),
+    );
+
+    await waitFor(() => {
+      const last = listRequests(fetchMock).at(-1)!;
+      expect(last.get('overdue')).toBe('true');
+      expect(last.get('offset')).toBe('0');
+    });
+    const last = listRequests(fetchMock).at(-1)!;
+    expect(last.get('search')).toBe('texto');
+    expect(last.get('student_id')).toBe('101');
+    expect(last.get('status')).toBe('pending');
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/professor/atividades?busca=texto&aluno=101&situacao=pending&atrasadas=1',
+    );
+  });
+
+  it('o Limpar filtros do estado vazio apaga busca, aluno, situação e atrasadas', async () => {
+    const { events } = setup(
+      [makeActivity(1, { title: 'Só esta' })],
+      'teacher',
+      '/professor/atividades?busca=zzz&aluno=101&situacao=completed&atrasadas=1',
+      [makeAdvisee(1)],
+    );
+
+    await events.click(
+      await screen.findByRole('button', { name: 'Limpar filtros' }),
+    );
+
+    expect(await screen.findByText('Só esta')).toBeVisible();
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/professor\/atividades$/,
+    );
+    expect(screen.getByRole('combobox', { name: 'Aluno' })).toHaveValue(
+      'Todos',
+    );
+    expect(screen.getByRole('combobox', { name: 'Situação' })).toHaveValue(
+      'Todas',
+    );
+    expect(
+      screen.getByRole('textbox', { name: 'Título da atividade' }),
+    ).toHaveValue('');
+    expect(
+      screen.getByRole('switch', { name: 'Somente atrasadas' }),
+    ).not.toBeChecked();
+  });
+
+  it('segue a ordem do rascunho: título e botão, totais, busca, aluno e situação com o interruptor, e a lista', async () => {
+    setup([makeActivity(1)], 'teacher', TEACHER_PATH, [makeAdvisee(1)]);
+    await screen.findByText('Atividade 1');
+
+    const sequence = [
+      screen.getByRole('heading', { level: 1, name: 'Atividades' }),
+      screen.getByRole('button', { name: 'Nova atividade' }),
+      screen.getByRole('group', { name: 'Total Atividades' }),
+      screen.getByRole('textbox', { name: 'Título da atividade' }),
+      screen.getByRole('combobox', { name: 'Aluno' }),
+      screen.getByRole('combobox', { name: 'Situação' }),
+      screen.getByRole('switch', { name: 'Somente atrasadas' }),
+      screen.getByRole('list', { name: 'Atividades' }),
+    ];
+    for (let index = 1; index < sequence.length; index += 1) {
+      expect(
+        sequence[index - 1]!.compareDocumentPosition(sequence[index]!) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
+  });
+
+  it('anuncia a mudança da lista pelo número de atividades encontradas', async () => {
+    const { events } = setup(STATUS_ACTIVITIES, 'student');
+    await screen.findByText('Aberta');
+    expect(screen.getByText('4 atividades encontradas')).toBeVisible();
+
+    await events.click(screen.getByRole('combobox', { name: 'Situação' }));
+    await events.click(
+      await screen.findByRole('option', { name: 'Concluída' }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText('1 atividade encontrada')).toBeVisible(),
+    );
+  });
 });
