@@ -1,6 +1,9 @@
 import { httpClient } from './httpClient';
 
+/** O tamanho de página dos seletores de orientando (filtros e formulários). */
 export const ADVISEES_PAGE_SIZE = 20;
+/** O tamanho de página da tela "Meus orientandos" (RF33). */
+export const ADVISEES_SCREEN_PAGE_SIZE = 10;
 
 export interface Advisee {
   advisingId: number;
@@ -42,14 +45,18 @@ interface ApiAdvisee {
   };
 }
 
-/** `search` filtra pelo nome do aluno no servidor, sem diferenciar acentos nem maiúsculas. */
+/**
+ * `search` filtra pelo nome do aluno no servidor, sem diferenciar acentos nem maiúsculas.
+ * `pageSize` é o dos seletores, a menos que a tela peça outro.
+ */
 export async function listAdvisees(
   page: number,
   search?: string,
+  pageSize: number = ADVISEES_PAGE_SIZE,
 ): Promise<AdviseePage> {
   const params = new URLSearchParams({
-    limit: String(ADVISEES_PAGE_SIZE),
-    offset: String((page - 1) * ADVISEES_PAGE_SIZE),
+    limit: String(pageSize),
+    offset: String((page - 1) * pageSize),
   });
   if (search) params.set('search', search);
   const response = await httpClient.get<{ items: ApiAdvisee[]; count: number }>(

@@ -1,6 +1,7 @@
 import {
   Alert,
   Button,
+  Chip,
   Link,
   Skeleton,
   Stack,
@@ -8,6 +9,7 @@ import {
 } from '@mui/material';
 import { useRef, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import { AdviseeActionsMenu } from '../advisees/AdviseeActionsMenu';
 import { AdviseeCard } from '../advisees/AdviseeCard';
 import {
   EndAdvisingDialog,
@@ -28,7 +30,7 @@ import {
 import { paths, teacherStudentPath } from '../navigation/paths';
 import { OriginLink } from '../navigation/OriginLink';
 import {
-  ADVISEES_PAGE_SIZE,
+  ADVISEES_SCREEN_PAGE_SIZE,
   endAdvising,
   listAdvisees,
 } from '../services/adviseeService';
@@ -37,6 +39,10 @@ import { ThesisTopicDialog } from '../thesis/ThesisTopicDialog';
 
 function foundText(count: number): string {
   return `${count} ${count === 1 ? 'orientando encontrado' : 'orientandos encontrados'}`;
+}
+
+function totalText(count: number): string {
+  return `${count} ${count === 1 ? 'orientando' : 'orientandos'}`;
 }
 
 export function TeacherAdviseesPage() {
@@ -48,7 +54,8 @@ export function TeacherAdviseesPage() {
   const { notify } = useFeedback();
   // O diálogo do tema: o orientando escolhido fica guardado para o diálogo sair com ele.
   const topicDialog = useDialogSlot<Advisee>();
-  const { refreshUser } = useSession();
+  const { user, refreshUser } = useSession();
+  const activeCount = user?.activeAdviseesCount;
   // `openCount` muda a cada abertura, para o diálogo começar com o motivo vazio.
   const [dialog, setDialog] = useState<{
     advisee: Advisee;
@@ -58,11 +65,14 @@ export function TeacherAdviseesPage() {
   const [sending, setSending] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [reasonError, setReasonError] = useState<string | null>(null);
-  const list = useLoad(() => listAdvisees(page), `${page}|${reload}`);
+  const list = useLoad(
+    () => listAdvisees(page, undefined, ADVISEES_SCREEN_PAGE_SIZE),
+    `${page}|${reload}`,
+  );
 
   const { knownCount, lastPage, fallbackPage } = usePageBounds(
     list,
-    ADVISEES_PAGE_SIZE,
+    ADVISEES_SCREEN_PAGE_SIZE,
     page,
   );
 
@@ -118,9 +128,20 @@ export function TeacherAdviseesPage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h4" component="h1" ref={heading} tabIndex={-1}>
-        Orientandos
-      </Typography>
+      <div>
+        <Stack
+          direction="row"
+          sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 2 }}
+        >
+          <Typography variant="h4" component="h1" ref={heading} tabIndex={-1}>
+            Meus orientandos
+          </Typography>
+          {activeCount !== undefined && <Chip label={totalText(activeCount)} />}
+        </Stack>
+        <Typography color="text.secondary">
+          Acompanhe suas orientações ativas.
+        </Typography>
+      </div>
       {/* Uma frase curta numa região própria: reler a lista inteira a cada página seria ruído. */}
       <Typography role="status" aria-live="polite" color="text.secondary">
         {list.status === 'ready' && list.data.count > 0
@@ -165,6 +186,19 @@ export function TeacherAdviseesPage() {
                     {name}
                   </OriginLink>
                 )}
+                menu={
+                  <AdviseeActionsMenu
+                    studentName={advisee.student.fullName}
+                    onEnd={() => {
+                      clearErrors();
+                      setDialog((current) => ({
+                        advisee,
+                        open: true,
+                        openCount: (current?.openCount ?? 0) + 1,
+                      }));
+                    }}
+                  />
+                }
                 actions={
                   <>
                     <Button
@@ -182,21 +216,6 @@ export function TeacherAdviseesPage() {
                     >
                       {advisee.thesisTopic ? 'Editar tema' : 'Cadastrar tema'}
                     </Button>
-                    <Button
-                      color="error"
-                      variant="outlined"
-                      aria-label={`Encerrar orientação de ${advisee.student.fullName}`}
-                      onClick={() => {
-                        clearErrors();
-                        setDialog((current) => ({
-                          advisee,
-                          open: true,
-                          openCount: (current?.openCount ?? 0) + 1,
-                        }));
-                      }}
-                    >
-                      Encerrar orientação
-                    </Button>
                   </>
                 }
               />
@@ -207,7 +226,7 @@ export function TeacherAdviseesPage() {
       <PagePagination
         ariaLabel="Paginação dos orientandos"
         knownCount={knownCount}
-        pageSize={ADVISEES_PAGE_SIZE}
+        pageSize={ADVISEES_SCREEN_PAGE_SIZE}
         lastPage={lastPage}
         page={page}
         onChange={(next) => {
