@@ -1,3 +1,4 @@
+import { createTheme } from '@mui/material';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,6 +7,7 @@ import { activitiesServer, makeActivity } from '../test/activitiesApi';
 import type { FakeActivity } from '../test/activitiesApi';
 import { commentsServer, makeComment } from '../test/commentsApi';
 import type { FakeComment } from '../test/commentsApi';
+import { contrast, opaque } from '../test/contrast';
 import { mockApi, requestsTo } from '../test/mockApi';
 import type { MockResponse } from '../test/mockApi';
 import { renderApp } from '../test/renderApp';
@@ -507,6 +509,58 @@ describe('Linha do tempo: comentar e agir', () => {
     );
   });
 
+  it('depois de enviar para revisão, o evento novo aparece no topo', async () => {
+    const { events } = setup('student', {
+      status: 'in_progress',
+      submissions: FULL.submissions,
+    });
+    const region = await timeline();
+    await within(region).findByText('Atividade criada');
+
+    await events.click(
+      screen.getByRole('button', { name: 'Enviar para revisão' }),
+    );
+    await events.click(
+      within(await screen.findByRole('dialog')).getByRole('button', {
+        name: 'Enviar para revisão',
+      }),
+    );
+
+    await waitFor(() =>
+      expect(
+        cardTitles(screen.getByRole('region', { name: 'Linha do tempo' }))[0],
+      ).toBe('Enviada para revisão'),
+    );
+  });
+
+  it('se a releitura falhar depois de comentar, avisa que foi gravado e deixa tentar de novo', async () => {
+    const control = { failFirst: false, failOlder: false };
+    const { events } = setup('student', FULL, FULL_COMMENTS, {}, control);
+    const region = await timeline();
+    await within(region).findByText('Atividade criada');
+    control.failFirst = true;
+
+    await events.type(
+      within(region).getByLabelText('Novo comentário'),
+      'Comentário novo',
+    );
+    await events.click(
+      within(region).getByRole('button', { name: 'Comentar' }),
+    );
+
+    expect(
+      await within(region).findByText(
+        /Não foi possível atualizar a linha do tempo/,
+      ),
+    ).toBeVisible();
+    expect(within(region).getByText('Atividade criada')).toBeVisible();
+    control.failFirst = false;
+    await events.click(
+      within(region).getByRole('button', { name: 'Tentar novamente' }),
+    );
+    expect(await within(region).findByText('Comentário novo')).toBeVisible();
+  });
+
   it('a posição da rolagem não vai para a URL', async () => {
     const { events } = setup(
       'teacher',
@@ -575,5 +629,61 @@ describe('Linha do tempo: carregamento e erro', () => {
 
     expect(await within(region).findByText('Atividade criada')).toBeVisible();
     expect(within(region).getByText('Início do histórico')).toBeVisible();
+  });
+});
+
+describe('Linha do tempo: dados que a tela não conhece', () => {
+  it('ignora um tipo de evento novo do servidor sem quebrar os outros cartões', async () => {
+    setup('student', {}, [], {
+      [TIMELINE]: () => ({
+        body: {
+          items: [
+            {
+              index: 2,
+              type: 'tipo_novo',
+              id: 9,
+              occurred_at: '2026-11-04T10:00:00Z',
+              author: TEACHER,
+            },
+            {
+              index: 1,
+              type: 'created',
+              id: 5,
+              occurred_at: '2026-11-02T14:30:00Z',
+              author: TEACHER,
+            },
+          ],
+          count: 2,
+          has_more: false,
+        },
+      }),
+    });
+
+    const region = await timeline();
+
+    expect(await within(region).findByText('Atividade criada')).toBeVisible();
+    expect(cardTitles(region)).toEqual(['Atividade criada']);
+  });
+});
+
+describe('Linha do tempo: contraste (WCAG 2.1 AA)', () => {
+  const { primary, success, error } = createTheme().palette;
+  const white: [number, number, number] = [255, 255, 255];
+
+  it.each([
+    ['o selo Aguardando avaliação', primary.main],
+    ['o selo Aceita', success.main],
+    ['o selo Recusada', error.main],
+  ])('%s lê-se sobre o cartão', (_label, color) => {
+    expect(contrast(opaque(color, white), white)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('o número do evento lê-se sobre o círculo', () => {
+    expect(
+      contrast(
+        opaque(primary.contrastText, white),
+        opaque(primary.dark, white),
+      ),
+    ).toBeGreaterThanOrEqual(4.5);
   });
 });

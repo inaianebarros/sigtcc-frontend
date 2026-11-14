@@ -32,7 +32,13 @@ export function useActivityTimeline(activityId: number) {
   const [state, setState] = useState<TimelineState>({ status: 'loading' });
   const [loadingMore, setLoadingMore] = useState(false);
   const [moreFailed, setMoreFailed] = useState(false);
+  const [reloadFailed, setReloadFailed] = useState(false);
   const busy = useRef(false);
+  // A atividade cujos resultados ainda valem: uma resposta tardia de outra é descartada.
+  const current = useRef(activityId);
+  useEffect(() => {
+    current.current = activityId;
+  }, [activityId]);
 
   const load = useCallback(async () => {
     setState({ status: 'loading' });
@@ -62,20 +68,27 @@ export function useActivityTimeline(activityId: number) {
 
   /** Relê o primeiro trecho: o evento novo entra no topo, e os anteriores já carregados ficam. */
   const reload = useCallback(async () => {
-    const fresh = await listTimeline(activityId);
-    setState((current) => {
-      const lowest = fresh.items.at(-1)?.index ?? 0;
-      if (current.status !== 'ready' || lowest <= 1) {
-        return { status: 'ready', ...fresh };
-      }
-      const kept = current.items.filter((item) => item.index < lowest);
-      return {
-        status: 'ready',
-        items: [...fresh.items, ...kept],
-        count: fresh.count,
-        hasMore: kept.length > 0 ? current.hasMore : fresh.hasMore,
-      };
-    });
+    setReloadFailed(false);
+    try {
+      const fresh = await listTimeline(activityId);
+      if (current.current !== activityId) return;
+      setState((now) => {
+        const oldestFresh = fresh.items.at(-1)?.index ?? 0;
+        if (now.status !== 'ready' || oldestFresh <= 1) {
+          return { status: 'ready', ...fresh };
+        }
+        const kept = now.items.filter((item) => item.index < oldestFresh);
+        return {
+          status: 'ready',
+          items: [...fresh.items, ...kept],
+          count: fresh.count,
+          hasMore: kept.length > 0 ? now.hasMore : fresh.hasMore,
+        };
+      });
+    } catch {
+      // O que já está na tela continua; o aviso deixa tentar de novo.
+      if (current.current === activityId) setReloadFailed(true);
+    }
   }, [activityId]);
 
   /** Traz os 10 eventos anteriores ao último carregado e os põe depois dele. */
@@ -88,6 +101,7 @@ export function useActivityTimeline(activityId: number) {
     setMoreFailed(false);
     try {
       const older = await listTimeline(activityId, { before });
+      if (current.current !== activityId) return;
       setState((now) => {
         if (now.status !== 'ready') return now;
         const known = new Set(now.items.map((item) => item.index));
@@ -97,7 +111,7 @@ export function useActivityTimeline(activityId: number) {
             ...now.items,
             ...older.items.filter((item) => !known.has(item.index)),
           ],
-          count: older.count,
+          count: Math.max(now.count, older.count),
           hasMore: older.hasMore,
         };
       });
@@ -109,5 +123,13 @@ export function useActivityTimeline(activityId: number) {
     }
   }, [activityId, state]);
 
-  return { state, load, reload, loadMore, loadingMore, moreFailed };
+  return {
+    state,
+    load,
+    reload,
+    reloadFailed,
+    loadMore,
+    loadingMore,
+    moreFailed,
+  };
 }

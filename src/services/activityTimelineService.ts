@@ -71,7 +71,8 @@ interface ApiTimelineEvent {
   justification?: string;
 }
 
-function eventFrom(event: ApiTimelineEvent): TimelineEvent {
+/** O evento da API, ou `null` para um tipo que esta versão da tela não conhece. */
+function eventFrom(event: ApiTimelineEvent): TimelineEvent | null {
   const base: TimelineBase = {
     index: event.index,
     id: event.id,
@@ -112,6 +113,8 @@ function eventFrom(event: ApiTimelineEvent): TimelineEvent {
     case 'created':
     case 'sent_for_review':
       return { ...base, type: event.type };
+    default:
+      return null;
   }
 }
 
@@ -134,7 +137,9 @@ export async function listTimeline(
     has_more: boolean;
   }>(`/atividades/${activityId}/linha-do-tempo?${params}`);
   return {
-    items: response.items.map(eventFrom),
+    items: response.items
+      .map(eventFrom)
+      .filter((event): event is TimelineEvent => event !== null),
     count: response.count,
     hasMore: response.has_more,
   };

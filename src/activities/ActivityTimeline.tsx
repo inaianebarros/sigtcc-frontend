@@ -45,9 +45,13 @@ export function ActivityTimeline({
     const target = sentinel.current;
     if (!canLoadMore || moreFailed || !target) return;
     if (typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver((entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) void loadMore();
-    });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) void loadMore();
+      },
+      // Começa a carregar um pouco antes de o fim chegar à tela.
+      { rootMargin: '300px' },
+    );
     observer.observe(target);
     return () => observer.disconnect();
   }, [canLoadMore, moreFailed, loadMore]);
@@ -59,7 +63,7 @@ export function ActivityTimeline({
         completed={completed}
         text={commentText}
         onTextChange={onCommentTextChange}
-        onSent={() => void timeline.reload().catch(() => undefined)}
+        onSent={() => void timeline.reload()}
       />
       {state.status === 'loading' && (
         <Stack sx={{ alignItems: 'center', py: 2 }}>
@@ -75,6 +79,23 @@ export function ActivityTimeline({
             Tentar novamente
           </Button>
         </Stack>
+      )}
+      {timeline.reloadFailed && (
+        <Alert
+          severity="error"
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => void timeline.reload()}
+            >
+              Tentar novamente
+            </Button>
+          }
+        >
+          Não foi possível atualizar a linha do tempo. O que você fez foi
+          gravado.
+        </Alert>
       )}
       {state.status === 'ready' && (
         <>
@@ -132,7 +153,11 @@ export function ActivityTimeline({
               </Button>
             </Stack>
           ) : (
-            <Typography color="text.secondary">Início do histórico</Typography>
+            state.items.some((event) => event.index === 1) && (
+              <Typography color="text.secondary">
+                Início do histórico
+              </Typography>
+            )
           )}
         </>
       )}
