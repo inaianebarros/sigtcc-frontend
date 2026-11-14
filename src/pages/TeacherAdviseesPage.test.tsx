@@ -145,7 +145,7 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
 
     const card = cardOf('Orientando 1');
 
-    expect(within(card).getAllByRole('link')).toHaveLength(2);
+    expect(within(card).getAllByRole('link')).toHaveLength(3);
     expect(
       within(card).getByRole('link', { name: 'Orientando 1' }),
     ).toHaveAttribute('href', '/professor/alunos/101');
@@ -154,6 +154,11 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
         name: 'Ver atividades de Orientando 1',
       }),
     ).toHaveAttribute('href', '/professor/atividades?aluno=101');
+    expect(
+      within(card).getByRole('link', {
+        name: 'Ver reuniões de Orientando 1',
+      }),
+    ).toHaveAttribute('href', '/professor/reunioes?aluno=101');
     expect(
       within(card)
         .getAllByRole('button')
@@ -377,6 +382,23 @@ describe('TeacherAdviseesPage: estados, acesso e celular', () => {
     expect(
       within(card).getByRole('list', { name: 'Atividades por status' }),
     ).toBeVisible();
+  });
+});
+
+describe('TeacherAdviseesPage: atalho para as reuniões do orientando', () => {
+  it('o botão "Ver reuniões" abre o calendário de reuniões daquele aluno', async () => {
+    const { user } = setup([makeAdvisee(1), makeAdvisee(2)]);
+    await screen.findByText('Orientando 2');
+    const link = within(cardOf('Orientando 2')).getByRole('link', {
+      name: 'Ver reuniões de Orientando 2',
+    });
+
+    expect(link).toHaveTextContent('Ver reuniões');
+    expect(link).toHaveAttribute('href', '/professor/reunioes?aluno=102');
+    await user.click(link);
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/professor/reunioes',
+    );
   });
 });
 

@@ -46,6 +46,11 @@ export function teacherActivitiesOfStudentPath(studentId: number): string {
   return `${paths.teacherActivities}?${STUDENT_FILTER_PARAM}=${studentId}`;
 }
 
+/** O calendário de reuniões já com só aquele orientando ligado (RN46), para o professor. */
+export function teacherMeetingsOfStudentPath(studentId: number): string {
+  return `${paths.teacherMeetings}?${STUDENT_FILTER_PARAM}=${studentId}`;
+}
+
 export function notificationsPathFor(userType: 'student' | 'teacher'): string {
   return userType === 'student'
     ? paths.studentNotifications

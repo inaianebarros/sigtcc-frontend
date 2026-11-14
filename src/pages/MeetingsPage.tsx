@@ -14,6 +14,7 @@ import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { useSession } from '../hooks/useSession';
 import { CalendarFiltersPanel } from '../meetings/calendar/CalendarFiltersPanel';
+import { useEntryStudent } from '../meetings/calendar/useEntryStudent';
 import { CalendarToolbar } from '../meetings/calendar/CalendarToolbar';
 import { prefillFromClick } from '../meetings/calendar/clickedSlot';
 import type { SlotPrefill } from '../meetings/calendar/clickedSlot';
@@ -110,6 +111,14 @@ export function MeetingsPage() {
   const [hiddenStudentIds, setHiddenStudentIds] = useState<ReadonlySet<number>>(
     new Set(),
   );
+  // O "Ver reuniões" de um orientando abre o calendário só com ele ligado (exceção à RN46): o filtro
+  // de entrada é conferido uma vez, aplicado uma vez, e o calendário só lê depois disso.
+  const entry = useEntryStudent(isTeacher);
+  const [entryApplied, setEntryApplied] = useState(false);
+  if (!entryApplied && !entry.pending) {
+    setEntryApplied(true);
+    if (entry.hiddenStudentIds) setHiddenStudentIds(entry.hiddenStudentIds);
+  }
   const allSituations = situations.size === MEETING_SITUATIONS.length;
   const filtersActive = !allSituations || hiddenStudentIds.size > 0;
   const noSituation = situations.size === 0;
@@ -125,7 +134,7 @@ export function MeetingsPage() {
         hiddenStudentIds: hiddenParam,
       }),
     // Sem nenhuma situação ligada não há o que ler: o servidor entenderia "todas".
-    period === null || noSituation
+    period === null || noSituation || !entryApplied
       ? null
       : `${period.from}|${period.to}|${situationParam.join(',')}|${hiddenParam.join(',')}|${reload}`,
   );
