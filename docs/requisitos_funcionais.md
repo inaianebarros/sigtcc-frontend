@@ -90,7 +90,7 @@ RF44 - **Expirar Solicitação de Orientação:** O sistema deve monitorar o pra
 
 RF45 - **Notificar Aluno sobre Solicitação Não Respondida:** O sistema deve notificar o aluno quando sua solicitação de orientação for marcada como "Não respondida" por ausência de resposta do professor dentro do prazo.
 
-RF46 - **Revisar Atividade:** O sistema deve permitir que o professor aceite ou recuse uma atividade com status em revisão. Em caso de aceitação o status é alterado para concluída. Em caso de recusa o status retorna para pendente e o controle volta ao aluno, e a recusa exige uma justificativa (RN40).
+RF46 - **Revisar Atividade:** O sistema deve permitir que o professor aceite ou recuse uma atividade com status em revisão. Em caso de aceitação o status é alterado para concluída. Em caso de recusa o status retorna para pendente e o controle volta ao aluno, e a recusa exige uma justificativa (RN40) e pode levar arquivos anexos, opcionais (RN48).
 
 RF47 - **Notificar Professor sobre Atividade Aguardando Revisão:** O sistema deve notificar o professor quando uma atividade for submetida pelo aluno para revisão.
 

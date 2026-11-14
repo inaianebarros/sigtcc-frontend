@@ -3,23 +3,23 @@ import { Button, Typography } from '@mui/material';
 import { useState } from 'react';
 import { formatFileSize } from '../formatters/fileSize';
 import { useFeedback } from '../hooks/useFeedback';
-import { downloadSubmissionFile } from '../services/activityService';
 import type { SubmissionFile } from '../services/activityService';
 import { ApiError, messageOf } from '../services/apiError';
 import { saveFile } from './saveFile';
 
 export const FILE_NOT_FOUND_MESSAGE = 'O arquivo não foi encontrado.';
 
-interface SubmissionFileItemProps {
-  activityId: number;
+interface AttachedFileItemProps {
   file: SubmissionFile;
+  /** Busca o conteúdo do arquivo por requisição autenticada; falha com o `ApiError` do servidor. */
+  load: () => Promise<Blob>;
 }
 
-/** Um arquivo de uma Entrega, com a ação de baixar para o aluno e para o orientador (RF31). */
-export function SubmissionFileItem({
-  activityId,
-  file,
-}: SubmissionFileItemProps) {
+/**
+ * Um arquivo guardado, com a ação de baixar para o aluno e para o orientador: o de uma Entrega
+ * (RF31) ou o de um Anexo da Revisão (RN48).
+ */
+export function AttachedFileItem({ file, load }: AttachedFileItemProps) {
   const { notify } = useFeedback();
   const [downloading, setDownloading] = useState(false);
 
@@ -27,10 +27,7 @@ export function SubmissionFileItem({
     if (downloading) return;
     setDownloading(true);
     try {
-      saveFile(
-        await downloadSubmissionFile(activityId, file.id),
-        file.fileName,
-      );
+      saveFile(await load(), file.fileName);
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         notify(FILE_NOT_FOUND_MESSAGE, 'error');

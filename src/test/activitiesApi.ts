@@ -185,8 +185,17 @@ export function activitiesServer(
     }),
     'GET /api/atividades/:id': (_body, _url, params) => {
       const found = state.find((item) => item.id === Number(params.id));
+      // Como o servidor: cada revisão traz sempre a lista `files`, vazia sem anexos.
       return found
-        ? { body: found }
+        ? {
+            body: {
+              ...found,
+              reviews: found.reviews.map((review) => ({
+                ...review,
+                files: review.files ?? [],
+              })),
+            },
+          }
         : { status: 404, body: { detail: 'Atividade não encontrada.' } };
     },
     'POST /api/atividades': (body) => {
@@ -289,6 +298,22 @@ export function activitiesServer(
       const file = found?.submissions
         .flatMap((submission) => submission.files)
         .find((item) => item.id === Number(params.fileId));
+      return file
+        ? {
+            rawBody: `conteúdo de ${file.file_name}`,
+            headers: { 'Content-Type': file.content_type },
+          }
+        : { status: 404, body: { detail: 'Arquivo não encontrado.' } };
+    },
+    'GET /api/atividades/:id/revisoes/:reviewId/arquivos/:fileId': (
+      _body,
+      _url,
+      params,
+    ) => {
+      const found = state.find((item) => item.id === Number(params.id));
+      const file = found?.reviews
+        .find((item) => item.id === Number(params.reviewId))
+        ?.files?.find((item) => item.id === Number(params.fileId));
       return file
         ? {
             rawBody: `conteúdo de ${file.file_name}`,

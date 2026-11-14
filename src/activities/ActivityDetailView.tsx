@@ -3,6 +3,10 @@ import { useId } from 'react';
 import type { ReactNode } from 'react';
 import { formatDate, formatDeadline } from '../formatters/dateTime';
 import { ReadOnlyFacts } from '../profile/ReadOnlyFacts';
+import {
+  downloadReviewFile,
+  downloadSubmissionFile,
+} from '../services/activityService';
 import type {
   ActivityDetail,
   StudentSettableStatus,
@@ -10,7 +14,7 @@ import type {
 import { CommentsSection } from './CommentsSection';
 import { Section } from './Section';
 import { StatusAndDelivery } from './StatusAndDelivery';
-import { SubmissionFileItem } from './SubmissionFileItem';
+import { AttachedFileItem } from './AttachedFileItem';
 import { StatusWithBadge } from './StatusWithBadge';
 
 export const COMPLETED_REASON = 'Atividade concluída não pode ser alterada';
@@ -167,10 +171,10 @@ export function ActivityDetailView({
             </Typography>
             <Box component="ul" sx={{ m: 0, pl: 3 }}>
               {submission.files.map((file) => (
-                <SubmissionFileItem
+                <AttachedFileItem
                   key={file.id}
-                  activityId={activity.id}
                   file={file}
+                  load={() => downloadSubmissionFile(activity.id, file.id)}
                 />
               ))}
             </Box>
@@ -193,6 +197,23 @@ export function ActivityDetailView({
                   >
                     {item.justification}
                   </Typography>
+                )}
+                {item.files.length > 0 && (
+                  <Box
+                    component="ul"
+                    aria-label="Anexos da recusa"
+                    sx={{ m: 0, pl: 3 }}
+                  >
+                    {item.files.map((file) => (
+                      <AttachedFileItem
+                        key={file.id}
+                        file={file}
+                        load={() =>
+                          downloadReviewFile(activity.id, item.id, file.id)
+                        }
+                      />
+                    ))}
+                  </Box>
                 )}
               </li>
             ))}
