@@ -1,15 +1,6 @@
-import {
-  Alert,
-  Button,
-  Skeleton,
-  Stack,
-  Typography,
-  useMediaQuery,
-} from '@mui/material';
-import type { Theme } from '@mui/material';
+import { Alert, Button, Skeleton, Stack, Typography } from '@mui/material';
 import { useRef, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { ActivitiesTable, ActivityCards } from '../activities/ActivitiesTable';
+import { ActivityCards } from '../activities/ActivityCards';
 import { ActivityFormDialog } from '../activities/ActivityFormDialog';
 import { ActivityFiltersBar } from '../activities/ActivityFiltersBar';
 import type { ActivityFormValues } from '../activities/activityForm';
@@ -22,9 +13,6 @@ import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
 import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
-import { OriginLink } from '../navigation/OriginLink';
-import { originState } from '../navigation/origin';
-import { activityPath } from '../navigation/paths';
 import {
   ACTIVITIES_PAGE_SIZE,
   createActivity,
@@ -39,17 +27,12 @@ export function ActivitiesPage() {
   const { user } = useSession();
   const { notify } = useFeedback();
   const notifyStateChanged = useStateChangedNotice();
-  const navigate = useNavigate();
-  const location = useLocation();
   const isTeacher = user?.type === 'teacher';
   const userType = isTeacher ? 'teacher' : 'student';
   const filters = useActivityFilters(isTeacher);
   const [page, setPage] = useUrlPage();
   const [reload, setReload] = useState(0);
   const listTop = useRef<HTMLDivElement>(null);
-  const isNarrow = useMediaQuery((theme: Theme) =>
-    theme.breakpoints.down('md'),
-  );
   const list = useLoad(
     () =>
       listActivities({
@@ -103,15 +86,6 @@ export function ActivitiesPage() {
     notifyStateChanged(error);
     setReload((current) => current + 1);
   };
-
-  const openActivity = (item: { id: number }) =>
-    navigate(activityPath(userType, item.id), {
-      state: originState(location),
-    });
-
-  const renderTitle = (item: { id: number; title: string }) => (
-    <OriginLink to={activityPath(userType, item.id)}>{item.title}</OriginLink>
-  );
 
   return (
     <Stack spacing={3}>
@@ -179,23 +153,11 @@ export function ActivitiesPage() {
           </Alert>
         )}
         {list.status === 'ready' && list.data.items.length > 0 && (
-          <>
-            {isNarrow ? (
-              <ActivityCards
-                items={list.data.items}
-                showStudent={isTeacher}
-                renderTitle={renderTitle}
-                onOpen={openActivity}
-              />
-            ) : (
-              <ActivitiesTable
-                items={list.data.items}
-                showStudent={isTeacher}
-                renderTitle={renderTitle}
-                onOpen={openActivity}
-              />
-            )}
-          </>
+          <ActivityCards
+            items={list.data.items}
+            showStudent={isTeacher}
+            userType={userType}
+          />
         )}
       </div>
       <PagePagination
