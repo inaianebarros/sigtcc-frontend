@@ -13,7 +13,6 @@ import { AreaPage } from './pages/AreaPage';
 import { ChangePasswordPage } from './pages/ChangePasswordPage';
 import { ComingSoonPage } from './pages/ComingSoonPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
-import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
 import { MeetingsPage } from './pages/MeetingsPage';
 import { TeacherAdviseesPage } from './pages/TeacherAdviseesPage';
@@ -70,7 +69,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<HomePage />} />
+        <Route index element={<Navigate to={paths.login} replace />} />
         <Route path={paths.login} element={<LoginPage />} />
         <Route path={paths.forgotPassword} element={<ForgotPasswordPage />} />
         <Route path={paths.resetPassword} element={<ResetPasswordPage />} />
