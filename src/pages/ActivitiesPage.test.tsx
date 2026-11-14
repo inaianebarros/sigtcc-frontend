@@ -30,8 +30,9 @@ function listRequests(fetchMock: ReturnType<typeof mockApi>) {
   );
 }
 
-function rowOf(title: string) {
-  return screen.getByRole('row', { name: new RegExp(title) });
+/** O cartão da atividade: o link inteiro, cujo nome reúne título, aluno, prazo e situação. */
+function cardOf(title: string) {
+  return screen.getByRole('link', { name: new RegExp(title) });
 }
 
 beforeEach(() => {
@@ -41,7 +42,7 @@ beforeEach(() => {
 });
 
 describe('ActivitiesPage: a lista do aluno', () => {
-  it('mostra o título, o prazo, a situação e o selo Atrasada só quando o servidor diz que está atrasada', async () => {
+  it('mostra o título, o prazo dd/mm/aaaa, a situação em pílula e o selo Atrasada só quando o servidor diz que está atrasada', async () => {
     setup(
       [
         makeActivity(1, {
@@ -72,26 +73,84 @@ describe('ActivitiesPage: a lista do aluno', () => {
     ).toBeInTheDocument();
     await screen.findByText('Capítulo 2');
 
+    expect(within(cardOf('Capítulo 2')).getByText('31/12/2026')).toBeVisible();
     expect(
-      within(rowOf('Capítulo 2')).getByText('31 de dezembro de 2026'),
+      within(cardOf('Capítulo 2')).getByText('Em andamento'),
     ).toBeVisible();
-    expect(within(rowOf('Capítulo 2')).getByText('Em andamento')).toBeVisible();
-    expect(within(rowOf('Resumo')).getByText('Pendente')).toBeVisible();
-    expect(within(rowOf('Conclusão')).getByText('Concluída')).toBeVisible();
+    expect(within(cardOf('Resumo')).getByText('Pendente')).toBeVisible();
+    expect(within(cardOf('Resumo')).getByText('01/01/2020')).toBeVisible();
+    expect(within(cardOf('Conclusão')).getByText('Concluída')).toBeVisible();
     expect(screen.getAllByText('Atrasada')).toHaveLength(1);
-    expect(within(rowOf('Introdução')).getByText('Atrasada')).toBeVisible();
-    // O status original continua visível ao lado do selo.
-    expect(within(rowOf('Introdução')).getByText('Pendente')).toBeVisible();
+    expect(within(cardOf('Introdução')).getByText('Atrasada')).toBeVisible();
+    // A situação original continua visível ao lado do selo.
+    expect(within(cardOf('Introdução')).getByText('Pendente')).toBeVisible();
   });
 
-  it('não mostra a coluna do aluno nem o botão Nova atividade', async () => {
+  it('mostra a situação em pílula, e não como texto solto', async () => {
+    setup(
+      [makeActivity(1, { title: 'Capítulo 2', status: 'in_review' })],
+      'student',
+    );
+
+    const pill = within(
+      await screen.findByRole('link', { name: /Capítulo 2/ }),
+    ).getByText('Em revisão');
+
+    expect(pill.closest('.MuiChip-root')).not.toBeNull();
+  });
+
+  it('não escreve nome de campo dentro do cartão', async () => {
+    setup(
+      [
+        makeActivity(1, {
+          title: 'Capítulo 2',
+          deadline: '2026-12-31',
+          student: { id: 101, full_name: 'Maria Lima' },
+        }),
+      ],
+      'teacher',
+    );
+
+    const card = await screen.findByRole('link', { name: /Capítulo 2/ });
+
+    expect(card.textContent).toBe('Capítulo 2Maria Lima31/12/2026Pendente');
+    for (const field of [/Prazo/, /Título/, /Aluno/, /Situação/]) {
+      expect(card.textContent).not.toMatch(field);
+    }
+  });
+
+  it('o ícone do prazo é anunciado como Prazo pelo leitor de tela, sem rótulo visível', async () => {
+    setup(
+      [makeActivity(1, { title: 'Capítulo 2', deadline: '2026-12-31' })],
+      'student',
+    );
+
+    const card = await screen.findByRole('link', { name: /Capítulo 2/ });
+
+    expect(
+      within(card).getByRole('img', { name: 'Prazo' }),
+    ).toBeInTheDocument();
+    expect(within(card).queryByText('Prazo')).not.toBeInTheDocument();
+    expect(card).toHaveAccessibleName(
+      /Capítulo 2.*Prazo.*31\/12\/2026.*Pendente/,
+    );
+  });
+
+  it('a seta do cartão é decorativa', async () => {
+    setup([makeActivity(1, { title: 'Capítulo 2' })], 'student');
+
+    const card = await screen.findByRole('link', { name: /Capítulo 2/ });
+
+    const arrow = card.querySelector('[data-testid="ChevronRightIcon"]');
+    expect(arrow).not.toBeNull();
+    expect(arrow).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('não mostra o nome do aluno nem o botão Nova atividade', async () => {
     setup([makeActivity(1)], 'student');
 
     await screen.findByText('Atividade 1');
 
-    expect(
-      screen.queryByRole('columnheader', { name: 'Aluno' }),
-    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Nova atividade' }),
     ).not.toBeInTheDocument();
@@ -103,23 +162,67 @@ describe('ActivitiesPage: a lista do aluno', () => {
       'student',
     );
 
-    await events.click(await screen.findByRole('link', { name: 'Capítulo 2' }));
+    await events.click(await screen.findByRole('link', { name: /Capítulo 2/ }));
 
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/aluno/atividades/5',
     );
   });
 
-  it('a linha inteira abre o detalhe, e não só o título', async () => {
+  it('o cartão inteiro abre o detalhe, e não só o título', async () => {
     const { events } = setup(
       [makeActivity(5, { title: 'Capítulo 2', deadline: '2026-12-31' })],
       'student',
     );
 
-    await events.click(await screen.findByText('31 de dezembro de 2026'));
+    await events.click(await screen.findByText('31/12/2026'));
 
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/aluno/atividades/5',
+    );
+  });
+
+  it('cada cartão tem um só link, operável pelo teclado', async () => {
+    const { events } = setup(
+      [
+        makeActivity(1, { title: 'Capítulo 2' }),
+        makeActivity(2, { title: 'Resumo' }),
+      ],
+      'student',
+    );
+    await screen.findByText('Capítulo 2');
+    expect(
+      screen.getAllByRole('link', { name: /Capítulo 2|Resumo/ }),
+    ).toHaveLength(2);
+
+    const first = screen.getAllByRole('link', {
+      name: /Capítulo 2|Resumo/,
+    })[0]!;
+    first.focus();
+    expect(first).toHaveFocus();
+    expect(first).toHaveAccessibleName(/Capítulo 2|Resumo/);
+    await events.keyboard('{Enter}');
+
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /\/aluno\/atividades\/\d/,
+    );
+  });
+
+  it('leva a lista de onde veio, com a página e os filtros, para o Voltar do detalhe', async () => {
+    const { events } = setup(
+      [makeActivity(5, { title: 'Capítulo 2', status: 'in_progress' })],
+      'student',
+      '/aluno/atividades?situacao=in_progress',
+    );
+
+    await events.click(await screen.findByRole('link', { name: /Capítulo 2/ }));
+
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/aluno/atividades/5',
+    );
+    await events.click(await screen.findByRole('link', { name: /Voltar/ }));
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      '/aluno/atividades?situacao=in_progress',
     );
   });
 
@@ -136,7 +239,7 @@ describe('ActivitiesPage: a lista do aluno', () => {
 });
 
 describe('ActivitiesPage: a lista do professor', () => {
-  it('mostra a coluna do aluno e o botão Nova atividade', async () => {
+  it('mostra o nome do aluno no cartão, sem rótulo, e o botão Nova atividade', async () => {
     setup(
       [
         makeActivity(1, {
@@ -149,8 +252,7 @@ describe('ActivitiesPage: a lista do professor', () => {
 
     await screen.findByText('Capítulo 2');
 
-    expect(screen.getByRole('columnheader', { name: 'Aluno' })).toBeVisible();
-    expect(within(rowOf('Capítulo 2')).getByText('Maria Lima')).toBeVisible();
+    expect(within(cardOf('Capítulo 2')).getByText('Maria Lima')).toBeVisible();
     expect(
       screen.getByRole('button', { name: 'Nova atividade' }),
     ).toBeVisible();
@@ -427,18 +529,18 @@ describe('ActivitiesPage: carregamento, erro e celular', () => {
   it('no celular o cartão inteiro abre o detalhe', async () => {
     setViewportWidth(PHONE_WIDTH);
     const { events } = setup(
-      [makeActivity(5, { title: 'Capítulo 2' })],
+      [makeActivity(5, { title: 'Capítulo 2', deadline: '2026-12-31' })],
       'student',
     );
 
-    await events.click(await screen.findByText(/Prazo:/));
+    await events.click(await screen.findByText('31/12/2026'));
 
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/aluno/atividades/5',
     );
   });
 
-  it('no celular mostra cartões, com o selo Atrasada, em vez da tabela', async () => {
+  it('no celular mostra os mesmos cartões, com o selo Atrasada, e nenhuma tabela', async () => {
     setViewportWidth(PHONE_WIDTH);
     setup(
       [
@@ -451,11 +553,38 @@ describe('ActivitiesPage: carregamento, erro e celular', () => {
       'teacher',
     );
 
-    const card = await screen.findByRole('article', { name: /Capítulo 2/ });
+    const card = await screen.findByRole('link', { name: /Capítulo 2/ });
 
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(within(card).getByText('Atrasada')).toBeVisible();
     expect(within(card).getByText('Maria Lima')).toBeVisible();
     expect(within(card).getByText('Pendente')).toBeVisible();
+  });
+
+  it('no desktop também não há tabela: a lista é a mesma lista de cartões', async () => {
+    setup([makeActivity(1, { title: 'Capítulo 2' })], 'student');
+
+    await screen.findByRole('link', { name: /Capítulo 2/ });
+
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Atividades' })).toBeVisible();
+  });
+
+  it('a lista segue a ordem do servidor, sem reordenar no cliente', async () => {
+    setup(
+      [
+        makeActivity(1, { title: 'Zebra', deadline: '2026-12-31' }),
+        makeActivity(2, { title: 'Abelha', deadline: '2026-01-01' }),
+        makeActivity(3, { title: 'Macaco', deadline: '2026-06-01' }),
+      ],
+      'student',
+    );
+
+    const list = await screen.findByRole('list', { name: 'Atividades' });
+
+    const titles = within(list)
+      .getAllByRole('heading', { level: 2 })
+      .map((heading) => heading.textContent);
+    expect(titles).toEqual(['Zebra', 'Abelha', 'Macaco']);
   });
 });

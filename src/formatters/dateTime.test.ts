@@ -4,6 +4,7 @@ import {
   formatDateTime,
   formatDateTimeRange,
   formatDeadline,
+  formatDeadlineShort,
 } from './dateTime';
 
 describe('formatDate e formatDateTime', () => {
@@ -47,5 +48,21 @@ describe('formatDateTimeRange', () => {
     expect(formatDateTimeRange('lixo', '2026-11-02T14:30:00Z')).toBe(
       'data indisponível',
     );
+  });
+});
+
+describe('formatDeadlineShort', () => {
+  it('escreve o prazo como dd/mm/aaaa, sem passar pelo fuso', () => {
+    expect(formatDeadlineShort('2026-12-31')).toBe('31/12/2026');
+    expect(formatDeadlineShort('2026-01-05')).toBe('05/01/2026');
+  });
+
+  it('não é uma data quando o texto é inválido ou o dia não existe', () => {
+    expect(formatDeadlineShort('2026-02-30')).toBe('data indisponível');
+    expect(formatDeadlineShort('31/12/2026')).toBe('data indisponível');
+    expect(formatDeadlineShort('2026-12-31T10:00:00Z')).toBe(
+      'data indisponível',
+    );
+    expect(formatDeadlineShort('')).toBe('data indisponível');
   });
 });

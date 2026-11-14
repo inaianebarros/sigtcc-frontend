@@ -49,22 +49,36 @@ const deadlineFormat = new Intl.DateTimeFormat('pt-BR', {
 });
 
 /**
- * Uma data sem hora, como o prazo de uma atividade (AAAA-MM-DD): vale o mesmo dia em qualquer
- * fuso, então ela não passa pelo horário da instituição, que a faria cair no dia anterior.
+ * Lê um prazo sem hora (AAAA-MM-DD): o dia não passa pelo horário da instituição, que o faria cair
+ * no dia anterior. Um dia que não existe, como 30 de fevereiro, rolaria para o mês seguinte: não é
+ * uma data.
  */
-export function formatDeadline(isoDate: string): string {
+function parseDeadline(isoDate: string): { date: Date; text: string[] } | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
-  if (!match) return UNAVAILABLE;
+  if (!match) return null;
   const [year, month, day] = [
     Number(match[1]),
     Number(match[2]),
     Number(match[3]),
   ];
   const date = new Date(Date.UTC(year, month - 1, day));
-  // Um dia que não existe, como 30 de fevereiro, rolaria para o mês seguinte: não é uma data.
   const exists =
     date.getUTCFullYear() === year &&
     date.getUTCMonth() === month - 1 &&
     date.getUTCDate() === day;
-  return exists ? deadlineFormat.format(date) : UNAVAILABLE;
+  return exists ? { date, text: [match[1]!, match[2]!, match[3]!] } : null;
+}
+
+/** O prazo de uma atividade, por extenso, a partir da data sem hora (AAAA-MM-DD). */
+export function formatDeadline(isoDate: string): string {
+  const parsed = parseDeadline(isoDate);
+  return parsed ? deadlineFormat.format(parsed.date) : UNAVAILABLE;
+}
+
+/** O prazo de uma atividade como `dd/mm/aaaa`, a partir da data sem hora (AAAA-MM-DD). */
+export function formatDeadlineShort(isoDate: string): string {
+  const parsed = parseDeadline(isoDate);
+  if (!parsed) return UNAVAILABLE;
+  const [year, month, day] = parsed.text;
+  return `${day}/${month}/${year}`;
 }
