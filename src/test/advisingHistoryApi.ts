@@ -25,6 +25,13 @@ export function makeEndedAdvising(
   };
 }
 
+function plain(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
 type Handler = MockResponse | ((body: unknown, url: URL) => MockResponse);
 
 /** Um servidor simulado do perfil dado: pagina como a API real e mantém a ordem recebida. */
@@ -32,6 +39,8 @@ export function historyRoutes(
   items: FakeEndedAdvising[],
   user: 'student' | 'teacher' = 'student',
   list?: Handler,
+  summary?: Handler,
+  activeCount = 4,
 ): Record<string, Handler> {
   return {
     'POST /api/auth/refresh': { body: { access_token: 't' } },
@@ -60,12 +69,26 @@ export function historyRoutes(
           url.searchParams.get('limit') ?? HISTORY_PAGE_SIZE,
         );
         const offset = Number(url.searchParams.get('offset') ?? 0);
+        const search = plain(url.searchParams.get('search') ?? '');
+        const found = items.filter(
+          (item) =>
+            plain(item.counterpart.full_name).includes(search) ||
+            plain(item.thesis_topic ?? '').includes(search),
+        );
         return {
           body: {
-            items: items.slice(offset, offset + limit),
-            count: items.length,
+            items: found.slice(offset, offset + limit),
+            count: found.length,
           },
         };
       }),
+    'GET /api/orientacao/historico/resumo':
+      summary ??
+      (() => ({
+        body: {
+          ended_count: items.length,
+          active_count: user === 'teacher' ? activeCount : null,
+        },
+      })),
   };
 }

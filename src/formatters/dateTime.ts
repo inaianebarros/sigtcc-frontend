@@ -5,6 +5,10 @@ const dateFormat = new Intl.DateTimeFormat('pt-BR', {
   dateStyle: 'long',
   timeZone: TIME_ZONE,
 });
+const shortDateFormat = new Intl.DateTimeFormat('pt-BR', {
+  dateStyle: 'short',
+  timeZone: TIME_ZONE,
+});
 const timeFormat = new Intl.DateTimeFormat('pt-BR', {
   timeStyle: 'short',
   timeZone: TIME_ZONE,
@@ -21,6 +25,12 @@ function parse(iso: string): Date | null {
 export function formatDate(iso: string): string {
   const date = parse(iso);
   return date ? dateFormat.format(date) : UNAVAILABLE;
+}
+
+/** Por exemplo, "02/11/2026". */
+export function formatShortDate(iso: string): string {
+  const date = parse(iso);
+  return date ? shortDateFormat.format(date) : UNAVAILABLE;
 }
 
 /** Por exemplo, "2 de novembro de 2026, às 11:30". */

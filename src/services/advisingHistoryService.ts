@@ -33,14 +33,20 @@ interface ApiEndedAdvising {
   thesis_topic: string | null;
 }
 
-/** O histórico do usuário (RF49): do encerramento mais recente para o mais antigo, paginado. */
+/**
+ * O histórico do usuário (RF49): do encerramento mais recente para o mais antigo, paginado.
+ * `search` filtra no servidor pelo nome da outra parte ou pelo tema, sem diferenciar acentos nem
+ * maiúsculas.
+ */
 export async function listAdvisingHistory(
   page: number,
+  search?: string,
 ): Promise<EndedAdvisingPage> {
   const params = new URLSearchParams({
     limit: String(HISTORY_PAGE_SIZE),
     offset: String((page - 1) * HISTORY_PAGE_SIZE),
   });
+  if (search) params.set('search', search);
   const response = await httpClient.get<ApiEndedAdvisingPage>(
     `/orientacao/historico?${params}`,
   );
@@ -57,5 +63,24 @@ export async function listAdvisingHistory(
       reason: item.reason,
       thesisTopic: item.thesis_topic,
     })),
+  };
+}
+
+export interface AdvisingHistorySummary {
+  /** As orientações encerradas do usuário, sem filtro. */
+  endedCount: number;
+  /** As orientações ativas do professor; `null` para o aluno, que não tem esse total. */
+  activeCount: number | null;
+}
+
+/** Os totais do topo do histórico: gerais, e não mudam com a busca. */
+export async function getAdvisingHistorySummary(): Promise<AdvisingHistorySummary> {
+  const response = await httpClient.get<{
+    ended_count: number;
+    active_count: number | null;
+  }>('/orientacao/historico/resumo');
+  return {
+    endedCount: response.ended_count,
+    activeCount: response.active_count,
   };
 }

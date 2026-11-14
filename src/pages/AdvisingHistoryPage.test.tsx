@@ -54,12 +54,19 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     await screen.findByText('Pessoa 7');
 
     expect(
-      screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent),
+      screen
+        .getAllByRole('article')
+        .map((card) => within(card).getByRole('heading').textContent),
     ).toEqual(['Pessoa 7', 'Pessoa 3', 'Pessoa 5']);
-    expect(screen.getByText('3 orientações encerradas')).toBeVisible();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Orientações anteriores' }),
+    ).toBeVisible();
+    expect(
+      screen.getByText('Consulte os registros das orientações encerradas.'),
+    ).toBeVisible();
   });
 
-  it('mostra no cartão o professor, o início, o encerramento, o motivo e o tema congelado', async () => {
+  it('mostra no cartão o professor, o tema congelado, o início e o encerramento, sem o motivo', async () => {
     setup([
       makeEndedAdvising(1, {
         counterpart: { id: 50, full_name: 'Paulo Professor' },
@@ -73,31 +80,49 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
 
     const card = cardOf('Paulo Professor');
 
-    expect(within(card).getByText('Professor orientador')).toBeVisible();
+    expect(within(card).getByText('Encerrada')).toBeVisible();
+    expect(within(card).getByText('Tema da orientação')).toBeVisible();
     expect(
-      within(card).getByText('Orientação iniciada em 3 de agosto de 2026'),
+      within(card).getByText('Aprendizado de máquina na saúde'),
     ).toBeVisible();
+    expect(within(card).getByText('Início')).toBeVisible();
+    expect(within(card).getByText('03/08/2026')).toBeVisible();
+    expect(within(card).getByText('Encerramento')).toBeVisible();
+    expect(within(card).getByText('02/11/2026')).toBeVisible();
     expect(
-      within(card).getByText('Orientação encerrada em 2 de novembro de 2026'),
-    ).toBeVisible();
+      within(card).queryByText('Motivo do encerramento'),
+    ).not.toBeInTheDocument();
     expect(
-      within(card).getByText('Concluímos o ciclo de orientação do TCC.'),
-    ).toBeVisible();
-    expect(
-      within(card).getByText('Tema: Aprendizado de máquina na saúde'),
-    ).toBeVisible();
+      within(card).queryByText('Concluímos o ciclo de orientação do TCC.'),
+    ).not.toBeInTheDocument();
   });
 
-  it('o motivo e o tema ficam sob rótulos próprios, para o leitor de tela', async () => {
+  it('o nome do professor leva ao perfil dele', async () => {
+    setup([
+      makeEndedAdvising(1, {
+        counterpart: { id: 50, full_name: 'Paulo Professor' },
+      }),
+    ]);
+    await screen.findByText('Paulo Professor');
+
+    expect(
+      within(cardOf('Paulo Professor')).getByRole('link', {
+        name: 'Paulo Professor',
+      }),
+    ).toHaveAttribute('href', '/aluno/orientadores/50');
+  });
+
+  it('mostra "Ver relatório" só como texto, sem link nem botão', async () => {
     setup([makeEndedAdvising(1)]);
     await screen.findByText('Pessoa 1');
 
     const card = cardOf('Pessoa 1');
 
-    expect(within(card).getByText('Motivo do encerramento')).toBeVisible();
+    expect(within(card).getByText('Ver relatório')).toBeVisible();
     expect(
-      within(card).getByText('Concluímos o ciclo da orientação 1.'),
-    ).toBeVisible();
+      within(card).queryByRole('link', { name: /Ver relatório/ }),
+    ).not.toBeInTheDocument();
+    expect(within(card).queryByRole('button')).not.toBeInTheDocument();
   });
 
   it('mostra "Sem tema cadastrado" quando a orientação não teve tema', async () => {
@@ -107,7 +132,52 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     const card = cardOf('Pessoa 1');
 
     expect(within(card).getByText('Sem tema cadastrado')).toBeVisible();
-    expect(within(card).queryByText(/^Tema:/)).not.toBeInTheDocument();
+  });
+
+  it('mostra só o total de orientações encerradas, sem o de orientandos', async () => {
+    setup([makeEndedAdvising(1), makeEndedAdvising(2), makeEndedAdvising(3)]);
+
+    const total = await screen.findByRole('group', {
+      name: 'Orientações encerradas',
+    });
+
+    expect(within(total).getByText('3')).toBeVisible();
+    expect(
+      screen.queryByRole('group', { name: 'Orientandos' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('o campo se chama "Buscar orientador" e a busca vai ao servidor, sem acento e por tema', async () => {
+    const { fetchMock, user } = setup([
+      makeEndedAdvising(1, {
+        counterpart: { id: 50, full_name: 'Márcia Professora' },
+        thesis_topic: 'Redes neurais',
+      }),
+      makeEndedAdvising(2, {
+        counterpart: { id: 51, full_name: 'João Orientador' },
+        thesis_topic: 'Banco de dados',
+      }),
+    ]);
+    await screen.findByText('Márcia Professora');
+
+    await user.type(screen.getByLabelText('Buscar orientador'), 'marcia');
+
+    await waitFor(() =>
+      expect(screen.queryByText('João Orientador')).not.toBeInTheDocument(),
+    );
+    expect(await screen.findByText('Márcia Professora')).toBeVisible();
+    expect(
+      new URL(
+        String(requestsTo(fetchMock, LIST).at(-1)?.[0]),
+        'http://localhost',
+      ).searchParams.get('search'),
+    ).toBe('marcia');
+    expect(screen.getByTestId('location')).toHaveTextContent('?busca=marcia');
+    expect(screen.getByText('1 orientação encontrada')).toBeVisible();
+
+    await user.clear(screen.getByLabelText('Buscar orientador'));
+    await user.type(screen.getByLabelText('Buscar orientador'), 'dados');
+    expect(await screen.findByText('João Orientador')).toBeVisible();
   });
 
   it('sem orientações encerradas, mostra um estado vazio que explica o que aparece ali', async () => {
@@ -121,6 +191,25 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
       screen.queryByRole('navigation', { name: 'Paginação do histórico' }),
     ).not.toBeInTheDocument();
   });
+
+  it('busca sem resultado mostra o aviso e "Limpar busca" traz a lista de volta', async () => {
+    const { user } = setup([makeEndedAdvising(1)], {
+      path: '/aluno/historico?busca=zzz',
+    });
+
+    expect(
+      await screen.findByText(/Nenhuma orientação encontrada para essa busca/),
+    ).toBeVisible();
+    expect(screen.getByLabelText('Buscar orientador')).toHaveValue('zzz');
+
+    await user.click(screen.getByRole('button', { name: 'Limpar busca' }));
+
+    expect(await screen.findByText('Pessoa 1')).toBeVisible();
+    expect(screen.getByLabelText('Buscar orientador')).toHaveValue('');
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/aluno\/historico$/,
+    );
+  });
 });
 
 describe('AdvisingHistoryPage: o histórico do professor', () => {
@@ -131,23 +220,71 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
           counterpart: { id: 70, full_name: 'Ana Souza' },
         }),
       ],
-      {
-        user: 'teacher',
-      },
+      { user: 'teacher' },
     );
 
-    const card = await screen.findByRole('article', { name: 'Ana Souza' });
+    await screen.findByRole('article', { name: 'Ana Souza' });
 
-    expect(within(card).getByText('Aluno')).toBeVisible();
-    expect(
-      within(card).queryByText('Professor orientador'),
-    ).not.toBeInTheDocument();
     expect(
       screen.getByRole('heading', {
         level: 1,
         name: 'Histórico de orientações',
       }),
     ).toBeInTheDocument();
+  });
+
+  it('o nome do aluno leva ao perfil dele', async () => {
+    setup(
+      [
+        makeEndedAdvising(1, {
+          counterpart: { id: 70, full_name: 'Ana Souza' },
+        }),
+      ],
+      { user: 'teacher' },
+    );
+    await screen.findByText('Ana Souza');
+
+    expect(
+      within(cardOf('Ana Souza')).getByRole('link', { name: 'Ana Souza' }),
+    ).toHaveAttribute('href', '/professor/alunos/70');
+  });
+
+  it('mostra os totais de orientações encerradas e de orientandos', async () => {
+    setup([makeEndedAdvising(1), makeEndedAdvising(2)], { user: 'teacher' });
+
+    const ended = await screen.findByRole('group', {
+      name: 'Orientações encerradas',
+    });
+    const active = screen.getByRole('group', { name: 'Orientandos' });
+
+    expect(within(ended).getByText('2')).toBeVisible();
+    expect(within(active).getByText('4')).toBeVisible();
+  });
+
+  it('os totais não mudam com a busca, e o campo se chama "Buscar orientando"', async () => {
+    const { user } = setup(
+      [
+        makeEndedAdvising(1, {
+          counterpart: { id: 70, full_name: 'Ana Souza' },
+        }),
+        makeEndedAdvising(2, {
+          counterpart: { id: 71, full_name: 'Bruno Lima' },
+        }),
+      ],
+      { user: 'teacher' },
+    );
+    await screen.findByText('Ana Souza');
+
+    await user.type(screen.getByLabelText('Buscar orientando'), 'bruno');
+
+    await waitFor(() =>
+      expect(screen.queryByText('Ana Souza')).not.toBeInTheDocument(),
+    );
+    expect(
+      within(
+        screen.getByRole('group', { name: 'Orientações encerradas' }),
+      ).getByText('2'),
+    ).toBeVisible();
   });
 
   it('sem orientações encerradas, o estado vazio fala das orientações que o professor encerrou', async () => {
@@ -242,7 +379,7 @@ describe('AdvisingHistoryPage: o celular', () => {
 
     const card = await screen.findByRole('article', { name: 'Pessoa 1' });
 
-    expect(within(card).getByText('Motivo do encerramento')).toBeVisible();
-    expect(within(card).getByText('Tema: Tema da orientação 1')).toBeVisible();
+    expect(within(card).getByText('Tema da orientação 1')).toBeVisible();
+    expect(within(card).getByText('Ver relatório')).toBeVisible();
   });
 });
