@@ -93,26 +93,32 @@ interface ApiDetail extends ApiItem {
   submissions: {
     id: number;
     submitted_at: string;
-    files: {
-      id: number;
-      file_name: string;
-      size_bytes: number;
-      content_type: string;
-    }[];
+    files: ApiFile[];
   }[];
   reviews: {
     id: number;
     decision: ReviewDecision;
     justification: string;
     decided_at: string;
-    files: {
-      id: number;
-      file_name: string;
-      size_bytes: number;
-      content_type: string;
-    }[];
+    files: ApiFile[];
   }[];
   comments_count: number;
+}
+
+interface ApiFile {
+  id: number;
+  file_name: string;
+  size_bytes: number;
+  content_type: string;
+}
+
+function fileFrom(file: ApiFile): SubmissionFile {
+  return {
+    id: file.id,
+    fileName: file.file_name,
+    sizeBytes: file.size_bytes,
+    contentType: file.content_type,
+  };
 }
 
 function itemFrom(item: ApiItem): ActivityItem {
@@ -137,24 +143,14 @@ function detailFrom(detail: ApiDetail): ActivityDetail {
     submissions: detail.submissions.map((submission) => ({
       id: submission.id,
       submittedAt: submission.submitted_at,
-      files: submission.files.map((file) => ({
-        id: file.id,
-        fileName: file.file_name,
-        sizeBytes: file.size_bytes,
-        contentType: file.content_type,
-      })),
+      files: submission.files.map(fileFrom),
     })),
     reviews: detail.reviews.map((review) => ({
       id: review.id,
       decision: review.decision,
       justification: review.justification,
       decidedAt: review.decided_at,
-      files: review.files.map((file) => ({
-        id: file.id,
-        fileName: file.file_name,
-        sizeBytes: file.size_bytes,
-        contentType: file.content_type,
-      })),
+      files: review.files.map(fileFrom),
     })),
     commentsCount: detail.comments_count,
   };

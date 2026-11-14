@@ -201,7 +201,7 @@ export function ActivityDetailView({
                 {item.files.length > 0 && (
                   <Box
                     component="ul"
-                    aria-label="Anexos da recusa"
+                    aria-label={`Anexos da recusa de ${formatDate(item.decidedAt)}`}
                     sx={{ m: 0, pl: 3 }}
                   >
                     {item.files.map((file) => (

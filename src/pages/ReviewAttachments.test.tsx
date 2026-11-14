@@ -125,7 +125,9 @@ describe('Revisões: os anexos da recusa', () => {
       expect(within(first).getByText('versão corrigida.zip')).toBeVisible();
       expect(within(first).getByText(/3,0 MB, application\/zip/)).toBeVisible();
       expect(
-        within(first).getByRole('list', { name: 'Anexos da recusa' }),
+        within(first).getByRole('list', {
+          name: 'Anexos da recusa de 6 de novembro de 2026',
+        }),
       ).toBeVisible();
     },
   );
@@ -138,7 +140,7 @@ describe('Revisões: os anexos da recusa', () => {
     expect(within(section).getByText('Só texto.')).toBeVisible();
     expect(within(section).getByText(/Aceita em/)).toBeVisible();
     expect(
-      within(section).getAllByRole('list', { name: 'Anexos da recusa' }),
+      within(section).getAllByRole('list', { name: /^Anexos da recusa de/ }),
     ).toHaveLength(1);
     expect(within(section).queryByText(/Nenhum anexo/)).not.toBeInTheDocument();
   });
@@ -227,12 +229,12 @@ describe('Revisões: os anexos da recusa', () => {
 
   it.each([
     [404, 'O arquivo não foi encontrado.'],
-    [503, 'Não foi possível obter o arquivo. Tente novamente.'],
+    [503, 'Ocorreu um erro no servidor. Tente novamente em instantes.'],
   ])(
     'um %i no download mostra uma mensagem informativa e deixa tentar de novo',
     async (status, message) => {
       const { events } = setup('student', {
-        [DOWNLOAD]: { status, body: { detail: message } },
+        [DOWNLOAD]: { status, body: {} },
       });
 
       await events.click(await downloadButton('correcoes.pdf'));
@@ -247,7 +249,11 @@ describe('Revisões: os anexos da recusa', () => {
     const { events } = setup();
     const button = await downloadButton('correcoes.pdf');
 
-    button.focus();
+    // O foco chega ao botão pela ordem de tabulação, sem armadilha de foco antes dele.
+    for (let step = 0; step < 30 && document.activeElement !== button; step++) {
+      await events.tab();
+    }
+    expect(button).toHaveFocus();
     await events.keyboard('{Enter}');
 
     await waitFor(() => expect(saved).toHaveLength(1));
