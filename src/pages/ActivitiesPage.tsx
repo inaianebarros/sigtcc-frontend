@@ -2,6 +2,7 @@ import { Alert, Button, Skeleton, Stack, Typography } from '@mui/material';
 import { useRef, useState } from 'react';
 import { ActivityCards } from '../activities/ActivityCards';
 import { ActivityFormDialog } from '../activities/ActivityFormDialog';
+import { ActivityTotals } from '../activities/ActivityTotals';
 import { ActivityFiltersBar } from '../activities/ActivityFiltersBar';
 import type { ActivityFormValues } from '../activities/activityForm';
 import { useActivityFilters } from '../activities/useActivityFilters';
@@ -16,6 +17,7 @@ import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
 import {
   ACTIVITIES_PAGE_SIZE,
   createActivity,
+  getActivitySummary,
   listActivities,
 } from '../services/activityService';
 
@@ -32,6 +34,7 @@ export function ActivitiesPage() {
   const filters = useActivityFilters(isTeacher);
   const [page, setPage] = useUrlPage();
   const [reload, setReload] = useState(0);
+  const [summaryReload, setSummaryReload] = useState(0);
   const listTop = useRef<HTMLDivElement>(null);
   const list = useLoad(
     () =>
@@ -43,6 +46,9 @@ export function ActivitiesPage() {
       }),
     `${page}|${filters.status}|${filters.overdueOnly}|${filters.studentId}|${reload}`,
   );
+  // Os totais não dependem de filtro nem de página: só se relêem quando uma atividade muda
+  // (criar, ou um conflito de estado) ou quando o usuário pede de novo.
+  const summary = useLoad(getActivitySummary, `${reload}|${summaryReload}`);
   const { knownCount, lastPage, fallbackPage } = usePageBounds(
     list,
     ACTIVITIES_PAGE_SIZE,
@@ -102,6 +108,10 @@ export function ActivitiesPage() {
           </Button>
         )}
       </Stack>
+      <ActivityTotals
+        summary={summary}
+        onRetry={() => setSummaryReload((current) => current + 1)}
+      />
       <ActivityFiltersBar
         status={filters.status}
         overdueOnly={filters.overdueOnly}

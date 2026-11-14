@@ -114,6 +114,35 @@ describe('Nova atividade: o envio', () => {
     expect(await screen.findByText('Capítulo 2')).toBeVisible();
   });
 
+  it('lê os totais de novo depois de criar a atividade', async () => {
+    const { events } = setup();
+    await within(
+      await screen.findByRole('group', { name: 'Total Atividades' }),
+    ).findByText('0');
+    const dialog = await openDialog(events);
+
+    await chooseStudent(events, dialog, 'Orientando 2');
+    await fill(events, dialog, {
+      title: 'Capítulo 2',
+      description: 'Entregar',
+      deadline: '2099-12-31',
+    });
+    await events.click(within(dialog).getByRole('button', { name: 'Criar' }));
+
+    await waitFor(() =>
+      expect(
+        within(
+          screen.getByRole('group', { name: 'Total Atividades' }),
+        ).getByText('1'),
+      ).toBeVisible(),
+    );
+    expect(
+      within(screen.getByRole('group', { name: 'Total Pendentes' })).getByText(
+        '1',
+      ),
+    ).toBeVisible();
+  });
+
   it('mostra o andamento e não deixa enviar de novo enquanto o pedido está em curso', async () => {
     let release: () => void = () => undefined;
     const gate = new Promise<void>((resolve) => {
