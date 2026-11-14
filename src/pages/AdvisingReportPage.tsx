@@ -1,7 +1,8 @@
-import { Alert, Button, Skeleton, Stack } from '@mui/material';
+import { Alert, Button, Skeleton, Stack, Typography } from '@mui/material';
 import { useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { ReportNavigation } from '../advisingReport/ReportNavigation';
+import { RecordsSection } from '../advisingReport/RecordsSection';
 import { ReportHeader } from '../advisingReport/ReportHeader';
 import { ReportSummary } from '../advisingReport/ReportSummary';
 import { useLoad } from '../hooks/useLoad';
@@ -42,6 +43,9 @@ export function AdvisingReportPage() {
             : undefined
         }
       />
+      <Typography variant="h4" component="h1">
+        Relatório da orientação
+      </Typography>
       {report.status === 'loading' && (
         <Stack spacing={2} data-testid="report-skeleton" aria-hidden>
           <Skeleton variant="rounded" height={260} />
@@ -63,6 +67,7 @@ export function AdvisingReportPage() {
         <>
           <ReportHeader report={report.data} />
           <ReportSummary report={report.data} />
+          <RecordsSection advisingId={report.data.id} />
         </>
       )}
     </Stack>

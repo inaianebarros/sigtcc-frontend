@@ -9,23 +9,28 @@ export function ReportSummary({ report }: { report: AdvisingReport }) {
     { label: 'Atividades', value: report.activitiesCount },
   ];
   return (
-    <Stack direction="row" spacing={2}>
-      {totals.map(({ label, value }) => (
-        <Paper
-          key={label}
-          variant="outlined"
-          role="group"
-          aria-label={label}
-          sx={{ flex: 1, minWidth: 0, p: 2 }}
-        >
-          <Typography variant="h4" component="p">
-            {value}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" aria-hidden>
-            {label}
-          </Typography>
-        </Paper>
-      ))}
+    <Stack spacing={2} component="section">
+      <Typography variant="h6" component="h2">
+        Resumo da orientação
+      </Typography>
+      <Stack direction="row" spacing={2}>
+        {totals.map(({ label, value }) => (
+          <Paper
+            key={label}
+            variant="outlined"
+            role="group"
+            aria-label={label}
+            sx={{ flex: 1, minWidth: 0, p: 2 }}
+          >
+            <Typography variant="h4" component="p">
+              {value}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" aria-hidden>
+              {label}
+            </Typography>
+          </Paper>
+        ))}
+      </Stack>
     </Stack>
   );
 }
