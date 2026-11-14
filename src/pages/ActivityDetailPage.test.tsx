@@ -15,7 +15,6 @@ function setup(
   path: string,
   entries?: { pathname: string; search?: string; state?: unknown }[],
 ) {
-  const server = activitiesServer(activities, { user });
   const comments = commentsServer(
     Array.from({ length: activities[0]?.comments_count ?? 0 }, (_, index) =>
       makeComment(index + 1),
@@ -24,6 +23,10 @@ function setup(
       ? { id: 7, full_name: 'Ana Souza', type: 'student' }
       : { id: 9, full_name: 'Carlos Lima', type: 'teacher' },
   );
+  const server = activitiesServer(activities, {
+    user,
+    comments: comments.comments,
+  });
   const fetchMock = mockApi({ ...server.routes, ...comments.routes });
   const events = userEvent.setup();
   renderApp(path, entries ? { entries } : undefined);
@@ -112,48 +115,59 @@ describe('ActivityDetailPage: o conteúdo', () => {
     expect(screen.queryByText('Orientador')).not.toBeInTheDocument();
   });
 
-  it('lista as entregas com a data de envio e os arquivos, com nome, tamanho e tipo, sem link de download', async () => {
+  it('lista as entregas na linha do tempo com a data de envio e os arquivos, com nome, tamanho e tipo', async () => {
     setup([FULL], 'teacher', '/professor/atividades/5');
 
-    const section = await screen.findByRole('region', { name: 'Entregas' });
+    const section = await screen.findByRole('region', {
+      name: 'Linha do tempo',
+    });
+    const delivery = (
+      await within(section).findByText('Entrega — Versão 1')
+    ).closest('li')!;
 
-    expect(within(section).getByText(/5 de novembro de 2026/)).toBeVisible();
-    expect(within(section).getByText('capitulo2.pdf')).toBeVisible();
-    expect(within(section).getByText(/1,5 KB/)).toBeVisible();
-    expect(within(section).getByText(/application\/pdf/)).toBeVisible();
-    expect(within(section).getByText('anexos.zip')).toBeVisible();
-    expect(within(section).getByText(/3,0 MB/)).toBeVisible();
-    expect(within(section).queryByRole('link')).not.toBeInTheDocument();
+    expect(within(delivery).getByText(/5 de novembro de 2026/)).toBeVisible();
+    expect(within(delivery).getByText('capitulo2.pdf')).toBeVisible();
+    expect(within(delivery).getByText(/1,5 KB/)).toBeVisible();
+    expect(within(delivery).getByText(/application\/pdf/)).toBeVisible();
+    expect(within(delivery).getByText('anexos.zip')).toBeVisible();
+    expect(within(delivery).getByText(/3,0 MB/)).toBeVisible();
+    expect(within(delivery).queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('mostra o histórico de revisões e a contagem de comentários', async () => {
+  it('mostra as decisões e os comentários na linha do tempo', async () => {
     setup([FULL], 'teacher', '/professor/atividades/5');
 
-    const reviews = await screen.findByRole('region', { name: 'Revisões' });
+    const section = await screen.findByRole('region', {
+      name: 'Linha do tempo',
+    });
+    await within(section).findByText('Atividade criada');
 
-    expect(within(reviews).getByText(/Recusada/)).toBeVisible();
-    expect(within(reviews).getByText(/6 de novembro de 2026/)).toBeVisible();
-    expect(within(reviews).getByText(/Aceita/)).toBeVisible();
-    expect(await screen.findByText('3 comentários')).toBeVisible();
+    expect(within(section).getByText('Recusada')).toBeVisible();
+    expect(within(section).getByText(/6 de novembro de 2026/)).toBeVisible();
+    expect(within(section).getByText('Aceita')).toBeVisible();
+    expect(within(section).getAllByText('Comentário')).toHaveLength(3);
   });
 
-  it('diz que ainda não há entregas nem revisões, e que não há comentários', async () => {
+  it('numa atividade nova a linha do tempo só tem a criação, sem entregas, decisões nem comentários', async () => {
     setup([makeActivity(5)], 'student', '/aluno/atividades/5');
 
-    expect(await screen.findByText('Nenhuma entrega ainda.')).toBeVisible();
-    expect(screen.getByText('Nenhuma revisão ainda.')).toBeVisible();
-    expect(await screen.findByText('Nenhum comentário')).toBeVisible();
+    const section = await screen.findByRole('region', {
+      name: 'Linha do tempo',
+    });
+
+    expect(await within(section).findByText('Atividade criada')).toBeVisible();
+    expect(within(section).getByText('Início do histórico')).toBeVisible();
+    expect(within(section).queryByText(/Entrega —/)).not.toBeInTheDocument();
+    expect(within(section).queryByText('Comentário')).not.toBeInTheDocument();
   });
 
-  it('tem a seção de comentários, já sem o aviso de em breve, e a revisão só aparece ao orientador', async () => {
+  it('tem a linha do tempo com o campo de comentário, e a revisão só aparece ao orientador', async () => {
     setup([makeActivity(5)], 'student', '/aluno/atividades/5');
 
     await screen.findByRole('heading', { level: 1, name: 'Atividade 5' });
 
-    const slot = screen.getByRole('region', { name: 'Comentários' });
-    expect(
-      within(slot).queryByText('Disponível em breve'),
-    ).not.toBeInTheDocument();
+    const slot = screen.getByRole('region', { name: 'Linha do tempo' });
+    expect(within(slot).getByLabelText('Novo comentário')).toBeVisible();
     expect(
       screen.queryByRole('region', { name: 'Revisão' }),
     ).not.toBeInTheDocument();

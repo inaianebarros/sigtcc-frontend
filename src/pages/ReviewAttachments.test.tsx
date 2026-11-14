@@ -103,49 +103,48 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const history = () => screen.findByRole('region', { name: 'Revisões' });
+const history = async () => {
+  const region = await screen.findByRole('region', { name: 'Linha do tempo' });
+  await within(region).findByText('Atividade criada');
+  return region;
+};
+
+/** O cartão da avaliação que tem esta justificativa. */
+const reviewCard = (region: HTMLElement, justification: string) =>
+  within(region).getByText(justification).closest('li')!;
 const downloadButton = (name: string) =>
   screen.findByRole('button', { name: `Baixar ${name}` });
 
-describe('Revisões: os anexos da recusa', () => {
+describe('Linha do tempo: os anexos da recusa', () => {
   it.each(['student', 'teacher'] as const)(
-    'o %s vê nome, tamanho e tipo de cada anexo dentro da decisão que o trouxe',
+    'o %s vê nome, tamanho e tipo de cada anexo dentro do cartão da avaliação que o trouxe',
     async (user) => {
       setup(user);
 
-      const items = within(await history()).getAllByRole('listitem', {
-        name: '',
-      });
-      const first = items.find((item) =>
-        item.textContent?.includes('Veja as correções anexas.'),
-      )!;
+      const first = reviewCard(await history(), 'Veja as correções anexas.');
 
       expect(within(first).getByText('correcoes.pdf')).toBeVisible();
       expect(within(first).getByText(/1,5 KB, application\/pdf/)).toBeVisible();
       expect(within(first).getByText('versão corrigida.zip')).toBeVisible();
       expect(within(first).getByText(/3,0 MB, application\/zip/)).toBeVisible();
-      expect(
-        within(first).getByRole('list', {
-          name: 'Anexos da recusa de 6 de novembro de 2026',
-        }),
-      ).toBeVisible();
+      expect(within(first).getByText('Recusada')).toBeVisible();
     },
   );
 
-  it('a recusa sem arquivos e o aceite ficam como hoje, sem lista de anexos', async () => {
+  it('a recusa sem arquivos e o aceite não mostram lista de anexos', async () => {
     setup();
 
     const section = await history();
 
-    expect(within(section).getByText('Só texto.')).toBeVisible();
-    expect(within(section).getByText(/Aceita em/)).toBeVisible();
+    const textOnly = reviewCard(section, 'Só texto.');
+    expect(within(textOnly).queryByRole('list')).not.toBeInTheDocument();
+    expect(within(section).getByText('Aceita')).toBeVisible();
     expect(
-      within(section).getAllByRole('list', { name: /^Anexos da recusa de/ }),
-    ).toHaveLength(1);
-    expect(within(section).queryByText(/Nenhum anexo/)).not.toBeInTheDocument();
+      within(section).getAllByRole('button', { name: /^Baixar / }),
+    ).toHaveLength(2);
   });
 
-  it('a decisão antiga mantém os anexos depois de um novo envio para revisão', async () => {
+  it('a avaliação antiga mantém os anexos depois de um novo envio para revisão', async () => {
     setup(
       'student',
       {},
@@ -172,6 +171,7 @@ describe('Revisões: os anexos da recusa', () => {
     const section = await history();
 
     expect(within(section).getByText('correcoes.pdf')).toBeVisible();
+    expect(within(section).getByText('nova-entrega.pdf')).toBeVisible();
   });
 
   it.each(['student', 'teacher'] as const)(

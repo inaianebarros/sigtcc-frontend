@@ -3,23 +3,16 @@ import { useId } from 'react';
 import type { ReactNode } from 'react';
 import { formatDate, formatDeadline } from '../formatters/dateTime';
 import { ReadOnlyFacts } from '../profile/ReadOnlyFacts';
-import {
-  downloadReviewFile,
-  downloadSubmissionFile,
-} from '../services/activityService';
 import type {
   ActivityDetail,
   StudentSettableStatus,
 } from '../services/activityService';
-import { CommentsSection } from './CommentsSection';
+import { ActivityTimeline } from './ActivityTimeline';
 import { Section } from './Section';
 import { StatusAndDelivery } from './StatusAndDelivery';
-import { AttachedFileItem } from './AttachedFileItem';
 import { StatusWithBadge } from './StatusWithBadge';
 
 export const COMPLETED_REASON = 'Atividade concluída não pode ser alterada';
-
-const DECISION_LABELS = { accepted: 'Aceita', rejected: 'Recusada' } as const;
 
 interface ActivityActionsProps {
   completed: boolean;
@@ -88,7 +81,7 @@ function ReviewPanel({ onAccept, onRefuse }: ReviewActions) {
         Aguardando a sua revisão
       </Typography>
       <Typography color="text.secondary">
-        Abra os arquivos na seção Entregas e decida: aceitar conclui a
+        Abra os arquivos na linha do tempo e decida: aceitar conclui a
         atividade; recusar a devolve ao aluno com uma justificativa.
       </Typography>
       <Stack direction="row" useFlexGap sx={{ gap: 1, flexWrap: 'wrap' }}>
@@ -192,72 +185,12 @@ export function ActivityDetailView({
           <ReviewPanel {...review} />
         )}
       </Section>
-      <Section title="Entregas">
-        {activity.submissions.length === 0 && (
-          <Typography>Nenhuma entrega ainda.</Typography>
-        )}
-        {activity.submissions.map((submission) => (
-          <Stack key={submission.id} spacing={0.5}>
-            <Typography>
-              Enviada em {formatDate(submission.submittedAt)}
-            </Typography>
-            <Box component="ul" sx={{ m: 0, pl: 3 }}>
-              {submission.files.map((file) => (
-                <AttachedFileItem
-                  key={file.id}
-                  file={file}
-                  load={() => downloadSubmissionFile(activity.id, file.id)}
-                />
-              ))}
-            </Box>
-          </Stack>
-        ))}
-      </Section>
-      <Section title="Revisões">
-        {activity.reviews.length === 0 && (
-          <Typography>Nenhuma revisão ainda.</Typography>
-        )}
-        {activity.reviews.length > 0 && (
-          <Box component="ul" sx={{ m: 0, pl: 3 }}>
-            {activity.reviews.map((item) => (
-              <li key={item.id}>
-                {DECISION_LABELS[item.decision]} em {formatDate(item.decidedAt)}
-                {item.justification && (
-                  <Typography
-                    component="p"
-                    sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
-                  >
-                    {item.justification}
-                  </Typography>
-                )}
-                {item.files.length > 0 && (
-                  <Box
-                    component="ul"
-                    aria-label={`Anexos da recusa de ${formatDate(item.decidedAt)}`}
-                    sx={{ m: 0, pl: 3 }}
-                  >
-                    {item.files.map((file) => (
-                      <AttachedFileItem
-                        key={file.id}
-                        file={file}
-                        load={() =>
-                          downloadReviewFile(activity.id, item.id, file.id)
-                        }
-                      />
-                    ))}
-                  </Box>
-                )}
-              </li>
-            ))}
-          </Box>
-        )}
-      </Section>
-      <CommentsSection
+      <ActivityTimeline
         activityId={activity.id}
         currentUserId={comments.currentUserId}
         completed={activity.status === 'completed'}
-        text={comments.text}
-        onTextChange={comments.onTextChange}
+        commentText={comments.text}
+        onCommentTextChange={comments.onTextChange}
       />
     </>
   );

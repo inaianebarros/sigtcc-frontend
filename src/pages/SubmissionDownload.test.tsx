@@ -189,12 +189,14 @@ describe('Entregas: baixar um arquivo', () => {
     expect(await downloadButton('capitulo2.pdf')).toBeEnabled();
   });
 
-  it('a lista de Entregas mostra o nome, o tamanho e o tipo de cada arquivo', async () => {
+  it('a linha do tempo mostra o nome, o tamanho e o tipo de cada arquivo', async () => {
     setup();
 
-    const section = await screen.findByRole('region', { name: 'Entregas' });
+    const section = await screen.findByRole('region', {
+      name: 'Linha do tempo',
+    });
 
-    expect(within(section).getByText('capitulo2.pdf')).toBeVisible();
+    expect(await within(section).findByText('capitulo2.pdf')).toBeVisible();
     expect(within(section).getByText(/1,5 KB, application\/pdf/)).toBeVisible();
     expect(within(section).getByText(/3,0 MB, application\/zip/)).toBeVisible();
   });

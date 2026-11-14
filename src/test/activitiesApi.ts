@@ -1,6 +1,9 @@
 import type { FakeAdvisee } from './adviseesApi';
 import { makeLinkedStudent } from './linkedStudentApi';
+import type { FakeComment } from './commentsApi';
 import type { MockResponse } from './mockApi';
+import { buildTimeline, timelinePage } from './timelineApi';
+import type { FakeLogEvent } from './timelineApi';
 
 export interface FakeActivity {
   id: number;
@@ -37,6 +40,8 @@ export interface FakeActivity {
     }[];
   }[];
   comments_count: number;
+  /** Mudanças de situação e envios para revisão, para a linha do tempo. */
+  events?: FakeLogEvent[];
 }
 
 export function makeActivity(
@@ -84,6 +89,8 @@ interface ServerOptions {
   user: 'student' | 'teacher';
   /** Os orientandos do professor, para a seleção do aluno na criação (paginados como a API). */
   advisees?: FakeAdvisee[];
+  /** Os comentários da atividade, para entrarem na linha do tempo (o `commentsServer` os guarda). */
+  comments?: () => FakeComment[];
   /** Substitui uma rota inteira, como uma falha ou um 409. */
   overrides?: Record<string, MockResponse | Handler>;
 }
@@ -111,7 +118,7 @@ const ME = {
  */
 export function activitiesServer(
   initial: FakeActivity[],
-  { user, advisees = [], overrides = {} }: ServerOptions,
+  { user, advisees = [], comments, overrides = {} }: ServerOptions,
 ): ActivitiesServer {
   // Cópias: o PATCH muda a atividade, e um dado compartilhado entre testes vazaria o estado.
   const state = initial.map((item) => structuredClone(item));
@@ -250,6 +257,11 @@ export function activitiesServer(
         };
       }
       found.status = status;
+      (found.events ??= []).push({
+        type: status === 'in_review' ? 'sent_for_review' : 'status_change',
+        ...(status === 'in_review' || status === 'completed' ? {} : { status }),
+        occurred_at: '2026-11-09T11:00:00Z',
+      });
       return {
         body: {
           id: found.id,
@@ -259,6 +271,14 @@ export function activitiesServer(
           overdue: found.overdue,
           student: found.student,
         },
+      };
+    },
+    'GET /api/atividades/:id/linha-do-tempo': (_body, url, params) => {
+      const found = state.find((item) => item.id === Number(params.id));
+      if (!found)
+        return { status: 404, body: { detail: 'Atividade não encontrada.' } };
+      return {
+        body: timelinePage(buildTimeline(found, comments?.() ?? []), url),
       };
     },
     'POST /api/atividades/:id/revisar': (body, _url, params) => {

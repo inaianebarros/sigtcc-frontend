@@ -166,12 +166,14 @@ describe('Revisão: quando o painel aparece', () => {
     ).toBeEnabled();
   });
 
-  it('o professor abre o material pela seção Entregas, que já existe', async () => {
+  it('o professor abre o material pela linha do tempo, que já mostra as entregas', async () => {
     setup();
 
-    const deliveries = await screen.findByRole('region', { name: 'Entregas' });
+    const deliveries = await screen.findByRole('region', {
+      name: 'Linha do tempo',
+    });
 
-    expect(within(deliveries).getByText('capitulo2.pdf')).toBeVisible();
+    expect(await within(deliveries).findByText('capitulo2.pdf')).toBeVisible();
   });
 
   it('o aluno não vê o painel e continua com o aviso de aguardando', async () => {
@@ -252,8 +254,10 @@ describe('Revisão: aceitar (RN15, RNF21)', () => {
       screen.queryByRole('region', { name: 'Revisão' }),
     ).not.toBeInTheDocument();
     expect(screen.getByText(COMPLETED_REASON)).toBeVisible();
-    const history = screen.getByRole('region', { name: 'Revisões' });
-    expect(within(history).getByText(/Aceita em/)).toBeVisible();
+    const history = await screen.findByRole('region', {
+      name: 'Linha do tempo',
+    });
+    expect(await within(history).findByText('Aceita')).toBeVisible();
   });
 
   it('trava a confirmação enquanto envia e faz um pedido só', async () => {
@@ -355,8 +359,10 @@ describe('Revisão: recusar (RN40)', () => {
     expect(
       screen.queryByRole('region', { name: 'Revisão' }),
     ).not.toBeInTheDocument();
-    const history = await screen.findByRole('region', { name: 'Revisões' });
-    expect(within(history).getByText(/Recusada em/)).toBeVisible();
+    const history = await screen.findByRole('region', {
+      name: 'Linha do tempo',
+    });
+    expect(await within(history).findByText('Recusada')).toBeVisible();
     const justification = within(history).getByText(/Faltou a conclusão\./);
     expect(justification.textContent).toBe(
       'Faltou a conclusão.\nRefaça o capítulo.',
@@ -723,7 +729,7 @@ describe('Revisão: alterações não enviadas (RNF28)', () => {
   });
 });
 
-describe('Revisão: o histórico (RN40)', () => {
+describe('Revisão: as avaliações na linha do tempo (RN40)', () => {
   const REVIEWS: FakeActivity['reviews'] = [
     {
       id: 1,
@@ -740,18 +746,32 @@ describe('Revisão: o histórico (RN40)', () => {
   ];
 
   it.each(['teacher', 'student'] as const)(
-    'o %s vê a decisão, a data e a justificativa das recusas, na ordem da API',
+    'o %s vê a decisão, a data e a justificativa das recusas, do mais recente ao mais antigo',
     async (user) => {
       setup({ status: 'completed', reviews: REVIEWS }, user);
 
-      const history = await screen.findByRole('region', { name: 'Revisões' });
+      const timeline = await screen.findByRole('region', {
+        name: 'Linha do tempo',
+      });
+      await within(timeline).findByText('Atividade criada');
 
-      const items = within(history).getAllByRole('listitem');
-      expect(items).toHaveLength(2);
-      expect(items[0]).toHaveTextContent(/Recusada em/);
-      expect(items[0]).toHaveTextContent('Faltou a conclusão.');
-      expect(items[1]).toHaveTextContent(/Aceita em/);
-      expect(items[1]).not.toHaveTextContent(/Justificativa/);
+      const titles = within(timeline)
+        .getAllByRole('heading', { level: 3 })
+        .map((heading) => heading.textContent);
+      expect(titles).toEqual([
+        'Avaliação da versão 1',
+        'Avaliação da versão 1',
+        'Entrega — Versão 1',
+        'Atividade criada',
+      ]);
+      const [accepted, refused] = within(timeline)
+        .getAllByText(/^Avaliação da versão/)
+        .map((title) => title.closest('li')!);
+      expect(accepted).toHaveTextContent('Aceita');
+      expect(accepted).not.toHaveTextContent('Faltou a conclusão.');
+      expect(refused).toHaveTextContent('Recusada');
+      expect(refused).toHaveTextContent('Faltou a conclusão.');
+      expect(refused).toHaveTextContent(/6 de novembro de 2026/);
     },
   );
 });

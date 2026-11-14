@@ -105,14 +105,14 @@ interface ApiDetail extends ApiItem {
   comments_count: number;
 }
 
-interface ApiFile {
+export interface ApiFile {
   id: number;
   file_name: string;
   size_bytes: number;
   content_type: string;
 }
 
-function fileFrom(file: ApiFile): SubmissionFile {
+export function fileFrom(file: ApiFile): SubmissionFile {
   return {
     id: file.id,
     fileName: file.file_name,
