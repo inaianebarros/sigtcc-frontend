@@ -30,7 +30,7 @@ describe('AdvisingReportPage: o cabeçalho e os totais (RF61)', () => {
     renderApp('/aluno/historico/7/relatorio');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Paulo Professor' }),
+      await screen.findByRole('heading', { level: 2, name: 'Paulo Professor' }),
     ).toBeVisible();
     expect(screen.getByText('Encerrada')).toBeVisible();
     expect(screen.getByText('Tema da orientação')).toBeVisible();
@@ -40,6 +40,22 @@ describe('AdvisingReportPage: o cabeçalho e os totais (RF61)', () => {
     expect(screen.getByText('Motivo do encerramento')).toBeVisible();
     expect(
       screen.getByText('Concluímos o ciclo de orientação do TCC.'),
+    ).toBeVisible();
+  });
+
+  it('o título da página é "Relatório da orientação", e o resumo tem o seu subtítulo', async () => {
+    mockApi(reportRoutes([makeAdvisingReport(7)]));
+    renderApp('/aluno/historico/7/relatorio');
+
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Relatório da orientação',
+      }),
+    ).toBeVisible();
+    await screen.findByRole('heading', { level: 2, name: 'Pessoa 7' });
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Resumo da orientação' }),
     ).toBeVisible();
   });
 
@@ -85,7 +101,7 @@ describe('AdvisingReportPage: o cabeçalho e os totais (RF61)', () => {
     renderApp('/professor/historico/7/relatorio');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Ana Souza' }),
+      await screen.findByRole('heading', { level: 2, name: 'Ana Souza' }),
     ).toBeVisible();
   });
 });
@@ -99,7 +115,7 @@ describe('AdvisingReportPage: carregamento, erro e acesso negado', () => {
       'aria-hidden',
       'true',
     );
-    await screen.findByRole('heading', { level: 1, name: 'Pessoa 7' });
+    await screen.findByRole('heading', { level: 2, name: 'Pessoa 7' });
     expect(screen.queryByTestId('report-skeleton')).not.toBeInTheDocument();
   });
 
@@ -120,7 +136,7 @@ describe('AdvisingReportPage: carregamento, erro e acesso negado', () => {
     await user.click(screen.getByRole('button', { name: 'Tentar novamente' }));
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Pessoa 7' }),
+      await screen.findByRole('heading', { level: 2, name: 'Pessoa 7' }),
     ).toBeVisible();
     expect(
       requestsTo(fetchMock, 'GET /api/orientacao/historico/7/relatorio'),
@@ -158,7 +174,7 @@ describe('AdvisingReportPage: a volta ao histórico', () => {
     mockApi(reportRoutes([makeAdvisingReport(7)]));
     renderApp('/aluno/historico/7/relatorio');
 
-    await screen.findByRole('heading', { level: 1, name: 'Pessoa 7' });
+    await screen.findByRole('heading', { level: 2, name: 'Pessoa 7' });
     const path = screen.getByRole('navigation', { name: 'Caminho' });
 
     expect(
@@ -229,7 +245,7 @@ describe('AdvisingReportPage: o menu e o celular', () => {
   it('mantém selecionado o item "Histórico de orientações" do menu', async () => {
     mockApi(reportRoutes([makeAdvisingReport(7)]));
     renderApp('/aluno/historico/7/relatorio');
-    await screen.findByRole('heading', { level: 1, name: 'Pessoa 7' });
+    await screen.findByRole('heading', { level: 2, name: 'Pessoa 7' });
 
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
 
@@ -244,7 +260,7 @@ describe('AdvisingReportPage: o menu e o celular', () => {
     renderApp('/aluno/historico/7/relatorio');
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Pessoa 7' }),
+      await screen.findByRole('heading', { level: 2, name: 'Pessoa 7' }),
     ).toBeVisible();
     expect(screen.getByText('Motivo do encerramento')).toBeVisible();
     expect(screen.getByRole('group', { name: 'Registros' })).toBeVisible();

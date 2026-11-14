@@ -4,10 +4,14 @@ import type { AdvisingReport } from '../services/advisingReportService';
 
 function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <Stack direction="row" sx={{ justifyContent: 'space-between', gap: 2 }}>
-      <Typography color="text.secondary">{label}</Typography>
-      <Typography>{value}</Typography>
-    </Stack>
+    <div>
+      <Typography variant="body2" color="text.secondary">
+        {label}
+      </Typography>
+      <Typography variant="h6" component="p">
+        {value}
+      </Typography>
+    </div>
   );
 }
 
@@ -29,8 +33,8 @@ export function ReportHeader({ report }: { report: AdvisingReport }) {
           }}
         >
           <Typography
-            variant="h4"
-            component="h1"
+            variant="h5"
+            component="h2"
             sx={{ overflowWrap: 'anywhere' }}
           >
             {report.counterpart.fullName}
@@ -51,7 +55,7 @@ export function ReportHeader({ report }: { report: AdvisingReport }) {
           </Typography>
         </div>
         <Divider />
-        <Stack spacing={1}>
+        <Stack direction="row" sx={{ gap: 4, flexWrap: 'wrap' }}>
           <Fact label="Início" value={formatShortDate(report.startedAt)} />
           <Fact label="Encerramento" value={formatShortDate(report.endedAt)} />
         </Stack>
