@@ -398,3 +398,164 @@ describe('TeacherAdviseesPage: atalho para as atividades do orientando', () => {
     );
   });
 });
+
+describe('TeacherAdviseesPage: a busca por nome ou tema', () => {
+  const people = [
+    makeAdvisee(1, {
+      student: {
+        id: 101,
+        full_name: 'José Almeida',
+        course: { id: 10, name: 'Ciência da Computação' },
+      },
+      thesis_topic: 'Redes neurais para imagens',
+    }),
+    makeAdvisee(2, {
+      student: {
+        id: 102,
+        full_name: 'Maria Souza',
+        course: { id: 10, name: 'Ciência da Computação' },
+      },
+      thesis_topic: 'Banco de dados distribuído',
+    }),
+  ];
+
+  function searchParamsOf(fetchMock: ReturnType<typeof mockApi>) {
+    const last = requestsTo(fetchMock, LIST).at(-1)?.[0];
+    return new URL(String(last), 'http://localhost').searchParams;
+  }
+
+  it('mostra o campo "Buscar orientando" com o apoio do que se pode digitar', async () => {
+    setup(people);
+    await screen.findByText('José Almeida');
+
+    expect(screen.getByLabelText('Buscar orientando')).toBeVisible();
+    expect(
+      screen.getByPlaceholderText('Digite o nome do aluno ou o tema do TCC...'),
+    ).toBeVisible();
+  });
+
+  it('busca pelo nome sem diferenciar acento nem maiúscula, no servidor, com o parâmetro q', async () => {
+    const { fetchMock, user } = setup(people);
+    await screen.findByText('José Almeida');
+
+    await user.type(screen.getByLabelText('Buscar orientando'), 'JOSE');
+
+    await waitFor(() =>
+      expect(screen.queryByText('Maria Souza')).not.toBeInTheDocument(),
+    );
+    expect(await screen.findByText('José Almeida')).toBeVisible();
+    expect(searchParamsOf(fetchMock).get('q')).toBe('JOSE');
+    expect(searchParamsOf(fetchMock).has('search')).toBe(false);
+    expect(screen.getByTestId('location')).toHaveTextContent('?busca=JOSE');
+  });
+
+  it('busca também pelo tema do TCC', async () => {
+    const { user } = setup(people);
+    await screen.findByText('José Almeida');
+
+    await user.type(
+      screen.getByLabelText('Buscar orientando'),
+      'banco de dados',
+    );
+
+    expect(await screen.findByText('Maria Souza')).toBeVisible();
+    await waitFor(() =>
+      expect(screen.queryByText('José Almeida')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('o "N orientandos encontrados" acompanha a busca e o chip do total continua o geral', async () => {
+    const { user } = setup(people);
+    expect(await screen.findByText('2 orientandos encontrados')).toBeVisible();
+
+    await user.type(screen.getByLabelText('Buscar orientando'), 'maria');
+
+    expect(await screen.findByText('1 orientando encontrado')).toBeVisible();
+    expect(screen.getByText('2 orientandos')).toBeVisible();
+  });
+
+  it('anuncia a quantidade encontrada numa região de status, que acompanha a busca', async () => {
+    const { user } = setup(people);
+    await screen.findByText('2 orientandos encontrados');
+    const announced = () =>
+      screen
+        .getAllByRole('status')
+        .map((region) => region.textContent)
+        .join('|');
+
+    expect(announced()).toContain('2 orientandos encontrados');
+
+    await user.type(screen.getByLabelText('Buscar orientando'), 'maria');
+
+    await waitFor(() =>
+      expect(announced()).toContain('1 orientando encontrado'),
+    );
+    expect(announced()).not.toContain('2 orientandos encontrados');
+  });
+
+  it('a busca espera 400 ms sem digitação antes de ir ao servidor', async () => {
+    const { fetchMock, user } = setup(people);
+    await screen.findByText('José Almeida');
+    const before = requestsTo(fetchMock, LIST).length;
+
+    await user.type(screen.getByLabelText('Buscar orientando'), 'mar');
+
+    expect(requestsTo(fetchMock, LIST)).toHaveLength(before);
+    await waitFor(() =>
+      expect(requestsTo(fetchMock, LIST)).toHaveLength(before + 1),
+    );
+    expect(searchParamsOf(fetchMock).get('q')).toBe('mar');
+  });
+
+  it('mudar a busca volta à primeira página', async () => {
+    const many = Array.from({ length: 45 }, (_, i) => makeAdvisee(i + 1));
+    const { user } = setup(many, `${PATH}?pagina=3`);
+    await screen.findByText('Orientando 21');
+
+    await user.type(screen.getByLabelText('Buscar orientando'), 'Orientando 3');
+
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent('busca='),
+    );
+    expect(screen.getByTestId('location')).not.toHaveTextContent('pagina');
+  });
+
+  it('recarregar em ?busca= aplica a busca e preenche o campo', async () => {
+    const { fetchMock } = setup(people, `${PATH}?busca=maria`);
+
+    expect(await screen.findByText('Maria Souza')).toBeVisible();
+    expect(screen.queryByText('José Almeida')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Buscar orientando')).toHaveValue('maria');
+    expect(searchParamsOf(fetchMock).get('q')).toBe('maria');
+  });
+
+  it('busca sem resultado mostra a mensagem, e "Limpar busca" volta à lista completa', async () => {
+    const { user } = setup(people, `${PATH}?busca=zzz`);
+
+    expect(
+      await screen.findByText('Nenhum orientando encontrado com esse texto'),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(/ainda não tem orientandos ativos/),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Limpar busca' }));
+
+    expect(await screen.findByText('José Almeida')).toBeVisible();
+    expect(screen.getByLabelText('Buscar orientando')).toHaveValue('');
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/professor\/orientandos$/,
+    );
+  });
+
+  it('sem nenhum orientando ativo, o campo de busca não aparece e vale a mensagem de hoje', async () => {
+    setup([]);
+
+    expect(
+      await screen.findByText(/Você ainda não tem orientandos ativos/),
+    ).toBeVisible();
+    expect(
+      screen.queryByLabelText('Buscar orientando'),
+    ).not.toBeInTheDocument();
+  });
+});

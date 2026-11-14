@@ -45,20 +45,7 @@ interface ApiAdvisee {
   };
 }
 
-/**
- * `search` filtra pelo nome do aluno no servidor, sem diferenciar acentos nem maiúsculas.
- * `pageSize` é o dos seletores, a menos que a tela peça outro.
- */
-export async function listAdvisees(
-  page: number,
-  search?: string,
-  pageSize: number = ADVISEES_PAGE_SIZE,
-): Promise<AdviseePage> {
-  const params = new URLSearchParams({
-    limit: String(pageSize),
-    offset: String((page - 1) * pageSize),
-  });
-  if (search) params.set('search', search);
+async function fetchAdvisees(params: URLSearchParams): Promise<AdviseePage> {
   const response = await httpClient.get<{ items: ApiAdvisee[]; count: number }>(
     `/orientacao/orientandos?${params}`,
   );
@@ -81,6 +68,40 @@ export async function listAdvisees(
       },
     })),
   };
+}
+
+/**
+ * Os orientandos para os seletores de aluno, de {@link ADVISEES_PAGE_SIZE} em
+ * {@link ADVISEES_PAGE_SIZE}. `search` filtra só pelo nome do aluno no servidor, sem diferenciar
+ * acentos nem maiúsculas.
+ */
+export async function listAdvisees(
+  page: number,
+  search?: string,
+): Promise<AdviseePage> {
+  const params = new URLSearchParams({
+    limit: String(ADVISEES_PAGE_SIZE),
+    offset: String((page - 1) * ADVISEES_PAGE_SIZE),
+  });
+  if (search) params.set('search', search);
+  return fetchAdvisees(params);
+}
+
+/**
+ * Os orientandos da tela "Meus orientandos" (RF33), de {@link ADVISEES_SCREEN_PAGE_SIZE} em
+ * {@link ADVISEES_SCREEN_PAGE_SIZE}. `text` filtra pelo nome do aluno ou pelo tema do TCC, no
+ * servidor, sem diferenciar acentos nem maiúsculas (parâmetro `q`).
+ */
+export async function listAdviseesByText(
+  page: number,
+  text?: string,
+): Promise<AdviseePage> {
+  const params = new URLSearchParams({
+    limit: String(ADVISEES_SCREEN_PAGE_SIZE),
+    offset: String((page - 1) * ADVISEES_SCREEN_PAGE_SIZE),
+  });
+  if (text) params.set('q', text);
+  return fetchAdvisees(params);
 }
 
 /** O professor orientador encerra a orientação, com o motivo (RN30 e RN33); o servidor decide. */

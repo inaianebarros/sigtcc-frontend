@@ -64,7 +64,7 @@ RF31 - **Entregar Atividade:** O sistema deve permitir que o aluno submeta a ent
 
 RF32 - **Comentar Atividade:** O sistema deve permitir que aluno e professor adicionem comentários nas atividades para acompanhamento e feedback.
 
-RF33 - **Listar Orientados:** O sistema deve permitir que o professor visualize a lista de alunos sob sua orientação.
+RF33 - **Listar Orientados:** O sistema deve permitir que o professor visualize a lista de alunos sob sua orientação, isto é, os orientandos de orientações ativas, da orientação iniciada mais recentemente para a mais antiga e de forma paginada, de 10 em 10. O topo da tela mostra o total de orientandos ativos, que a busca não altera. O professor pode buscar pelo nome do aluno ou pelo tema do TCC, sem diferenciar maiúsculas e acentos, e o total e a paginação da lista refletem a busca. Cada orientando aparece em um cartão com o nome (acesso ao perfil do aluno, RF11), o curso, a situação "Ativa", o início da orientação, o tema do TCC (ou a indicação de que ainda não foi cadastrado) e a quantidade de atividades por status (pendente, em andamento, em revisão e concluída). O cartão permite ver as atividades do orientando (RF29), ver as reuniões dele no calendário (RF19, RN46), cadastrar ou editar o tema (RF23, RF24) e, pelo menu de mais ações, encerrar a orientação (RF15, RN30, RN33). Sem orientandos ativos, a tela mostra uma mensagem informativa com o acesso às solicitações recebidas, sem o campo de busca; com a busca sem resultado, mostra a mensagem correspondente e a ação de limpar a busca.
 
 RF34 - **Notificar Aluno sobre Resposta de Solicitação de Orientação:** O sistema deve notificar o aluno quando o professor aceitar ou recusar sua solicitação de orientação.
 

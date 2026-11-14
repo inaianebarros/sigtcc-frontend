@@ -35,6 +35,13 @@ export function makeAdvisee(
   };
 }
 
+function plain(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
 type Handler = MockResponse | ((body: unknown, url: URL) => MockResponse);
 
 /**
@@ -60,10 +67,19 @@ export function adviseeRoutes(
     'GET /api/orientacao/orientandos': (_body, url) => {
       const limit = Number(url.searchParams.get('limit') ?? 20);
       const offset = Number(url.searchParams.get('offset') ?? 0);
+      // `search` filtra só pelo nome (os seletores de aluno); `q`, pelo nome ou pelo tema.
+      const search = plain(url.searchParams.get('search') ?? '');
+      const q = plain(url.searchParams.get('q') ?? '');
+      const found = state.filter(
+        (item) =>
+          plain(item.student.full_name).includes(search) &&
+          (plain(item.student.full_name).includes(q) ||
+            plain(item.thesis_topic ?? '').includes(q)),
+      );
       return {
         body: {
-          items: state.slice(offset, offset + limit),
-          count: state.length,
+          items: found.slice(offset, offset + limit),
+          count: found.length,
         },
       };
     },

@@ -8,7 +8,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useRef, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { AdviseeActionsMenu } from '../advisees/AdviseeActionsMenu';
 import { AdviseeCard } from '../advisees/AdviseeCard';
 import {
@@ -16,12 +16,17 @@ import {
   REASON_REJECTED_MESSAGE,
 } from '../advisees/EndAdvisingDialog';
 import { PagePagination } from '../components/PagePagination';
+import { UrlSearchField } from '../components/UrlSearchField';
 import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
-import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
+import {
+  PAGE_PARAM,
+  useReturnToLastPage,
+  useUrlPage,
+} from '../hooks/useUrlPage';
 import {
   ApiError,
   isStateChangedError,
@@ -32,10 +37,12 @@ import { OriginLink } from '../navigation/OriginLink';
 import {
   ADVISEES_SCREEN_PAGE_SIZE,
   endAdvising,
-  listAdvisees,
+  listAdviseesByText,
 } from '../services/adviseeService';
 import type { Advisee } from '../services/adviseeService';
 import { ThesisTopicDialog } from '../thesis/ThesisTopicDialog';
+/** O parâmetro da URL com o texto buscado (RNF30). */
+const SEARCH_PARAM = 'busca';
 
 function foundText(count: number): string {
   return `${count} ${count === 1 ? 'orientando encontrado' : 'orientandos encontrados'}`;
@@ -47,6 +54,8 @@ function totalText(count: number): string {
 
 export function TeacherAdviseesPage() {
   const [reload, setReload] = useState(0);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = (searchParams.get(SEARCH_PARAM) ?? '').trim();
   const [page, setPage] = useUrlPage();
   const listTop = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -66,8 +75,8 @@ export function TeacherAdviseesPage() {
   const [failure, setFailure] = useState<string | null>(null);
   const [reasonError, setReasonError] = useState<string | null>(null);
   const list = useLoad(
-    () => listAdvisees(page, undefined, ADVISEES_SCREEN_PAGE_SIZE),
-    `${page}|${reload}`,
+    () => listAdviseesByText(page, search),
+    `${page}|${search}|${reload}`,
   );
 
   const { knownCount, lastPage, fallbackPage } = usePageBounds(
@@ -77,6 +86,19 @@ export function TeacherAdviseesPage() {
   );
 
   useReturnToLastPage(fallbackPage, page, setPage);
+
+  const changeSearch = (next: string) =>
+    setSearchParams((current) => {
+      const params = new URLSearchParams(current);
+      params.delete(PAGE_PARAM);
+      if (next === '') params.delete(SEARCH_PARAM);
+      else params.set(SEARCH_PARAM, next);
+      return params;
+    });
+  // Sem nenhum orientando ativo a busca não serve para nada: o campo fica escondido.
+  const noAdvisees =
+    activeCount === 0 ||
+    (list.status === 'ready' && list.data.count === 0 && search === '');
 
   const clearErrors = () => {
     setFailure(null);
@@ -142,6 +164,14 @@ export function TeacherAdviseesPage() {
           Acompanhe suas orientações ativas.
         </Typography>
       </div>
+      {!noAdvisees && (
+        <UrlSearchField
+          label="Buscar orientando"
+          placeholder="Digite o nome do aluno ou o tema do TCC..."
+          value={search}
+          onSearch={changeSearch}
+        />
+      )}
       {/* Uma frase curta numa região própria: reler a lista inteira a cada página seria ruído. */}
       <Typography role="status" aria-live="polite" color="text.secondary">
         {list.status === 'ready' && list.data.count > 0
@@ -167,7 +197,20 @@ export function TeacherAdviseesPage() {
             </Button>
           </Stack>
         )}
-        {list.status === 'ready' && list.data.count === 0 && (
+        {list.status === 'ready' && list.data.count === 0 && search !== '' && (
+          <Stack spacing={2}>
+            <Alert severity="info">
+              Nenhum orientando encontrado com esse texto
+            </Alert>
+            <Button
+              onClick={() => changeSearch('')}
+              sx={{ alignSelf: 'flex-start' }}
+            >
+              Limpar busca
+            </Button>
+          </Stack>
+        )}
+        {list.status === 'ready' && list.data.count === 0 && search === '' && (
           <Alert severity="info">
             Você ainda não tem orientandos ativos.{' '}
             <Link component={RouterLink} to={paths.teacherRequests}>
