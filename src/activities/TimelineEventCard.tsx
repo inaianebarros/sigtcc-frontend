@@ -117,79 +117,153 @@ interface TimelineEventCardProps {
   activityId: number;
   /** O evento é do usuário que lê a tela. */
   own: boolean;
+  /** Telas a partir de 600 px: o professor à esquerda, o aluno à direita e os números no centro. */
+  split: boolean;
+}
+
+/** As cores de cada lado: o professor em azul e o aluno em roxo, ambos com texto branco a 4,5:1. */
+const SIDE_COLORS = { teacher: 'primary', student: 'secondary' } as const;
+
+function Marker({ event, color }: { event: TimelineEvent; color: string }) {
+  return (
+    <Box
+      role="img"
+      aria-label={`Evento ${event.index}`}
+      sx={{
+        flexShrink: 0,
+        minWidth: 32,
+        height: 32,
+        px: 0.5,
+        borderRadius: 16,
+        display: 'grid',
+        placeItems: 'center',
+        bgcolor: `${color}.dark`,
+        color: `${color}.contrastText`,
+        fontWeight: 'bold',
+      }}
+    >
+      <span aria-hidden>{event.index}</span>
+    </Box>
+  );
+}
+
+function Details({
+  event,
+  activityId,
+  own,
+}: Omit<TimelineEventCardProps, 'split'>) {
+  return (
+    <Stack spacing={1} sx={{ minWidth: 0, flex: 1 }}>
+      <Stack
+        direction="row"
+        useFlexGap
+        sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}
+      >
+        <Typography
+          variant="subtitle1"
+          component="h3"
+          sx={{ fontWeight: 'medium' }}
+        >
+          {titleOf(event)}
+        </Typography>
+        <Badge event={event} />
+      </Stack>
+      <Stack
+        direction="row"
+        useFlexGap
+        sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}
+      >
+        <Typography>{event.author.fullName}</Typography>
+        <Chip
+          size="small"
+          variant="outlined"
+          label={AUTHOR_LABELS[event.author.type]}
+        />
+        {own && (
+          <Chip size="small" color="primary" variant="outlined" label="Você" />
+        )}
+        <Typography variant="caption" color="text.secondary">
+          {formatDateTime(event.occurredAt)}
+        </Typography>
+      </Stack>
+      <Body event={event} activityId={activityId} />
+    </Stack>
+  );
 }
 
 /**
  * Um Evento da Atividade (RF30): o número, o título pelo tipo, o selo quando há, a data com hora
- * no horário da instituição, quem agiu e o conteúdo, com os arquivos para baixar.
+ * no horário da instituição, quem agiu e o conteúdo, com os arquivos para baixar. Em uma coluna
+ * (celular) o número fica dentro do cartão; dividido (a partir de 600 px), o número vai para a
+ * coluna central e o cartão para o lado de quem agiu. O documento mantém a mesma ordem nos dois.
  */
 export function TimelineEventCard({
   event,
   activityId,
   own,
+  split,
 }: TimelineEventCardProps) {
+  if (!split) {
+    return (
+      <Box component="li" sx={{ listStyle: 'none' }}>
+        <Paper variant="outlined" data-card sx={{ p: 2 }}>
+          <Stack direction="row" spacing={2} sx={{ alignItems: 'flex-start' }}>
+            <Marker event={event} color="primary" />
+            <Details event={event} activityId={activityId} own={own} />
+          </Stack>
+        </Paper>
+      </Box>
+    );
+  }
+  const side = event.author.type;
+  const color = SIDE_COLORS[side];
   return (
-    <Paper component="li" variant="outlined" sx={{ p: 2, listStyle: 'none' }}>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'flex-start' }}>
-        <Box
-          role="img"
-          aria-label={`Evento ${event.index}`}
-          sx={{
-            flexShrink: 0,
-            minWidth: 32,
-            height: 32,
-            px: 0.5,
-            borderRadius: 16,
-            display: 'grid',
-            placeItems: 'center',
-            bgcolor: 'primary.dark',
-            color: 'primary.contrastText',
-            fontWeight: 'bold',
-          }}
-        >
-          <span aria-hidden>{event.index}</span>
+    <Box
+      component="li"
+      data-side={side}
+      sx={{
+        listStyle: 'none',
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr) 64px minmax(0, 1fr)',
+        pb: 2,
+      }}
+    >
+      <Box
+        sx={{
+          gridColumn: 2,
+          gridRow: 1,
+          position: 'relative',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          // A linha vertical que liga os números, também por baixo do espaço entre os cartões.
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            bottom: -16,
+            width: 2,
+            bgcolor: 'divider',
+          },
+        }}
+      >
+        <Box sx={{ position: 'relative' }}>
+          <Marker event={event} color={color} />
         </Box>
-        <Stack spacing={1} sx={{ minWidth: 0, flex: 1 }}>
-          <Stack
-            direction="row"
-            useFlexGap
-            sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}
-          >
-            <Typography
-              variant="subtitle1"
-              component="h3"
-              sx={{ fontWeight: 'medium' }}
-            >
-              {titleOf(event)}
-            </Typography>
-            <Badge event={event} />
-          </Stack>
-          <Stack
-            direction="row"
-            useFlexGap
-            sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}
-          >
-            <Typography>{event.author.fullName}</Typography>
-            <Chip
-              size="small"
-              variant="outlined"
-              label={AUTHOR_LABELS[event.author.type]}
-            />
-            {own && (
-              <Chip
-                size="small"
-                color="primary"
-                variant="outlined"
-                label="Você"
-              />
-            )}
-            <Typography variant="caption" color="text.secondary">
-              {formatDateTime(event.occurredAt)}
-            </Typography>
-          </Stack>
-          <Body event={event} activityId={activityId} />
-        </Stack>
-      </Stack>
-    </Paper>
+      </Box>
+      <Paper
+        variant="outlined"
+        data-card
+        sx={{
+          gridColumn: side === 'teacher' ? 1 : 3,
+          gridRow: 1,
+          p: 2,
+          borderWidth: 2,
+          borderColor: `${color}.main`,
+        }}
+      >
+        <Details event={event} activityId={activityId} own={own} />
+      </Paper>
+    </Box>
   );
 }

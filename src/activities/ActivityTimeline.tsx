@@ -5,6 +5,8 @@ import {
   CircularProgress,
   Stack,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useEffect, useRef } from 'react';
 import { NewComment } from './NewComment';
@@ -36,6 +38,8 @@ export function ActivityTimeline({
   onCommentTextChange,
 }: ActivityTimelineProps) {
   const timeline = useActivityTimeline(activityId);
+  // A partir de 600 px o professor fica à esquerda e o aluno à direita; abaixo, uma coluna só.
+  const split = useMediaQuery(useTheme().breakpoints.up('sm'));
   const sentinel = useRef<HTMLDivElement>(null);
   const { state, loadMore, loadingMore, moreFailed } = timeline;
   const canLoadMore = state.status === 'ready' && state.hasMore;
@@ -117,8 +121,9 @@ export function ActivityTimeline({
           </Stack>
           <Stack
             component="ol"
-            spacing={1}
+            spacing={split ? 0 : 1}
             aria-label="Eventos da atividade"
+            data-layout={split ? 'split' : 'stacked'}
             sx={{ m: 0, p: 0 }}
           >
             {state.items.map((event) => (
@@ -127,6 +132,7 @@ export function ActivityTimeline({
                 event={event}
                 activityId={activityId}
                 own={event.author.id === currentUserId}
+                split={split}
               />
             ))}
           </Stack>
