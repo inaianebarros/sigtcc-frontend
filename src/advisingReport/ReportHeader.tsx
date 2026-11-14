@@ -1,0 +1,70 @@
+import { Chip, Divider, Paper, Stack, Typography } from '@mui/material';
+import { formatShortDate } from '../formatters/dateTime';
+import type { AdvisingReport } from '../services/advisingReportService';
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <Stack direction="row" sx={{ justifyContent: 'space-between', gap: 2 }}>
+      <Typography color="text.secondary">{label}</Typography>
+      <Typography>{value}</Typography>
+    </Stack>
+  );
+}
+
+/**
+ * O cabeçalho do relatório (RF61): a outra parte, a situação, o tema congelado, as datas e o
+ * motivo do encerramento (RN33).
+ */
+export function ReportHeader({ report }: { report: AdvisingReport }) {
+  return (
+    <Paper variant="outlined" component="section" sx={{ p: 2 }}>
+      <Stack spacing={2}>
+        <Stack
+          direction="row"
+          sx={{
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{ overflowWrap: 'anywhere' }}
+          >
+            {report.counterpart.fullName}
+          </Typography>
+          <Chip
+            label="Encerrada"
+            color="success"
+            size="small"
+            variant="outlined"
+          />
+        </Stack>
+        <div>
+          <Typography variant="body2" color="text.secondary">
+            Tema da orientação
+          </Typography>
+          <Typography sx={{ overflowWrap: 'anywhere' }}>
+            {report.thesisTopic ?? 'Sem tema cadastrado'}
+          </Typography>
+        </div>
+        <Divider />
+        <Stack spacing={1}>
+          <Fact label="Início" value={formatShortDate(report.startedAt)} />
+          <Fact label="Encerramento" value={formatShortDate(report.endedAt)} />
+        </Stack>
+        <Divider />
+        <div>
+          <Typography variant="body2" color="text.secondary">
+            Motivo do encerramento
+          </Typography>
+          <Typography sx={{ overflowWrap: 'anywhere' }}>
+            {report.reason}
+          </Typography>
+        </div>
+      </Stack>
+    </Paper>
+  );
+}
