@@ -1,6 +1,9 @@
 import { vi } from 'vitest';
 import type { MockResponse } from './mockApi';
 
+/** Lançada por um tratador para simular o envio que falha sem resposta, como a rede fora. */
+export class UploadNetworkError extends Error {}
+
 /** O que o cliente enviou num pedido com progresso, para os testes conferirem. */
 export interface UploadRequest {
   method: string;
@@ -92,9 +95,14 @@ export function mockUploads(
           progress: (loaded, total, lengthComputable = true) =>
             this.upload.onprogress?.({ lengthComputable, loaded, total }),
         };
-        const result =
-          typeof route === 'function' ? await route(request, context) : route;
-        this.finish(result);
+        try {
+          const result =
+            typeof route === 'function' ? await route(request, context) : route;
+          this.finish(result);
+        } catch (error) {
+          if (!(error instanceof UploadNetworkError)) throw error;
+          this.onerror?.();
+        }
       })();
     }
 
