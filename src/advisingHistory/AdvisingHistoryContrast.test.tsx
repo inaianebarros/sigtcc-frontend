@@ -1,4 +1,4 @@
-import { Alert, ThemeProvider, createTheme } from '@mui/material';
+import { Alert, Chip, ThemeProvider, createTheme } from '@mui/material';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { contrast, opaque } from '../test/contrast';
@@ -19,6 +19,26 @@ describe('Histórico de orientações: contraste mínimo de 4,5:1 (WCAG 2.1 AA)'
 
   it('o motivo, o tema e os títulos, em texto primário, leem-se sobre o cartão branco', () => {
     expect(contrast(opaque(text.primary, WHITE), WHITE)).toBeGreaterThanOrEqual(
+      MINIMUM,
+    );
+  });
+
+  it('o chip "Encerrada" lê-se sobre o cartão branco', () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <Chip
+          label="Encerrada"
+          color="success"
+          size="small"
+          variant="outlined"
+        />
+      </ThemeProvider>,
+    );
+    const style = getComputedStyle(
+      screen.getByText('Encerrada').parentElement!,
+    );
+
+    expect(contrast(opaque(style.color, WHITE), WHITE)).toBeGreaterThanOrEqual(
       MINIMUM,
     );
   });
