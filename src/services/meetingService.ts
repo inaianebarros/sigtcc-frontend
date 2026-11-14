@@ -193,10 +193,11 @@ export interface CalendarAdviseePage {
 export async function listCalendarAdvisees(
   page: number,
   search?: string,
+  pageSize: number = CALENDAR_ADVISEES_PAGE_SIZE,
 ): Promise<CalendarAdviseePage> {
   const params = new URLSearchParams({
-    limit: String(CALENDAR_ADVISEES_PAGE_SIZE),
-    offset: String((page - 1) * CALENDAR_ADVISEES_PAGE_SIZE),
+    limit: String(pageSize),
+    offset: String((page - 1) * pageSize),
   });
   if (search) params.set('search', search);
   const response = await httpClient.get<{
@@ -211,6 +212,22 @@ export async function listCalendarAdvisees(
       ended: item.ended,
     })),
   };
+}
+
+/** O maior tamanho de página que o servidor aceita nas listagens. */
+const MAX_PAGE_SIZE = 100;
+
+/**
+ * Os ids de todos os orientandos do painel do calendário, lidos página a página: o calendário aberto
+ * pelo "Ver reuniões" precisa saber quem desligar para deixar só um orientando ligado (RN46).
+ */
+export async function listAllCalendarAdviseeIds(): Promise<number[]> {
+  const ids: number[] = [];
+  for (let page = 1; ; page += 1) {
+    const result = await listCalendarAdvisees(page, undefined, MAX_PAGE_SIZE);
+    ids.push(...result.items.map((advisee) => advisee.id));
+    if (ids.length >= result.count || result.items.length === 0) return ids;
+  }
 }
 
 /**

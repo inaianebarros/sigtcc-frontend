@@ -32,7 +32,11 @@ import {
   isStateChangedError,
   messageForStatus,
 } from '../services/apiError';
-import { paths, teacherStudentPath } from '../navigation/paths';
+import {
+  paths,
+  teacherMeetingsOfStudentPath,
+  teacherStudentPath,
+} from '../navigation/paths';
 import { OriginLink } from '../navigation/OriginLink';
 import {
   ADVISEES_SCREEN_PAGE_SIZE,
@@ -251,6 +255,14 @@ export function TeacherAdviseesPage() {
                       aria-label={`Ver atividades de ${advisee.student.fullName}`}
                     >
                       Ver atividades
+                    </Button>
+                    <Button
+                      component={RouterLink}
+                      to={teacherMeetingsOfStudentPath(advisee.student.id)}
+                      variant="outlined"
+                      aria-label={`Ver reuniões de ${advisee.student.fullName}`}
+                    >
+                      Ver reuniões
                     </Button>
                     <Button
                       variant="outlined"
