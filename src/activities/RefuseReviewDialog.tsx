@@ -29,7 +29,6 @@ import {
 } from './fileValidation';
 
 const schema = reasonFormSchema('justificativa');
-const FILE_ERROR_FIELD = /^files\.(\d+)$/;
 
 interface RefuseReviewDialogProps {
   open: boolean;
@@ -105,21 +104,13 @@ export function RefuseReviewDialog({
         onStateChanged(error);
         return;
       }
-      const byFile: Record<number, string> = {};
-      const rest: Record<string, string> = {};
-      if (error instanceof ApiError) {
-        for (const [field, message] of Object.entries(error.fieldErrors)) {
-          const index = FILE_ERROR_FIELD.exec(field)?.[1];
-          const target =
-            index === undefined ? undefined : chosen[Number(index)];
-          if (target) byFile[target.key] = message;
-          else rest[field] = message;
-        }
-        setServerErrors(byFile);
-      }
       const handled =
         error instanceof ApiError
-          ? new ApiError(error.status, error.message, rest)
+          ? new ApiError(
+              error.status,
+              error.message,
+              chosenFiles.applyServerErrors(error),
+            )
           : error;
       setFailure(
         applyApiFieldErrors(handled, { justification: 'reason' }, setError),

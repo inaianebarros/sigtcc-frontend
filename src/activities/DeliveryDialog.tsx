@@ -28,8 +28,6 @@ interface DeliveryDialogProps {
   onExited: () => void;
 }
 
-const FILE_ERROR_FIELD = /^files\.(\d+)$/;
-
 /**
  * O diálogo de entrega (RF31): escolhe de 1 a 5 arquivos pelo campo nativo ou soltando-os, confere
  * cada um como o servidor o fará, envia com o progresso e leva os erros de cada arquivo ao lado
@@ -79,17 +77,11 @@ export function DeliveryDialog({
         setFailure(messageOf(error));
         return;
       }
-      const byFile: Record<number, string> = {};
-      let general: string | null = null;
-      for (const [field, message] of Object.entries(error.fieldErrors)) {
-        const index = FILE_ERROR_FIELD.exec(field)?.[1];
-        const target = index === undefined ? undefined : chosen[Number(index)];
-        if (target) byFile[target.key] = message;
-        else general ??= message;
-      }
-      setServerErrors(byFile);
+      const rest = Object.values(chosenFiles.applyServerErrors(error));
       setFailure(
-        Object.keys(error.fieldErrors).length === 0 ? error.message : general,
+        Object.keys(error.fieldErrors).length === 0
+          ? error.message
+          : (rest[0] ?? null),
       );
     } finally {
       setSending(false);

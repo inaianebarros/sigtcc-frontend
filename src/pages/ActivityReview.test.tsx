@@ -435,6 +435,32 @@ describe('Revisão: recusar com arquivos (RF46)', () => {
     expect(refuseButton(dialog)).toBeEnabled();
   });
 
+  it('funciona só pelo teclado: chega ao seletor, remove um arquivo e recusa com Enter', async () => {
+    const { events, refusals } = setup();
+    const dialog = await openRefusal(events);
+    await writeJustification(events, dialog, 'Refazer.');
+    await choose(events, dialog, file('a.pdf'), file('b.pdf'));
+
+    within(dialog)
+      .getByLabelText(/Justificativa/)
+      .focus();
+    await events.tab();
+    expect(within(dialog).getByText('Escolher arquivos')).toHaveFocus();
+    await events.tab();
+    const remove = within(dialog).getByRole('button', {
+      name: 'Remover a.pdf',
+    });
+    expect(remove).toHaveFocus();
+    await events.keyboard('{Enter}');
+    expect(within(dialog).queryByText('a.pdf')).not.toBeInTheDocument();
+
+    refuseButton(dialog).focus();
+    await events.keyboard('{Enter}');
+
+    await screen.findByText('Atividade devolvida ao aluno');
+    expect(refusals[0]!.files.map((item) => item.name)).toEqual(['b.pdf']);
+  });
+
   it('mostra nome e tamanho de cada arquivo escolhido e deixa remover um', async () => {
     const { events } = setup();
     const dialog = await openRefusal(events);

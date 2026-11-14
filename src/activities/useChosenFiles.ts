@@ -1,7 +1,10 @@
 import { useRef, useState } from 'react';
+import type { ApiError } from '../services/apiError';
 import { MAX_FILES, problemWith } from './fileValidation';
 
-export interface ChosenFile {
+const FILE_ERROR_FIELD = /^files\.(\d+)$/;
+
+interface ChosenFile {
   /** Identifica o arquivo na lista, mesmo com dois de mesmo nome. */
   key: number;
   file: File;
@@ -44,6 +47,23 @@ export function useChosenFiles({ disabled, onAdd }: UseChosenFilesOptions) {
     setChosen(chosen.filter((item) => item.key !== key));
   };
 
+  /**
+   * Leva ao arquivo certo cada erro `files.N` do servidor e devolve os demais erros por campo,
+   * que quem usa trata como quiser.
+   */
+  const applyServerErrors = (error: ApiError): Record<string, string> => {
+    const byFile: Record<number, string> = {};
+    const rest: Record<string, string> = {};
+    for (const [field, message] of Object.entries(error.fieldErrors)) {
+      const index = FILE_ERROR_FIELD.exec(field)?.[1];
+      const target = index === undefined ? undefined : chosen[Number(index)];
+      if (target) byFile[target.key] = message;
+      else rest[field] = message;
+    }
+    setServerErrors(byFile);
+    return rest;
+  };
+
   return {
     chosen,
     files: chosen.map((item) => item.file),
@@ -52,6 +72,7 @@ export function useChosenFiles({ disabled, onAdd }: UseChosenFilesOptions) {
     overflowed,
     serverErrors,
     setServerErrors,
+    applyServerErrors,
     disabled,
     add,
     remove,
