@@ -139,6 +139,14 @@ export function activitiesServer(
         },
       };
     },
+    // Os totais gerais: não recebem filtros, então a busca e os filtros da lista nunca os alteram.
+    'GET /api/atividades/resumo': () => ({
+      body: {
+        total: state.length,
+        pending: state.filter((item) => item.status === 'pending').length,
+        completed: state.filter((item) => item.status === 'completed').length,
+      },
+    }),
     'GET /api/atividades/:id': (_body, _url, params) => {
       const found = state.find((item) => item.id === Number(params.id));
       return found

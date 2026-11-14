@@ -160,6 +160,17 @@ export async function listActivities(
   return { count: response.count, items: response.items.map(itemFrom) };
 }
 
+export interface ActivitySummary {
+  total: number;
+  pending: number;
+  completed: number;
+}
+
+/** Os totais gerais de atividades: sem filtros, nenhum filtro nem busca da lista os altera. */
+export function getActivitySummary(): Promise<ActivitySummary> {
+  return httpClient.get<ActivitySummary>('/atividades/resumo');
+}
+
 export async function getActivity(id: number): Promise<ActivityDetail> {
   return detailFrom(await httpClient.get<ApiDetail>(`/atividades/${id}`));
 }

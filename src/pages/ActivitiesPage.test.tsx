@@ -588,3 +588,159 @@ describe('ActivitiesPage: carregamento, erro e celular', () => {
     expect(titles).toEqual(['Zebra', 'Abelha', 'Macaco']);
   });
 });
+
+const SUMMARY = 'GET /api/atividades/resumo';
+
+/** Um cartão de total, achado pelo rótulo: o grupo reúne o rótulo e o número. */
+function totalOf(label: string) {
+  return screen.getByRole('group', { name: label });
+}
+
+const MIXED = [
+  makeActivity(1, { status: 'pending' }),
+  makeActivity(2, { status: 'pending', overdue: true }),
+  makeActivity(3, { status: 'in_progress' }),
+  makeActivity(4, { status: 'in_review' }),
+  makeActivity(5, { status: 'completed' }),
+];
+
+describe('ActivitiesPage: os totais', () => {
+  it.each(['student', 'teacher'] as const)(
+    'mostra Total Atividades, Total Concluídas e Total Pendentes (%s)',
+    async (user) => {
+      setup(MIXED, user);
+
+      expect(
+        await within(
+          await screen.findByRole('group', { name: 'Total Atividades' }),
+        ).findByText('5'),
+      ).toBeVisible();
+      expect(within(totalOf('Total Concluídas')).getByText('1')).toBeVisible();
+      // Pendentes é só a situação Pendente: em andamento e em revisão ficam de fora.
+      expect(within(totalOf('Total Pendentes')).getByText('2')).toBeVisible();
+    },
+  );
+
+  it('mostra zero nos três cartões quando não há atividades', async () => {
+    setup([], 'student');
+
+    await within(
+      await screen.findByRole('group', { name: 'Total Atividades' }),
+    ).findByText('0');
+    expect(within(totalOf('Total Concluídas')).getByText('0')).toBeVisible();
+    expect(within(totalOf('Total Pendentes')).getByText('0')).toBeVisible();
+  });
+
+  it('não muda os números ao filtrar por situação, atrasadas ou aluno', async () => {
+    const { fetchMock, events } = setup(MIXED, 'student');
+    await within(
+      await screen.findByRole('group', { name: 'Total Atividades' }),
+    ).findByText('5');
+
+    await events.click(screen.getByRole('combobox', { name: 'Situação' }));
+    await events.click(
+      await screen.findByRole('option', { name: 'Concluída' }),
+    );
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole('list', { name: 'Atividades' })).getAllByRole(
+          'link',
+        ),
+      ).toHaveLength(1),
+    );
+    await events.click(screen.getByRole('switch', { name: /atrasadas/i }));
+
+    expect(within(totalOf('Total Atividades')).getByText('5')).toBeVisible();
+    expect(within(totalOf('Total Pendentes')).getByText('2')).toBeVisible();
+    for (const [input] of requestsTo(fetchMock, SUMMARY)) {
+      expect(new URL(String(input), 'http://localhost').search).toBe('');
+    }
+  });
+
+  it('uma falha nos totais mostra o aviso com Tentar novamente e deixa a lista de pé', async () => {
+    const server = activitiesServer(
+      [makeActivity(1, { title: 'Capítulo 2' })],
+      { user: 'student' },
+    );
+    const original = server.routes[SUMMARY]!;
+    let failing = true;
+    server.routes[SUMMARY] = (body, url, params) =>
+      failing
+        ? { status: 500, body: {} }
+        : typeof original === 'function'
+          ? original(body, url, params)
+          : original;
+    mockApi(server.routes);
+    const events = userEvent.setup();
+    renderApp(STUDENT_PATH);
+
+    expect(await screen.findByText('Capítulo 2')).toBeVisible();
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('Ocorreu um erro no servidor');
+    failing = false;
+    await events.click(
+      screen.getByRole('button', { name: 'Tentar novamente' }),
+    );
+
+    expect(
+      await within(
+        await screen.findByRole('group', { name: 'Total Atividades' }),
+      ).findByText('1'),
+    ).toBeVisible();
+    expect(screen.getByText('Capítulo 2')).toBeVisible();
+  });
+
+  it('uma falha na lista não derruba os totais', async () => {
+    const server = activitiesServer([makeActivity(1)], {
+      user: 'student',
+      overrides: { [LIST]: { status: 500, body: {} } },
+    });
+    mockApi(server.routes);
+    renderApp(STUDENT_PATH);
+
+    expect(
+      await within(
+        await screen.findByRole('group', { name: 'Total Atividades' }),
+      ).findByText('1'),
+    ).toBeVisible();
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Ocorreu um erro no servidor',
+    );
+  });
+
+  it('mostra o carregamento próprio enquanto os totais chegam', async () => {
+    const server = activitiesServer([makeActivity(1)], { user: 'student' });
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const original = server.routes[SUMMARY] as () => { body: unknown };
+    server.routes[SUMMARY] = async () => {
+      await gate;
+      return original();
+    };
+    mockApi(server.routes);
+    renderApp(STUDENT_PATH);
+
+    expect(await screen.findByTestId('totals-skeleton')).toBeVisible();
+    expect(await screen.findByText('Atividade 1')).toBeVisible();
+    release();
+    expect(
+      await within(
+        await screen.findByRole('group', { name: 'Total Atividades' }),
+      ).findByText('1'),
+    ).toBeVisible();
+    expect(screen.queryByTestId('totals-skeleton')).not.toBeInTheDocument();
+  });
+
+  it('no celular os três cartões continuam visíveis', async () => {
+    setViewportWidth(PHONE_WIDTH);
+    setup(MIXED, 'student');
+
+    await within(
+      await screen.findByRole('group', { name: 'Total Atividades' }),
+    ).findByText('5');
+    expect(totalOf('Total Concluídas')).toBeVisible();
+    expect(totalOf('Total Pendentes')).toBeVisible();
+  });
+});
