@@ -4,7 +4,7 @@ RF01 - **Cadastrar Aluno:** O sistema deve permitir que o aluno faça cadastro i
 
 RF02 - **Cadastrar Professor:** O sistema deve permitir que o professor faça cadastro informando, na ordem: Matrícula, Nome Completo, E-mail, Senha, Confirmação de Senha, Instituto, Curso(s) e Áreas de Interesse (ao menos uma). O tipo da conta (professor) é o do cadastro escolhido e não é um campo do formulário: o usuário não o informa nem o altera.
 
-RF03 - **Realizar Login:** O sistema deve permitir que usuários cadastrados realizem o login utilizando e-mail e senha, concedendo acesso às funcionalidades de acordo com seu perfil.
+RF03 - **Realizar Login:** O sistema deve permitir que usuários cadastrados realizem o login utilizando e-mail e senha, concedendo acesso às funcionalidades de acordo com seu perfil. Ao acessar o endereço raiz do sistema, o usuário é levado à tela de login; se já estiver autenticado, vai direto à sua Dashboard (RF50, RF51).
 
 RF04 - **Editar Perfil do Aluno:** O sistema deve permitir que o aluno edite suas informações de perfil, como nome, áreas de interesse (ao menos uma deve permanecer cadastrada) e artigos publicados.
 

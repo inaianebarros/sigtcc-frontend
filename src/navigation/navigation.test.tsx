@@ -141,9 +141,35 @@ describe('menu lateral por perfil', () => {
 
     renderApp('/');
 
-    await screen.findByRole('heading', { level: 1, name: 'SIGTCC' });
+    await screen.findByRole('heading', { level: 1, name: 'Entrar' });
     expect(
       screen.queryByRole('navigation', { name: 'Menu principal' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('leva o aluno logado que abre a raiz ao Dashboard do aluno', async () => {
+    mockApi(sessionOf('student', { has_active_advising: false }));
+
+    renderApp('/');
+
+    expect(
+      await screen.findByRole('heading', { name: 'Dashboard' }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/aluno\/dashboard$/,
+    );
+  });
+
+  it('leva o professor logado que abre a raiz ao Dashboard do professor', async () => {
+    mockApi(sessionOf('teacher', { active_advisees_count: 0 }));
+
+    renderApp('/');
+
+    expect(
+      await screen.findByRole('heading', { name: 'Dashboard' }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/professor\/dashboard$/,
+    );
   });
 });

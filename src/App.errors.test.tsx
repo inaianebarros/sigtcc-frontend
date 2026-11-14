@@ -4,8 +4,8 @@ import { App } from './App';
 import { tokenStore } from './services/tokenStore';
 import { mockApi } from './test/mockApi';
 
-vi.mock('./pages/HomePage', () => ({
-  HomePage: () => {
+vi.mock('./pages/LoginPage', () => ({
+  LoginPage: () => {
     throw new Error('payload inesperado');
   },
 }));
@@ -19,7 +19,7 @@ describe('App: erro de renderização numa rota', () => {
   });
 
   it('mostra o aviso em português do app, e não a tela de erro padrão do roteador', async () => {
-    window.history.pushState({}, '', '/');
+    window.history.pushState({}, '', '/login');
 
     render(<App />);
 
