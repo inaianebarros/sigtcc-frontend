@@ -7,6 +7,7 @@ import { paths } from './navigation/paths';
 import { ActivitiesPage } from './pages/ActivitiesPage';
 import { ActivityDetailPage } from './pages/ActivityDetailPage';
 import { AdvisingHistoryPage } from './pages/AdvisingHistoryPage';
+import { AdvisingReportPage } from './pages/AdvisingReportPage';
 import { AdvisorProfilePage } from './pages/AdvisorProfilePage';
 import { AdvisorsPage } from './pages/AdvisorsPage';
 import { AreaPage } from './pages/AreaPage';
@@ -59,6 +60,8 @@ const subScreens: Record<string, ReactElement> = {
   ),
   [paths.studentActivity]: <ActivityDetailPage />,
   [paths.teacherActivity]: <ActivityDetailPage />,
+  [paths.studentAdvisingReport]: <AdvisingReportPage />,
+  [paths.teacherAdvisingReport]: <AdvisingReportPage />,
   [paths.teacherStudent]: <StudentProfileViewPage />,
   [paths.studentAdvisor]: <AdvisorProfilePage />,
   [paths.studentNotifications]: <NotificationsPage />,

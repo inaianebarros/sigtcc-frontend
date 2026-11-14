@@ -8,7 +8,11 @@ import { UrlSearchField } from '../components/UrlSearchField';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
-import { studentAdvisorPath, teacherStudentPath } from '../navigation/paths';
+import {
+  advisingReportPath,
+  studentAdvisorPath,
+  teacherStudentPath,
+} from '../navigation/paths';
 import {
   PAGE_PARAM,
   useReturnToLastPage,
@@ -139,6 +143,10 @@ export function AdvisingHistoryPage() {
               <EndedAdvisingCard
                 key={advising.id}
                 advising={advising}
+                reportPath={advisingReportPath(
+                  isStudent ? 'student' : 'teacher',
+                  advising.id,
+                )}
                 counterpartPath={
                   isStudent
                     ? studentAdvisorPath(advising.counterpart.id)

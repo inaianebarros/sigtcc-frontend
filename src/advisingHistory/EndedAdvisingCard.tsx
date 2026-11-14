@@ -8,6 +8,7 @@ import {
 } from '@mui/material';
 import { useId } from 'react';
 import { formatShortDate } from '../formatters/dateTime';
+import { VisuallyHidden } from '../components/VisuallyHidden';
 import { OriginLink } from '../navigation/OriginLink';
 import type { EndedAdvising } from '../services/advisingHistoryService';
 
@@ -15,6 +16,8 @@ interface EndedAdvisingCardProps {
   advising: EndedAdvising;
   /** O perfil da outra parte: o do professor, para o aluno, e o do aluno, para o professor. */
   counterpartPath: string;
+  /** O relatório da orientação (RF61). */
+  reportPath: string;
 }
 
 function DateRow({ label, value }: { label: string; value: string }) {
@@ -28,12 +31,13 @@ function DateRow({ label, value }: { label: string; value: string }) {
 
 /**
  * Uma orientação encerrada: a outra parte (o professor, para o aluno; o aluno, para o professor),
- * o tema congelado e as datas (RF49). O motivo do encerramento fica fora do cartão. O "Ver
- * relatório" é só um texto, sem link, até a tela dos relatórios existir.
+ * o tema congelado e as datas (RF49). O motivo do encerramento fica no relatório, que o "Ver
+ * relatório" abre (RF61).
  */
 export function EndedAdvisingCard({
   advising,
   counterpartPath,
+  reportPath,
 }: EndedAdvisingCardProps) {
   const titleId = useId();
   return (
@@ -73,8 +77,14 @@ export function EndedAdvisingCard({
             <DateRow label="Início" value={advising.startedAt} />
             <DateRow label="Encerramento" value={advising.endedAt} />
           </Stack>
-          <Typography color="text.secondary" sx={{ alignSelf: 'flex-end' }}>
-            Ver relatório
+          <Typography sx={{ alignSelf: 'flex-end' }}>
+            <OriginLink to={reportPath}>
+              Ver relatório
+              <VisuallyHidden>
+                {' '}
+                de {advising.counterpart.fullName}
+              </VisuallyHidden>
+            </OriginLink>
           </Typography>
         </Stack>
       </CardContent>
