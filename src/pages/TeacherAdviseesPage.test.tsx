@@ -84,8 +84,9 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
     const card = cardOf('Ana Souza');
 
     expect(within(card).getByText('Sistemas de Informação')).toBeVisible();
+    expect(within(card).getByText('Ativa')).toBeVisible();
     expect(
-      within(card).getByText('Orientação iniciada em 2 de novembro de 2026'),
+      within(card).getByText('Início da orientação: 02/11/2026'),
     ).toBeVisible();
     expect(
       within(card).getByText('Tema: Aprendizado de máquina na saúde'),
@@ -98,10 +99,10 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
         .getAllByRole('listitem')
         .map((item) => item.textContent),
     ).toEqual([
-      'Pendente: 5',
+      'Pendentes: 5',
       'Em andamento: 6',
       'Em revisão: 7',
-      'Concluída: 8',
+      'Concluídas: 8',
     ]);
   });
 
@@ -131,14 +132,14 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
         .getAllByRole('listitem')
         .map((item) => item.textContent),
     ).toEqual([
-      'Pendente: 0',
+      'Pendentes: 0',
       'Em andamento: 0',
       'Em revisão: 0',
-      'Concluída: 0',
+      'Concluídas: 0',
     ]);
   });
 
-  it('não mostra e-mail nem matrícula, e o cartão tem só os links do nome e das atividades e as ações de tema e de encerrar', async () => {
+  it('não mostra e-mail nem matrícula, e o cartão tem só os links do nome e das atividades e as ações de tema e o menu de mais ações', async () => {
     setup();
     await screen.findByText('Orientando 1');
 
@@ -156,8 +157,13 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
     expect(
       within(card)
         .getAllByRole('button')
-        .map((button) => button.textContent),
-    ).toEqual(['Editar tema', 'Encerrar orientação']);
+        .map(
+          (button) => button.getAttribute('aria-label') ?? button.textContent,
+        ),
+    ).toEqual(['Mais ações de Orientando 1', 'Editar tema de Orientando 1']);
+    expect(
+      within(card).queryByRole('button', { name: /Encerrar orientação/ }),
+    ).not.toBeInTheDocument();
     expect(card.textContent).not.toMatch(/@|Matrícula/);
   });
 

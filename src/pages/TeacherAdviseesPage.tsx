@@ -9,6 +9,7 @@ import {
 } from '@mui/material';
 import { useRef, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
+import { AdviseeActionsMenu } from '../advisees/AdviseeActionsMenu';
 import { AdviseeCard } from '../advisees/AdviseeCard';
 import {
   EndAdvisingDialog,
@@ -182,6 +183,19 @@ export function TeacherAdviseesPage() {
                     {name}
                   </OriginLink>
                 )}
+                menu={
+                  <AdviseeActionsMenu
+                    studentName={advisee.student.fullName}
+                    onEnd={() => {
+                      clearErrors();
+                      setDialog((current) => ({
+                        advisee,
+                        open: true,
+                        openCount: (current?.openCount ?? 0) + 1,
+                      }));
+                    }}
+                  />
+                }
                 actions={
                   <>
                     <Button
@@ -198,21 +212,6 @@ export function TeacherAdviseesPage() {
                       onClick={() => topicDialog.show(advisee)}
                     >
                       {advisee.thesisTopic ? 'Editar tema' : 'Cadastrar tema'}
-                    </Button>
-                    <Button
-                      color="error"
-                      variant="outlined"
-                      aria-label={`Encerrar orientação de ${advisee.student.fullName}`}
-                      onClick={() => {
-                        clearErrors();
-                        setDialog((current) => ({
-                          advisee,
-                          open: true,
-                          openCount: (current?.openCount ?? 0) + 1,
-                        }));
-                      }}
-                    >
-                      Encerrar orientação
                     </Button>
                   </>
                 }
