@@ -39,7 +39,8 @@ export function ActivityTimeline({
 }: ActivityTimelineProps) {
   const timeline = useActivityTimeline(activityId);
   // A partir de 600 px o professor fica à esquerda e o aluno à direita; abaixo, uma coluna só.
-  const split = useMediaQuery(useTheme().breakpoints.up('sm'));
+  // `noSsr` lê a largura já na primeira renderização: sem montar empilhado e remontar dividido.
+  const split = useMediaQuery(useTheme().breakpoints.up('sm'), { noSsr: true });
   const sentinel = useRef<HTMLDivElement>(null);
   const { state, loadMore, loadingMore, moreFailed } = timeline;
   const canLoadMore = state.status === 'ready' && state.hasMore;

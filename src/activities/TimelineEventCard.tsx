@@ -1,4 +1,5 @@
 import { Box, Chip, Paper, Stack, Typography } from '@mui/material';
+import type { Theme } from '@mui/material';
 import { formatDateTime } from '../formatters/dateTime';
 import {
   downloadReviewFile,
@@ -122,9 +123,18 @@ interface TimelineEventCardProps {
 }
 
 /** As cores de cada lado: o professor em azul e o aluno em roxo, ambos com texto branco a 4,5:1. */
+/** O espaço entre os eventos do layout dividido, em unidades do tema; a linha central o atravessa. */
+const ROW_SPACING = 2;
+
 const SIDE_COLORS = { teacher: 'primary', student: 'secondary' } as const;
 
-function Marker({ event, color }: { event: TimelineEvent; color: string }) {
+function Marker({
+  event,
+  color,
+}: {
+  event: TimelineEvent;
+  color: (typeof SIDE_COLORS)[keyof typeof SIDE_COLORS];
+}) {
   return (
     <Box
       role="img"
@@ -225,7 +235,9 @@ export function TimelineEventCard({
         listStyle: 'none',
         display: 'grid',
         gridTemplateColumns: 'minmax(0, 1fr) 64px minmax(0, 1fr)',
-        pb: 2,
+        pb: ROW_SPACING,
+        // O último evento termina a linha no próprio número, sem avançar sobre o que vem depois.
+        '&:last-of-type > div:first-of-type::before': { bottom: 0 },
       }}
     >
       <Box
@@ -241,7 +253,7 @@ export function TimelineEventCard({
             content: '""',
             position: 'absolute',
             top: 0,
-            bottom: -16,
+            bottom: (theme: Theme) => `-${theme.spacing(ROW_SPACING)}`,
             width: 2,
             bgcolor: 'divider',
           },

@@ -1,5 +1,6 @@
 import { createTheme } from '@mui/material';
 import { screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { tokenStore } from '../services/tokenStore';
 import { activitiesServer, makeActivity } from '../test/activitiesApi';
@@ -65,12 +66,19 @@ const COMMENTS: FakeComment[] = [
   }),
 ];
 
-function setup(width: number) {
+function setup(
+  width: number,
+  {
+    comments = COMMENTS,
+    overrides = {},
+  }: { comments?: FakeComment[]; overrides?: Record<string, never> } = {},
+) {
   setViewportWidth(width);
-  const commentApi = commentsServer(COMMENTS, STUDENT);
+  const commentApi = commentsServer(comments, STUDENT);
   const server = activitiesServer([makeActivity(5, ACTIVITY)], {
     user: 'student',
     comments: commentApi.comments,
+    overrides,
   });
   mockApi({ ...server.routes, ...commentApi.routes });
   renderApp('/aluno/atividades/5');
@@ -157,7 +165,7 @@ describe('Linha do tempo: duas colunas a partir de 600 px', () => {
     expect(studentCard).toHaveStyle({ gridColumn: '3' });
   });
 
-  it('o campo de comentário, o botão de carregar mais e o fim do histórico seguem à vista', async () => {
+  it('o campo de comentário e o fim do histórico seguem à vista', async () => {
     setup(DESKTOP_WIDTH);
 
     const region = await timeline();
@@ -165,6 +173,60 @@ describe('Linha do tempo: duas colunas a partir de 600 px', () => {
     expect(within(region).getByLabelText('Novo comentário')).toBeVisible();
     expect(within(region).getByText('Início do histórico')).toBeVisible();
     expect(within(region).getByText('7 de 7 eventos carregados')).toBeVisible();
+  });
+});
+
+describe('Linha do tempo: carregar mais e erro nas duas colunas', () => {
+  const many = Array.from({ length: 20 }, (_, position) =>
+    makeComment(position + 1, {
+      text: `Comentário ${position + 1}`,
+      created_at: `2026-11-04T10:${String(position).padStart(2, '0')}:00Z`,
+      author: position % 2 === 0 ? STUDENT : TEACHER,
+    }),
+  );
+
+  it.each([DESKTOP_WIDTH, PHONE_WIDTH])(
+    'com %i px, o botão Carregar mais eventos traz os próximos e mantém os lados',
+    async (width) => {
+      setup(width, { comments: many });
+      const region = await screen.findByRole('region', {
+        name: 'Linha do tempo',
+      });
+      await within(region).findByText('10 de 25 eventos carregados');
+      const events = userEvent.setup();
+
+      expect(titles(region)).toHaveLength(10);
+      await events.click(
+        within(region).getByRole('button', { name: 'Carregar mais eventos' }),
+      );
+
+      await within(region).findByText('20 de 25 eventos carregados');
+      const loaded = sides(region);
+      expect(loaded).toHaveLength(20);
+      if (width === DESKTOP_WIDTH) {
+        expect(loaded.every(([, side]) => side !== null)).toBe(true);
+      }
+    },
+  );
+
+  it('o erro de leitura mostra Tentar novamente também no layout largo', async () => {
+    setup(DESKTOP_WIDTH, {
+      overrides: {
+        'GET /api/atividades/:id/linha-do-tempo': {
+          status: 500,
+          body: {},
+        } as never,
+      },
+    });
+
+    const region = await screen.findByRole('region', {
+      name: 'Linha do tempo',
+    });
+
+    expect(await within(region).findByRole('alert')).toBeVisible();
+    expect(
+      within(region).getByRole('button', { name: 'Tentar novamente' }),
+    ).toBeVisible();
   });
 });
 
