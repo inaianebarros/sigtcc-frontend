@@ -58,7 +58,7 @@ RF28 - **Alterar Status da Atividade:** O sistema deve permitir que o aluno alte
 
 RF29 - **Listar Atividades:** O sistema deve permitir que aluno e professor visualize a lista de atividades vinculadas ao TCC, exibindo como "Atrasada" a atividade cujo prazo venceu sem estar concluída.
 
-RF30 - **Visualizar Detalhes da Atividade:** O sistema deve permitir que o usuário visualize os detalhes de uma atividade especifica, incluindo o prazo e a indicação "Atrasada" quando aplicável.
+RF30 - **Visualizar Detalhes da Atividade:** O sistema deve permitir que o usuário visualize os detalhes de uma atividade específica. O topo da tela mostra o título, a situação, o prazo e a indicação "Atrasada" quando aplicável (RN24), o aluno e o orientador e, logo abaixo, a descrição da atividade, fixa no topo, em destaque e com o texto inteiro, sempre a atual. Em seguida vêm as ações de cada perfil (RF26, RF27, RF28, RF31, RF32 e RF46) e a linha do tempo da atividade (RN49), que mostra, do evento mais recente para o mais antigo, a criação, as entregas com os arquivos, as mudanças de situação do aluno, os envios para revisão, os comentários e as avaliações, com a justificativa e os anexos do professor. No celular a linha do tempo é uma coluna só; em telas maiores as ações do professor ficam à esquerda e as do aluno à direita. Ela carrega 10 eventos por vez, conforme o usuário rola a tela, com o botão "Carregar mais eventos" como alternativa, e termina com "Início do histórico".
 
 RF31 - **Entregar Atividade:** O sistema deve permitir que o aluno submeta a entrega de uma atividade, sendo possível anexar arquivos.
 
