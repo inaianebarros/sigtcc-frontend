@@ -26,6 +26,7 @@ export interface ActivityPage {
   count: number;
 }
 
+/** Um arquivo guardado pelo servidor: de uma Entrega (RF31) ou do Anexo da Revisão (RN48). */
 export interface SubmissionFile {
   id: number;
   fileName: string;
@@ -47,6 +48,8 @@ export interface Review {
   /** Só as recusas a têm (RN40); no aceite vem vazia. */
   justification: string;
   decidedAt: string;
+  /** Os anexos da recusa (RN48); vazia no aceite e na recusa sem arquivos. */
+  files: SubmissionFile[];
 }
 
 export interface ActivityDetail extends ActivityItem {
@@ -90,20 +93,32 @@ interface ApiDetail extends ApiItem {
   submissions: {
     id: number;
     submitted_at: string;
-    files: {
-      id: number;
-      file_name: string;
-      size_bytes: number;
-      content_type: string;
-    }[];
+    files: ApiFile[];
   }[];
   reviews: {
     id: number;
     decision: ReviewDecision;
     justification: string;
     decided_at: string;
+    files: ApiFile[];
   }[];
   comments_count: number;
+}
+
+interface ApiFile {
+  id: number;
+  file_name: string;
+  size_bytes: number;
+  content_type: string;
+}
+
+function fileFrom(file: ApiFile): SubmissionFile {
+  return {
+    id: file.id,
+    fileName: file.file_name,
+    sizeBytes: file.size_bytes,
+    contentType: file.content_type,
+  };
 }
 
 function itemFrom(item: ApiItem): ActivityItem {
@@ -128,18 +143,14 @@ function detailFrom(detail: ApiDetail): ActivityDetail {
     submissions: detail.submissions.map((submission) => ({
       id: submission.id,
       submittedAt: submission.submitted_at,
-      files: submission.files.map((file) => ({
-        id: file.id,
-        fileName: file.file_name,
-        sizeBytes: file.size_bytes,
-        contentType: file.content_type,
-      })),
+      files: submission.files.map(fileFrom),
     })),
     reviews: detail.reviews.map((review) => ({
       id: review.id,
       decision: review.decision,
       justification: review.justification,
       decidedAt: review.decided_at,
+      files: review.files.map(fileFrom),
     })),
     commentsCount: detail.comments_count,
   };
@@ -200,6 +211,17 @@ export function downloadSubmissionFile(
   fileId: number,
 ): Promise<Blob> {
   return httpClient.download(`/atividades/${activityId}/arquivos/${fileId}`);
+}
+
+/** O conteúdo de um anexo de uma recusa, por requisição autenticada (RN48). */
+export function downloadReviewFile(
+  activityId: number,
+  reviewId: number,
+  fileId: number,
+): Promise<Blob> {
+  return httpClient.download(
+    `/atividades/${activityId}/revisoes/${reviewId}/arquivos/${fileId}`,
+  );
 }
 
 /** A Entrega de 1 a 5 arquivos (RF31), com o progresso do envio de 0 a 100. */
