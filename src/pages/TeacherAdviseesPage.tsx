@@ -41,12 +41,12 @@ import {
 } from '../services/adviseeService';
 import type { Advisee } from '../services/adviseeService';
 import { ThesisTopicDialog } from '../thesis/ThesisTopicDialog';
+/** O parâmetro da URL com o texto buscado (RNF30). */
+const SEARCH_PARAM = 'busca';
 
 function foundText(count: number): string {
   return `${count} ${count === 1 ? 'orientando encontrado' : 'orientandos encontrados'}`;
 }
-
-const SEARCH_PARAM = 'busca';
 
 function totalText(count: number): string {
   return `${count} ${count === 1 ? 'orientando' : 'orientandos'}`;

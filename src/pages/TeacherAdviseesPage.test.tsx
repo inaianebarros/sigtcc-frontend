@@ -474,6 +474,25 @@ describe('TeacherAdviseesPage: a busca por nome ou tema', () => {
     expect(screen.getByText('2 orientandos')).toBeVisible();
   });
 
+  it('anuncia a quantidade encontrada numa região de status, que acompanha a busca', async () => {
+    const { user } = setup(people);
+    await screen.findByText('2 orientandos encontrados');
+    const announced = () =>
+      screen
+        .getAllByRole('status')
+        .map((region) => region.textContent)
+        .join('|');
+
+    expect(announced()).toContain('2 orientandos encontrados');
+
+    await user.type(screen.getByLabelText('Buscar orientando'), 'maria');
+
+    await waitFor(() =>
+      expect(announced()).toContain('1 orientando encontrado'),
+    );
+    expect(announced()).not.toContain('2 orientandos encontrados');
+  });
+
   it('a busca espera 400 ms sem digitação antes de ir ao servidor', async () => {
     const { fetchMock, user } = setup(people);
     await screen.findByText('José Almeida');
