@@ -6,13 +6,20 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { PagePagination } from '../components/PagePagination';
+import { usePageBounds } from '../hooks/usePageBounds';
 import { RecordCard } from './RecordCard';
 import { RecordTypeFilter } from './RecordTypeFilter';
 import { useLoad } from '../hooks/useLoad';
-import { PAGE_PARAM, useUrlPage } from '../hooks/useUrlPage';
 import {
+  PAGE_PARAM,
+  useReturnToLastPage,
+  useUrlPage,
+} from '../hooks/useUrlPage';
+import {
+  RECORDS_PAGE_SIZE,
   listAdvisingRecords,
   type RecordType,
 } from '../services/advisingRecordsService';
@@ -47,13 +54,21 @@ function countText(count: number): string {
 export function RecordsSection({ advisingId }: { advisingId: number }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const type = typeFrom(searchParams.get(TYPE_PARAM));
-  const [page] = useUrlPage();
+  const [page, setPage] = useUrlPage();
+  const listTop = useRef<HTMLDivElement>(null);
   const [reload, setReload] = useState(0);
   const headingId = useId();
   const list = useLoad(
     () => listAdvisingRecords(advisingId, page, type ?? undefined),
     `${advisingId}|${type}|${page}|${reload}`,
   );
+
+  const { knownCount, lastPage, fallbackPage } = usePageBounds(
+    list,
+    RECORDS_PAGE_SIZE,
+    page,
+  );
+  useReturnToLastPage(fallbackPage, page, setPage);
 
   const changeType = (next: RecordType | null) =>
     setSearchParams((current) => {
@@ -65,7 +80,12 @@ export function RecordsSection({ advisingId }: { advisingId: number }) {
     });
 
   return (
-    <Stack spacing={2} component="section" aria-labelledby={headingId}>
+    <Stack
+      ref={listTop}
+      spacing={2}
+      component="section"
+      aria-labelledby={headingId}
+    >
       <Typography id={headingId} variant="h5" component="h2">
         Histórico de acontecimentos
       </Typography>
@@ -138,6 +158,17 @@ export function RecordsSection({ advisingId }: { advisingId: number }) {
           ))}
         </Stack>
       )}
+      <PagePagination
+        ariaLabel="Paginação dos registros"
+        knownCount={knownCount}
+        pageSize={RECORDS_PAGE_SIZE}
+        lastPage={lastPage}
+        page={page}
+        onChange={(next) => {
+          setPage(next);
+          listTop.current?.scrollIntoView?.({ block: 'start' });
+        }}
+      />
     </Stack>
   );
 }

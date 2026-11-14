@@ -12,7 +12,7 @@ import {
 } from '../test/advisingReportApi';
 import { mockApi, requestsTo } from '../test/mockApi';
 import { renderApp } from '../test/renderApp';
-import { DESKTOP_WIDTH, setViewportWidth } from '../test/viewport';
+import { DESKTOP_WIDTH, PHONE_WIDTH, setViewportWidth } from '../test/viewport';
 
 const PATH = '/aluno/historico/7/relatorio';
 
@@ -468,5 +468,112 @@ describe('AdvisingReportPage: estados da lista e anúncio', () => {
         '2 registros',
       ),
     );
+  });
+});
+
+describe('AdvisingReportPage: a paginação e a URL (RNF30)', () => {
+  const many: FakeRecord[] = Array.from({ length: 25 }, (_, index) =>
+    makeActivityRecord(index + 1),
+  );
+
+  function offsets(fetchMock: ReturnType<typeof mockApi>) {
+    return requestsTo(
+      fetchMock,
+      'GET /api/orientacao/historico/7/registros',
+    ).map(([input]) => {
+      const params = new URL(String(input), 'http://localhost').searchParams;
+      return { limit: params.get('limit'), offset: params.get('offset') };
+    });
+  }
+
+  it('pede 10 por página e mostra os 10 primeiros registros', async () => {
+    const fetchMock = setup(many);
+
+    expect(await screen.findByText('25 registros')).toBeVisible();
+
+    expect(offsets(fetchMock)).toEqual([{ limit: '10', offset: '0' }]);
+    expect(screen.getAllByRole('article')).toHaveLength(10);
+  });
+
+  it('abre a segunda página pela navegação e guarda a página na URL', async () => {
+    const fetchMock = setup(many);
+    const user = userEvent.setup();
+    await screen.findByText('25 registros');
+
+    await user.click(
+      within(
+        screen.getByRole('navigation', { name: 'Paginação dos registros' }),
+      ).getByRole('button', { name: /Ir para a página 2/ }),
+    );
+
+    expect(await screen.findByText('Atividade 11')).toBeVisible();
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      `${PATH}?pagina=2`,
+    );
+    expect(offsets(fetchMock).at(-1)).toEqual({ limit: '10', offset: '10' });
+    expect(screen.queryByText('Atividade 1')).not.toBeInTheDocument();
+  });
+
+  it('mantém o tipo de registro na URL ao trocar de página', async () => {
+    setup(many, { path: `${PATH}?tipo=atividades` });
+    const user = userEvent.setup();
+    await screen.findByText('25 registros');
+
+    await user.click(
+      within(
+        screen.getByRole('navigation', { name: 'Paginação dos registros' }),
+      ).getByRole('button', { name: /Ir para a página 2/ }),
+    );
+
+    await screen.findByText('Atividade 11');
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      `${PATH}?tipo=atividades&pagina=2`,
+    );
+  });
+
+  it('recarregar em ?pagina=3 volta à mesma página', async () => {
+    const fetchMock = setup(many, { path: `${PATH}?pagina=3` });
+
+    expect(await screen.findByText('Atividade 21')).toBeVisible();
+    expect(offsets(fetchMock)).toEqual([{ limit: '10', offset: '20' }]);
+    expect(screen.getAllByRole('article')).toHaveLength(5);
+  });
+
+  it('uma página além da última volta para a última, sem entrar no histórico', async () => {
+    setup(many, { path: `${PATH}?pagina=9` });
+
+    expect(await screen.findByText('Atividade 21')).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        `${PATH}?pagina=3`,
+      ),
+    );
+  });
+
+  it('com 10 registros ou menos, a navegação não aparece', async () => {
+    setup(many.slice(0, 10));
+    await screen.findByText('10 registros');
+
+    expect(
+      screen.queryByRole('navigation', { name: 'Paginação dos registros' }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe('AdvisingReportPage: o celular', () => {
+  it('em tela estreita, o filtro, os cartões e a navegação continuam disponíveis', async () => {
+    setViewportWidth(PHONE_WIDTH);
+    setup(
+      Array.from({ length: 12 }, (_, index) => makeActivityRecord(index + 1)),
+    );
+
+    expect(await screen.findByText('12 registros')).toBeVisible();
+    expect(
+      screen.getByRole('group', { name: 'Tipo de registro' }),
+    ).toBeVisible();
+    expect(screen.getAllByRole('article')).toHaveLength(10);
+    expect(
+      screen.getByRole('navigation', { name: 'Paginação dos registros' }),
+    ).toBeVisible();
   });
 });
