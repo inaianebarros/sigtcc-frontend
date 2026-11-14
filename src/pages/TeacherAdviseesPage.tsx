@@ -30,7 +30,7 @@ import {
 import { paths, teacherStudentPath } from '../navigation/paths';
 import { OriginLink } from '../navigation/OriginLink';
 import {
-  ADVISEES_PAGE_SIZE,
+  ADVISEES_SCREEN_PAGE_SIZE,
   endAdvising,
   listAdvisees,
 } from '../services/adviseeService';
@@ -65,11 +65,14 @@ export function TeacherAdviseesPage() {
   const [sending, setSending] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [reasonError, setReasonError] = useState<string | null>(null);
-  const list = useLoad(() => listAdvisees(page), `${page}|${reload}`);
+  const list = useLoad(
+    () => listAdvisees(page, undefined, ADVISEES_SCREEN_PAGE_SIZE),
+    `${page}|${reload}`,
+  );
 
   const { knownCount, lastPage, fallbackPage } = usePageBounds(
     list,
-    ADVISEES_PAGE_SIZE,
+    ADVISEES_SCREEN_PAGE_SIZE,
     page,
   );
 
@@ -223,7 +226,7 @@ export function TeacherAdviseesPage() {
       <PagePagination
         ariaLabel="Paginação dos orientandos"
         knownCount={knownCount}
-        pageSize={ADVISEES_PAGE_SIZE}
+        pageSize={ADVISEES_SCREEN_PAGE_SIZE}
         lastPage={lastPage}
         page={page}
         onChange={(next) => {

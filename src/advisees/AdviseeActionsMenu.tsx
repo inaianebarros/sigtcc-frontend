@@ -45,7 +45,17 @@ export function AdviseeActionsMenu({
             setAnchor(null);
             onEnd();
           }}
-          sx={{ color: 'error.dark' }}
+          sx={{
+            color: 'error.dark',
+            // O cinza padrão do foco derruba o vermelho abaixo de 4,5:1 (RNF23): um fundo mais claro
+            // e um contorno mantêm o foco visível.
+            '&.Mui-focusVisible': {
+              backgroundColor: 'action.hover',
+              outline: '2px solid',
+              outlineColor: 'error.dark',
+              outlineOffset: '-2px',
+            },
+          }}
         >
           <ListItemText>Encerrar orientação</ListItemText>
         </MenuItem>

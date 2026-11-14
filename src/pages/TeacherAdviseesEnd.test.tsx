@@ -53,9 +53,12 @@ async function openDialog(
 ) {
   await screen.findByText(name);
   const button = within(cardOf(name)).getByRole('button', {
-    name: `Encerrar orientação de ${name}`,
+    name: `Mais ações de ${name}`,
   });
   await user.click(button);
+  await user.click(
+    await screen.findByRole('menuitem', { name: 'Encerrar orientação' }),
+  );
   return { button, dialog: await screen.findByRole('dialog') };
 }
 
@@ -81,16 +84,65 @@ beforeEach(() => {
 });
 
 describe('Encerrar orientação: o diálogo', () => {
-  it('cada cartão tem a ação, com o nome do aluno para o leitor de tela', async () => {
-    setup();
+  it('cada cartão tem o menu "Mais ações de {nome}" com o item "Encerrar orientação", e nenhum botão de encerrar solto', async () => {
+    const { user } = setup();
     await screen.findByText('Ana Souza');
 
     for (const name of ['Ana Souza', 'Orientando 2']) {
-      const button = within(cardOf(name)).getByRole('button', {
-        name: `Encerrar orientação de ${name}`,
+      expect(
+        within(cardOf(name)).queryByRole('button', {
+          name: /Encerrar orientação/,
+        }),
+      ).not.toBeInTheDocument();
+      const menuButton = within(cardOf(name)).getByRole('button', {
+        name: `Mais ações de ${name}`,
       });
-      expect(button).toHaveTextContent('Encerrar orientação');
+      expect(menuButton).toHaveAttribute('aria-haspopup', 'menu');
+      expect(menuButton).toHaveAttribute('aria-expanded', 'false');
     }
+
+    await user.click(
+      within(cardOf('Ana Souza')).getByRole('button', {
+        name: 'Mais ações de Ana Souza',
+      }),
+    );
+
+    const menu = await screen.findByRole('menu', {
+      name: 'Mais ações de Ana Souza',
+    });
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Encerrar orientação']);
+  });
+
+  it('o menu abre e escolhe o item só pelo teclado, e o Escape o fecha sem abrir o diálogo', async () => {
+    const { user } = setup();
+    await screen.findByText('Ana Souza');
+    const menuButton = within(cardOf('Ana Souza')).getByRole('button', {
+      name: 'Mais ações de Ana Souza',
+    });
+
+    menuButton.focus();
+    await user.keyboard('{Enter}');
+    expect(
+      await screen.findByRole('menuitem', { name: 'Encerrar orientação' }),
+    ).toHaveFocus();
+    await user.keyboard('{Escape}');
+    await waitFor(() =>
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(menuButton).toHaveFocus();
+
+    await user.keyboard('{Enter}');
+    await screen.findByRole('menuitem', { name: 'Encerrar orientação' });
+    await user.keyboard('{Enter}');
+
+    expect(await screen.findByRole('dialog')).toHaveAccessibleName(
+      'Encerrar a orientação de Ana Souza?',
+    );
   });
 
   it('nomeia o aluno e diz que não dá para desfazer, que as atividades em aberto serão arquivadas e as reuniões pendentes ou aceitas ainda não realizadas, canceladas (RN30)', async () => {
@@ -159,6 +211,9 @@ describe('Encerrar orientação: o diálogo', () => {
     expect(requestsTo(fetchMock, END_1)).toHaveLength(0);
     expect(button).toHaveFocus();
     await user.click(button);
+    await user.click(
+      await screen.findByRole('menuitem', { name: 'Encerrar orientação' }),
+    );
     expect(
       within(await screen.findByRole('dialog')).getByRole('textbox', {
         name: 'Motivo do encerramento',
@@ -236,9 +291,21 @@ describe('Encerrar orientação: confirmar', () => {
     expect(requestsTo(fetchMock, LIST).length).toBeGreaterThanOrEqual(2);
     await waitFor(() =>
       expect(
-        screen.getByRole('heading', { level: 1, name: 'Orientandos' }),
+        screen.getByRole('heading', { level: 1, name: 'Meus orientandos' }),
       ).toHaveFocus(),
     );
+  });
+
+  it('o total do topo diminui depois de encerrar uma orientação', async () => {
+    const { user } = setup();
+    expect(await screen.findByText('2 orientandos')).toBeVisible();
+    const { dialog } = await openDialog(user);
+    await typeReason(user, dialog);
+
+    await user.click(confirmButton(dialog));
+
+    expect(await screen.findByText('1 orientando')).toBeVisible();
+    expect(screen.queryByText('2 orientandos')).not.toBeInTheDocument();
   });
 
   it('relê o usuário, e o item Orientandos volta a ficar desabilitado quando não sobra orientando', async () => {
@@ -280,7 +347,10 @@ describe('Encerrar orientação: erros', () => {
       expect(requestsTo(fetchMock, LIST).length).toBeGreaterThan(before),
     );
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Orientandos' }),
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'Meus orientandos',
+      }),
     ).toBeInTheDocument();
   });
 

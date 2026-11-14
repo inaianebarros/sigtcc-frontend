@@ -442,7 +442,7 @@ describe('Links para o perfil nas listas', () => {
       ]),
     });
     const user = userEvent.setup();
-    renderApp('/professor/orientandos?pagina=2');
+    renderApp('/professor/orientandos?pagina=3');
     await screen.findByText('Orientando 21');
 
     const card = screen.getByRole('article', { name: 'Orientando 21' });
@@ -455,7 +455,7 @@ describe('Links para o perfil nas listas', () => {
 
     expect(await screen.findByText('Orientando 21')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
-      /^\/professor\/orientandos\?pagina=2$/,
+      /^\/professor\/orientandos\?pagina=3$/,
     );
   });
 
