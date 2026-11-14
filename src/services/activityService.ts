@@ -64,6 +64,8 @@ export interface ActivityFilters {
   status: ActivityStatus | null;
   overdueOnly: boolean;
   studentId: number | null;
+  /** O texto da busca pelo título; vazio não filtra. */
+  search?: string;
 }
 
 export interface ActivityInput {
@@ -154,6 +156,7 @@ export async function listActivities(
   if (filters.overdueOnly) params.set('overdue', 'true');
   if (filters.studentId !== null)
     params.set('student_id', String(filters.studentId));
+  if (filters.search) params.set('search', filters.search);
   const response = await httpClient.get<{ items: ApiItem[]; count: number }>(
     `/atividades?${params}`,
   );

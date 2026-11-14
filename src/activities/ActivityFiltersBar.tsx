@@ -1,5 +1,4 @@
 import {
-  Chip,
   FormControlLabel,
   MenuItem,
   Stack,
@@ -9,26 +8,37 @@ import {
 import { ACTIVITY_STATUSES } from '../services/activityService';
 import type { ActivityStatus } from '../services/activityService';
 import { STATUS_LABELS } from './activityStatus';
+import { ActivitySearchField } from './ActivitySearchField';
+import { StudentFilterField } from './StudentFilterField';
+import type { StudentOption } from './useStudentFilterOptions';
 
 const ALL = 'all';
 
 interface ActivityFiltersBarProps {
   status: ActivityStatus | null;
   overdueOnly: boolean;
-  /** O nome do aluno filtrado, quando há filtro de aluno (só o professor). */
-  studentName: string | null;
+  /** A busca pelo título que está na URL. */
+  search: string;
+  /** O aluno filtrado (só o professor); `null` é Todos. */
+  student: StudentOption | null;
+  /** Só o professor filtra por aluno. */
+  canFilterByStudent: boolean;
   onStatus: (status: ActivityStatus | null) => void;
   onOverdueOnly: (on: boolean) => void;
-  onClearStudent: () => void;
+  onSearch: (search: string) => void;
+  onStudent: (student: StudentOption | null) => void;
 }
 
 export function ActivityFiltersBar({
   status,
   overdueOnly,
-  studentName,
+  search,
+  student,
+  canFilterByStudent,
   onStatus,
   onOverdueOnly,
-  onClearStudent,
+  onSearch,
+  onStudent,
 }: ActivityFiltersBarProps) {
   return (
     <Stack
@@ -36,6 +46,10 @@ export function ActivityFiltersBar({
       useFlexGap
       sx={{ gap: 2, alignItems: { sm: 'center' }, flexWrap: 'wrap' }}
     >
+      <ActivitySearchField value={search} onSearch={onSearch} />
+      {canFilterByStudent && (
+        <StudentFilterField value={student} onChange={onStudent} />
+      )}
       <TextField
         select
         label="Situação"
@@ -65,9 +79,6 @@ export function ActivityFiltersBar({
         }
         label="Somente atrasadas"
       />
-      {studentName !== null && (
-        <Chip label={`Aluno: ${studentName}`} onDelete={onClearStudent} />
-      )}
     </Stack>
   );
 }

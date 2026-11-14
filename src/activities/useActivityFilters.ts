@@ -7,12 +7,14 @@ import { statusFrom } from './activityStatus';
 
 const STATUS_PARAM = 'situacao';
 const OVERDUE_PARAM = 'atrasadas';
+const SEARCH_PARAM = 'busca';
 const STUDENT_PARAM = STUDENT_FILTER_PARAM;
 
 export interface ActivityFilterValues {
   status: ActivityStatus | null;
   overdueOnly: boolean;
   studentId: number | null;
+  search: string;
 }
 
 /**
@@ -27,6 +29,7 @@ export function useActivityFilters(canFilterByStudent: boolean) {
     studentId: canFilterByStudent
       ? positiveIntFrom(searchParams.get(STUDENT_PARAM))
       : null,
+    search: searchParams.get(SEARCH_PARAM) ?? '',
   };
   const change = (edit: (params: URLSearchParams) => void) =>
     setSearchParams((current) => {
@@ -35,10 +38,19 @@ export function useActivityFilters(canFilterByStudent: boolean) {
       edit(params);
       return params;
     });
+  // Um `aluno` que não é um id válido não filtra nada, e quem usa o tira da URL.
+  const invalidStudentParam =
+    canFilterByStudent &&
+    searchParams.has(STUDENT_PARAM) &&
+    values.studentId === null;
   return {
     ...values,
+    invalidStudentParam,
     hasFilters:
-      values.status !== null || values.overdueOnly || values.studentId !== null,
+      values.status !== null ||
+      values.overdueOnly ||
+      values.studentId !== null ||
+      values.search !== '',
     setStatus: (status: ActivityStatus | null) =>
       change((params) =>
         status === null
@@ -49,12 +61,24 @@ export function useActivityFilters(canFilterByStudent: boolean) {
       change((params) =>
         on ? params.set(OVERDUE_PARAM, '1') : params.delete(OVERDUE_PARAM),
       ),
-    clearStudent: () => change((params) => params.delete(STUDENT_PARAM)),
+    setStudent: (studentId: number | null) =>
+      change((params) =>
+        studentId === null
+          ? params.delete(STUDENT_PARAM)
+          : params.set(STUDENT_PARAM, String(studentId)),
+      ),
+    setSearch: (search: string) =>
+      change((params) =>
+        search === ''
+          ? params.delete(SEARCH_PARAM)
+          : params.set(SEARCH_PARAM, search),
+      ),
     clearAll: () =>
       change((params) => {
         params.delete(STATUS_PARAM);
         params.delete(OVERDUE_PARAM);
         params.delete(STUDENT_PARAM);
+        params.delete(SEARCH_PARAM);
       }),
   };
 }
