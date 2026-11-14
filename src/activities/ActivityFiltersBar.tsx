@@ -1,18 +1,9 @@
-import {
-  FormControlLabel,
-  MenuItem,
-  Stack,
-  Switch,
-  TextField,
-} from '@mui/material';
-import { ACTIVITY_STATUSES } from '../services/activityService';
+import { FormControlLabel, Stack, Switch } from '@mui/material';
 import type { ActivityStatus } from '../services/activityService';
-import { STATUS_LABELS } from './activityStatus';
 import { ActivitySearchField } from './ActivitySearchField';
+import { StatusFilterField } from './StatusFilterField';
 import { StudentFilterField } from './StudentFilterField';
 import type { StudentOption } from './useStudentFilterOptions';
-
-const ALL = 'all';
 
 interface ActivityFiltersBarProps {
   status: ActivityStatus | null;
@@ -50,26 +41,7 @@ export function ActivityFiltersBar({
       {canFilterByStudent && (
         <StudentFilterField value={student} onChange={onStudent} />
       )}
-      <TextField
-        select
-        label="Situação"
-        value={status ?? ALL}
-        onChange={(event) =>
-          onStatus(
-            event.target.value === ALL
-              ? null
-              : (event.target.value as ActivityStatus),
-          )
-        }
-        sx={{ minWidth: 200 }}
-      >
-        <MenuItem value={ALL}>Todas</MenuItem>
-        {ACTIVITY_STATUSES.map((value) => (
-          <MenuItem key={value} value={value}>
-            {STATUS_LABELS[value]}
-          </MenuItem>
-        ))}
-      </TextField>
+      <StatusFilterField value={status} onChange={onStatus} />
       <FormControlLabel
         control={
           <Switch
