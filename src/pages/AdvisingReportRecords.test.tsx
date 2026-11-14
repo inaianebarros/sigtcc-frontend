@@ -379,3 +379,94 @@ describe('AdvisingReportPage: abrir um registro no próprio lugar', () => {
     expect(detailsButton(second)).toHaveAttribute('aria-expanded', 'true');
   });
 });
+
+describe('AdvisingReportPage: estados da lista e anúncio', () => {
+  it('enquanto a lista carrega, mostra um esqueleto escondido do leitor de tela', async () => {
+    setup([makeActivityRecord(2)]);
+
+    expect(await screen.findByTestId('records-skeleton')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    );
+    await screen.findByText('1 registro');
+    expect(screen.queryByTestId('records-skeleton')).not.toBeInTheDocument();
+  });
+
+  it('uma falha na lista mostra o erro com "Tentar novamente" e não derruba o cabeçalho e os totais', async () => {
+    let calls = 0;
+    const fetchMock = mockApi({
+      ...reportRoutes([makeAdvisingReport(7)]),
+      ...recordsRoutes(7, [], () => {
+        calls += 1;
+        return calls === 1
+          ? { status: 500, body: { detail: 'Falha no servidor.' } }
+          : { body: { items: [makeActivityRecord(2)], count: 1 } };
+      }),
+    });
+    renderApp(PATH);
+    const user = userEvent.setup();
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/./);
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Pessoa 7' }),
+    ).toBeVisible();
+    expect(screen.getByRole('group', { name: 'Registros' })).toBeVisible();
+
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+
+    expect(await screen.findByText('1 registro')).toBeVisible();
+    expect(
+      requestsTo(fetchMock, 'GET /api/orientacao/historico/7/registros'),
+    ).toHaveLength(2);
+  });
+
+  it('uma orientação sem registros mostra uma mensagem informativa', async () => {
+    setup([]);
+
+    expect(
+      await screen.findByText(/Esta orientação não tem registros/),
+    ).toBeVisible();
+    expect(screen.queryByRole('article')).not.toBeInTheDocument();
+  });
+
+  it('um filtro sem resultado mostra a mensagem do filtro e "Ver todos os registros"', async () => {
+    setup([makeActivityRecord(2)], { path: `${PATH}?tipo=reunioes` });
+    const user = userEvent.setup();
+
+    expect(await screen.findByText(/Nenhum registro deste tipo/)).toBeVisible();
+    expect(
+      screen.queryByText(/Esta orientação não tem registros/),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Ver todos os registros' }),
+    );
+
+    expect(await screen.findByText('1 registro')).toBeVisible();
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      new RegExp(`${PATH}$`),
+    );
+  });
+
+  it('anuncia a quantidade de registros do filtro numa região de status', async () => {
+    setup([makeMeetingRecord(1), makeActivityRecord(2), makeActivityRecord(3)]);
+    const user = userEvent.setup();
+    await screen.findByText('3 registros');
+
+    const section = screen.getByRole('region', {
+      name: 'Histórico de acontecimentos',
+    });
+
+    expect(within(section).getByRole('status')).toHaveTextContent(
+      '3 registros',
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Atividades' }));
+
+    await waitFor(() =>
+      expect(within(section).getByRole('status')).toHaveTextContent(
+        '2 registros',
+      ),
+    );
+  });
+});

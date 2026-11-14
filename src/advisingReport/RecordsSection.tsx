@@ -1,4 +1,12 @@
-import { Chip, Skeleton, Stack, Typography } from '@mui/material';
+import {
+  Alert,
+  Button,
+  Chip,
+  Skeleton,
+  Stack,
+  Typography,
+} from '@mui/material';
+import { useId, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { RecordCard } from './RecordCard';
 import { RecordTypeFilter } from './RecordTypeFilter';
@@ -40,9 +48,11 @@ export function RecordsSection({ advisingId }: { advisingId: number }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const type = typeFrom(searchParams.get(TYPE_PARAM));
   const [page] = useUrlPage();
+  const [reload, setReload] = useState(0);
+  const headingId = useId();
   const list = useLoad(
     () => listAdvisingRecords(advisingId, page, type ?? undefined),
-    `${advisingId}|${type}|${page}`,
+    `${advisingId}|${type}|${page}|${reload}`,
   );
 
   const changeType = (next: RecordType | null) =>
@@ -55,8 +65,8 @@ export function RecordsSection({ advisingId }: { advisingId: number }) {
     });
 
   return (
-    <Stack spacing={2} component="section">
-      <Typography variant="h5" component="h2">
+    <Stack spacing={2} component="section" aria-labelledby={headingId}>
+      <Typography id={headingId} variant="h5" component="h2">
         Histórico de acontecimentos
       </Typography>
       <Stack spacing={1}>
@@ -76,14 +86,52 @@ export function RecordsSection({ advisingId }: { advisingId: number }) {
         <Typography variant="h6" component="h3">
           {TYPE_TITLES[type ?? 'all']}
         </Typography>
-        {list.status === 'ready' && (
-          <Chip label={countText(list.data.count)} size="small" />
-        )}
+        {/* A região existe desde o início, para a mudança da quantidade ser anunciada. */}
+        <span role="status" aria-live="polite">
+          {list.status === 'ready' && (
+            <Chip label={countText(list.data.count)} size="small" />
+          )}
+        </span>
       </Stack>
       {list.status === 'loading' && (
-        <Skeleton variant="rounded" height={140} aria-hidden />
+        <Stack spacing={2} data-testid="records-skeleton" aria-hidden>
+          {[0, 1].map((item) => (
+            <Skeleton key={item} variant="rounded" height={140} />
+          ))}
+        </Stack>
       )}
-      {list.status === 'ready' && (
+      {list.status === 'error' && (
+        <Stack spacing={2}>
+          <Alert severity="error">{list.message}</Alert>
+          <Button
+            onClick={() => setReload((current) => current + 1)}
+            sx={{ alignSelf: 'flex-start' }}
+          >
+            Tentar novamente
+          </Button>
+        </Stack>
+      )}
+      {list.status === 'ready' && list.data.count === 0 && type === null && (
+        <Alert severity="info">
+          Esta orientação não tem registros. As reuniões realizadas e as
+          atividades concluídas ou arquivadas aparecem aqui.
+        </Alert>
+      )}
+      {list.status === 'ready' && list.data.count === 0 && type !== null && (
+        <Stack spacing={2}>
+          <Alert severity="info">
+            Nenhum registro deste tipo nesta orientação. Escolha outro tipo de
+            registro.
+          </Alert>
+          <Button
+            onClick={() => changeType(null)}
+            sx={{ alignSelf: 'flex-start' }}
+          >
+            Ver todos os registros
+          </Button>
+        </Stack>
+      )}
+      {list.status === 'ready' && list.data.items.length > 0 && (
         <Stack spacing={2}>
           {list.data.items.map((record) => (
             <RecordCard key={`${record.type}-${record.id}`} record={record} />
