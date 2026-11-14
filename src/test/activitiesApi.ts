@@ -28,6 +28,13 @@ export interface FakeActivity {
     /** Vazia no aceite (RN40); os testes antigos a omitem. */
     justification?: string;
     decided_at: string;
+    /** Os anexos da recusa; ausente nos testes antigos. */
+    files?: {
+      id: number;
+      file_name: string;
+      size_bytes: number;
+      content_type: string;
+    }[];
   }[];
   comments_count: number;
 }

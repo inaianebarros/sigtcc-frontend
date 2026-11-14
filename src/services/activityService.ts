@@ -230,16 +230,26 @@ export async function changeActivityStatus(
   await httpClient.patch(`/atividades/${id}/status`, { status });
 }
 
+/** O orientador aceita a atividade em revisão: conclui, de forma definitiva (RF46, RN15). */
+export async function acceptActivity(id: number): Promise<void> {
+  await httpClient.post(`/atividades/${id}/revisar`, { decision: 'accepted' });
+}
+
 /**
- * O orientador aceita (conclui, definitivo) ou recusa (devolve ao aluno) uma atividade em revisão
- * (RF46). A recusa leva a justificativa de 1 a 500 caracteres (RN40); o aceite não leva nenhuma.
+ * O orientador recusa a atividade em revisão e a devolve ao aluno (RF46). A justificativa tem de 1
+ * a 500 caracteres (RN40) e a recusa leva de 0 a 5 anexos; vai sempre em multipart, com o
+ * progresso do envio de 0 a 100.
  */
-export async function reviewActivity(
+export async function refuseActivity(
   id: number,
-  review:
-    { decision: 'accepted' } | { decision: 'rejected'; justification: string },
+  justification: string,
+  files: File[],
+  onProgress: (percent: number) => void,
 ): Promise<void> {
-  await httpClient.post(`/atividades/${id}/revisar`, review);
+  const form = new FormData();
+  form.append('justification', justification);
+  for (const file of files) form.append('files', file);
+  await httpClient.upload(`/atividades/${id}/recusar`, form, onProgress);
 }
 
 /** Exclusão lógica (RF27): o servidor preserva entregas, revisões e comentários. */

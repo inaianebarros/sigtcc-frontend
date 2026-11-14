@@ -23,7 +23,8 @@ import {
   changeActivityStatus,
   deleteActivity,
   getActivity,
-  reviewActivity,
+  acceptActivity,
+  refuseActivity,
   submitDelivery,
   updateActivity,
 } from '../services/activityService';
@@ -141,7 +142,7 @@ export function ActivityDetailPage() {
     if (id === null || accepting) return;
     setAccepting(true);
     try {
-      await reviewActivity(id, { decision: 'accepted' });
+      await acceptActivity(id);
       setConfirmingAccept(false);
       notify('Atividade concluída', 'success');
       refresh();
@@ -277,8 +278,8 @@ export function ActivityDetailPage() {
         <RefuseReviewDialog
           key={refuseDialog.slot.openCount}
           open={refuseDialog.slot.open}
-          send={(justification) =>
-            reviewActivity(id, { decision: 'rejected', justification })
+          send={(justification, files, onProgress) =>
+            refuseActivity(id, justification, files, onProgress)
           }
           onSaved={() => {
             refuseDialog.hide();

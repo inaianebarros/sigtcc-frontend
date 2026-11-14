@@ -6,11 +6,15 @@ import { activitiesServer, makeActivity } from '../test/activitiesApi';
 import type { FakeActivity } from '../test/activitiesApi';
 import { mockApi, requestsTo } from '../test/mockApi';
 import type { MockResponse } from '../test/mockApi';
+import { mockUploads, UploadNetworkError } from '../test/mockUpload';
+import type { UploadContext, UploadRequest } from '../test/mockUpload';
 import { renderApp } from '../test/renderApp';
 import { DESKTOP_WIDTH, setViewportWidth } from '../test/viewport';
 
 const REVIEW = 'POST /api/atividades/:id/revisar';
 const REVIEW_PATH = 'POST /api/atividades/5/revisar';
+const REFUSE = 'POST /api/atividades/5/recusar';
+const MB = 1024 * 1024;
 const COMPLETED_REASON = 'Atividade concluída não pode ser alterada';
 
 const DELIVERED = {
@@ -26,6 +30,34 @@ const DELIVERED = {
   ],
 };
 
+type UploadHandler = (
+  request: UploadRequest,
+  context: UploadContext,
+) => MockResponse | Promise<MockResponse>;
+
+/** O servidor grava a recusa, com os anexos, e a atividade volta para pendente. */
+function recordRefusal(
+  server: ReturnType<typeof activitiesServer>,
+): UploadHandler {
+  return (request) => {
+    const activity = server.activities()[0]!;
+    activity.reviews.push({
+      id: activity.reviews.length + 1,
+      decision: 'rejected',
+      justification: String(request.body.get('justification')),
+      decided_at: '2026-11-09T12:00:00Z',
+      files: request.files.map((file, index) => ({
+        id: 400 + index,
+        file_name: file.name,
+        size_bytes: file.size,
+        content_type: file.type,
+      })),
+    });
+    activity.status = 'pending';
+    return { body: {} };
+  };
+}
+
 type Overrides = Record<
   string,
   MockResponse | ((body: unknown) => MockResponse | Promise<MockResponse>)
@@ -35,6 +67,7 @@ function setup(
   activity: Partial<FakeActivity> = {},
   user: 'student' | 'teacher' = 'teacher',
   overrides: Overrides = {},
+  refuse?: (server: ReturnType<typeof activitiesServer>) => UploadHandler,
 ) {
   const server = activitiesServer(
     [
@@ -47,11 +80,14 @@ function setup(
     { user, overrides: overrides as never },
   );
   const fetchMock = mockApi(server.routes);
+  const { requests: refusals } = mockUploads({
+    [REFUSE]: refuse ? refuse(server) : recordRefusal(server),
+  });
   const events = userEvent.setup({ applyAccept: false });
   renderApp(
     user === 'student' ? '/aluno/atividades/5' : '/professor/atividades/5',
   );
-  return { fetchMock, events, server };
+  return { fetchMock, events, server, refusals };
 }
 
 const panel = () => screen.findByRole('region', { name: 'Revisão' });
@@ -83,6 +119,30 @@ async function writeJustification(
 ) {
   await events.click(within(dialog).getByLabelText(/Justificativa/));
   await events.paste(text);
+}
+
+function file(
+  name: string,
+  { size, type = 'application/pdf' } = {} as { size?: number; type?: string },
+) {
+  const created = new File(['conteúdo'], name, { type });
+  if (size !== undefined)
+    Object.defineProperty(created, 'size', { value: size });
+  return created;
+}
+
+const refuseButton = (dialog: HTMLElement) =>
+  within(dialog).getByRole('button', { name: 'Recusar atividade' });
+
+async function choose(
+  events: ReturnType<typeof userEvent.setup>,
+  dialog: HTMLElement,
+  ...files: File[]
+) {
+  await events.upload(
+    within(dialog).getByLabelText(/Escolher arquivos/),
+    files,
+  );
 }
 
 beforeEach(() => {
@@ -268,8 +328,8 @@ describe('Revisão: recusar (RN40)', () => {
     ).toBeVisible();
   });
 
-  it('enviar manda rejected com a justificativa sem as pontas, avisa, devolve ao aluno e mostra a recusa no histórico', async () => {
-    const { fetchMock, events } = setup();
+  it('enviar manda a justificativa sem as pontas por /recusar, avisa, devolve ao aluno e mostra a recusa no histórico', async () => {
+    const { fetchMock, events, refusals } = setup();
     const dialog = await openRefusal(events);
     await writeJustification(
       events,
@@ -277,19 +337,17 @@ describe('Revisão: recusar (RN40)', () => {
       '  Faltou a conclusão.\nRefaça o capítulo.  ',
     );
 
-    await events.click(
-      within(dialog).getByRole('button', { name: 'Recusar atividade' }),
-    );
+    await events.click(refuseButton(dialog));
 
     expect(
       await screen.findByText('Atividade devolvida ao aluno'),
     ).toBeVisible();
-    expect(reviewBodies(fetchMock)).toEqual([
-      {
-        decision: 'rejected',
-        justification: 'Faltou a conclusão.\nRefaça o capítulo.',
-      },
-    ]);
+    expect(refusals).toHaveLength(1);
+    expect(refusals[0]!.body.get('justification')).toBe(
+      'Faltou a conclusão.\nRefaça o capítulo.',
+    );
+    expect(refusals[0]!.files).toEqual([]);
+    expect(reviewBodies(fetchMock)).toEqual([]);
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
@@ -307,26 +365,22 @@ describe('Revisão: recusar (RN40)', () => {
   });
 
   it('um erro de validação do servidor aparece no campo da justificativa', async () => {
-    const { events } = setup({}, 'teacher', {
-      [REVIEW]: {
-        status: 422,
-        body: {
-          detail: [
-            {
-              loc: ['body', 'payload', 'justification'],
-              msg: 'Informe a justificativa da recusa (de 1 a 500 caracteres).',
-              type: 'value_error',
-            },
-          ],
-        },
+    const { events } = setup({}, 'teacher', {}, () => () => ({
+      status: 422,
+      body: {
+        detail: [
+          {
+            loc: ['body', 'justification'],
+            msg: 'Informe a justificativa da recusa (de 1 a 500 caracteres).',
+            type: 'value_error',
+          },
+        ],
       },
-    });
+    }));
     const dialog = await openRefusal(events);
     await writeJustification(events, dialog, 'Refazer.');
 
-    await events.click(
-      within(dialog).getByRole('button', { name: 'Recusar atividade' }),
-    );
+    await events.click(refuseButton(dialog));
 
     expect(
       await within(dialog).findByText(
@@ -341,18 +395,17 @@ describe('Revisão: recusar (RN40)', () => {
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const { fetchMock, events } = setup({}, 'teacher', {
-      [REVIEW]: async () => {
+    const { events, refusals } = setup({}, 'teacher', {}, (server) => {
+      const record = recordRefusal(server);
+      return async (request, context) => {
         await gate;
-        return { body: makeActivity(5, { status: 'pending' }) };
-      },
+        return record(request, context);
+      };
     });
     const dialog = await openRefusal(events);
     await writeJustification(events, dialog, 'Refazer.');
 
-    await events.click(
-      within(dialog).getByRole('button', { name: 'Recusar atividade' }),
-    );
+    await events.click(refuseButton(dialog));
 
     await waitFor(() =>
       expect(
@@ -364,12 +417,250 @@ describe('Revisão: recusar (RN40)', () => {
     ).toBeDisabled();
     release();
     await screen.findByText('Atividade devolvida ao aluno');
-    expect(reviewBodies(fetchMock)).toHaveLength(1);
+    expect(refusals).toHaveLength(1);
+  });
+});
+
+describe('Revisão: recusar com arquivos (RF46)', () => {
+  it('explica que os anexos são opcionais, de 0 a 5, e não os exige para recusar', async () => {
+    const { events } = setup();
+
+    const dialog = await openRefusal(events);
+
+    expect(
+      within(dialog).getByText(/De 0 a 5 arquivos de até 10 MB/),
+    ).toBeVisible();
+    expect(within(dialog).getByText('Nenhum arquivo escolhido.')).toBeVisible();
+    await writeJustification(events, dialog, 'Refazer.');
+    expect(refuseButton(dialog)).toBeEnabled();
+  });
+
+  it('funciona só pelo teclado: chega ao seletor, remove um arquivo e recusa com Enter', async () => {
+    const { events, refusals } = setup();
+    const dialog = await openRefusal(events);
+    await writeJustification(events, dialog, 'Refazer.');
+    await choose(events, dialog, file('a.pdf'), file('b.pdf'));
+
+    within(dialog)
+      .getByLabelText(/Justificativa/)
+      .focus();
+    await events.tab();
+    expect(within(dialog).getByText('Escolher arquivos')).toHaveFocus();
+    await events.tab();
+    const remove = within(dialog).getByRole('button', {
+      name: 'Remover a.pdf',
+    });
+    expect(remove).toHaveFocus();
+    await events.keyboard('{Enter}');
+    expect(within(dialog).queryByText('a.pdf')).not.toBeInTheDocument();
+
+    refuseButton(dialog).focus();
+    await events.keyboard('{Enter}');
+
+    await screen.findByText('Atividade devolvida ao aluno');
+    expect(refusals[0]!.files.map((item) => item.name)).toEqual(['b.pdf']);
+  });
+
+  it('mostra nome e tamanho de cada arquivo escolhido e deixa remover um', async () => {
+    const { events } = setup();
+    const dialog = await openRefusal(events);
+
+    await choose(
+      events,
+      dialog,
+      file('correcoes.pdf', { size: 1536 }),
+      file('modelo.docx', { size: 2 * MB }),
+    );
+
+    const list = within(dialog).getByRole('list', {
+      name: 'Arquivos escolhidos',
+    });
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+    expect(within(list).getByText('correcoes.pdf')).toBeVisible();
+    expect(within(list).getByText(/1,5 KB/)).toBeVisible();
+    await events.click(
+      within(dialog).getByRole('button', { name: 'Remover correcoes.pdf' }),
+    );
+    expect(within(list).queryByText('correcoes.pdf')).not.toBeInTheDocument();
+    expect(within(list).getByText('modelo.docx')).toBeVisible();
+  });
+
+  it('envia os arquivos junto com a justificativa e os mostra no histórico', async () => {
+    const { events, refusals } = setup();
+    const dialog = await openRefusal(events);
+    await writeJustification(events, dialog, 'Veja as correções.');
+    await choose(events, dialog, file('correcoes.pdf'), file('print.png'));
+
+    await events.click(refuseButton(dialog));
+
+    await screen.findByText('Atividade devolvida ao aluno');
+    expect(refusals).toHaveLength(1);
+    expect(refusals[0]!.url.pathname).toBe('/api/atividades/5/recusar');
+    expect(refusals[0]!.body.get('justification')).toBe('Veja as correções.');
+    expect(refusals[0]!.files.map((item) => item.name)).toEqual([
+      'correcoes.pdf',
+      'print.png',
+    ]);
+    expect(refusals[0]!.headers.get('Authorization')).toMatch(/^Bearer /);
+  });
+
+  it('mostra o andamento do envio e trava a escolha enquanto envia', async () => {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { events } = setup({}, 'teacher', {}, (server) => {
+      const record = recordRefusal(server);
+      return async (request, context) => {
+        context.progress(40, 100);
+        await gate;
+        return record(request, context);
+      };
+    });
+    const dialog = await openRefusal(events);
+    await writeJustification(events, dialog, 'Refazer.');
+    await choose(events, dialog, file('correcoes.pdf'));
+
+    await events.click(refuseButton(dialog));
+
+    expect(await within(dialog).findByText('Enviando… 40%')).toBeVisible();
+    expect(
+      within(dialog).getByRole('progressbar', { name: 'Progresso do envio' }),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole('button', { name: 'Remover correcoes.pdf' }),
+    ).toBeDisabled();
+    release();
+    await screen.findByText('Atividade devolvida ao aluno');
+  });
+
+  it.each([
+    ['tipo não permitido', 'notas.exe', 10, /Tipo de arquivo não permitido/],
+    ['acima de 10 MB', 'grande.pdf', 10 * MB + 1, /excede o limite de 10 MB/],
+    ['vazio', 'vazio.pdf', 0, /O arquivo está vazio/],
+  ])(
+    'recusa antes do envio o arquivo %s e bloqueia a recusa',
+    async (_label, name, size, message) => {
+      const { events, refusals } = setup();
+      const dialog = await openRefusal(events);
+      await writeJustification(events, dialog, 'Refazer.');
+
+      await choose(events, dialog, file(name, { size }));
+
+      expect(within(dialog).getByText(message)).toBeVisible();
+      expect(refuseButton(dialog)).toBeDisabled();
+      await events.click(
+        within(dialog).getByRole('button', { name: `Remover ${name}` }),
+      );
+      expect(refuseButton(dialog)).toBeEnabled();
+      expect(refusals).toHaveLength(0);
+    },
+  );
+
+  it('avisa e ignora os arquivos que passam de 5', async () => {
+    const { events } = setup();
+    const dialog = await openRefusal(events);
+
+    await choose(
+      events,
+      dialog,
+      ...[1, 2, 3, 4, 5, 6].map((n) => file(`arquivo${n}.pdf`)),
+    );
+
+    expect(
+      within(dialog).getByText('Anexe até 5 arquivos à recusa.'),
+    ).toBeVisible();
+    expect(
+      within(
+        within(dialog).getByRole('list', { name: 'Arquivos escolhidos' }),
+      ).getAllByRole('listitem'),
+    ).toHaveLength(5);
+  });
+
+  it('um erro de arquivo do servidor aparece ao lado do arquivo, sem fechar o diálogo', async () => {
+    const { events } = setup({}, 'teacher', {}, () => () => ({
+      status: 422,
+      body: {
+        detail: [
+          {
+            loc: ['body', 'files.1'],
+            msg: 'O conteúdo do arquivo não corresponde ao tipo informado.',
+            type: 'value_error',
+          },
+        ],
+      },
+    }));
+    const dialog = await openRefusal(events);
+    await writeJustification(events, dialog, 'Refazer.');
+    await choose(events, dialog, file('a.pdf'), file('b.pdf'));
+
+    await events.click(refuseButton(dialog));
+
+    const items = within(dialog).getAllByRole('listitem');
+    expect(
+      await within(items[1]!).findByText(
+        'O conteúdo do arquivo não corresponde ao tipo informado.',
+      ),
+    ).toBeVisible();
+    expect(dialog).toBeVisible();
+  });
+
+  it('se a recusa falhar mostra a mensagem, preserva texto e arquivos, deixa tentar de novo e a tela não muda', async () => {
+    let attempt = 0;
+    const { events, refusals } = setup({}, 'teacher', {}, (server) => {
+      const record = recordRefusal(server);
+      return (request, context) => {
+        attempt += 1;
+        return attempt === 1
+          ? { status: 503, body: { detail: 'Armazenamento indisponível.' } }
+          : record(request, context);
+      };
+    });
+    const dialog = await openRefusal(events);
+    await writeJustification(events, dialog, 'Refazer o capítulo 2.');
+    await choose(events, dialog, file('correcoes.pdf'));
+
+    await events.click(refuseButton(dialog));
+
+    expect(
+      await within(dialog).findByText('Armazenamento indisponível.'),
+    ).toBeVisible();
+    expect(within(dialog).getByLabelText(/Justificativa/)).toHaveValue(
+      'Refazer o capítulo 2.',
+    );
+    expect(within(dialog).getByText('correcoes.pdf')).toBeVisible();
+    expect(refuseButton(dialog)).toBeEnabled();
+    expect(screen.queryByText('Atividade devolvida ao aluno')).toBeNull();
+
+    await events.click(refuseButton(dialog));
+
+    await screen.findByText('Atividade devolvida ao aluno');
+    expect(refusals).toHaveLength(2);
+    expect(refusals[1]!.files.map((item) => item.name)).toEqual([
+      'correcoes.pdf',
+    ]);
+  });
+
+  it('uma falha de rede também mostra uma mensagem em português e preserva tudo', async () => {
+    const { events } = setup({}, 'teacher', {}, () => () => {
+      throw new UploadNetworkError();
+    });
+    const dialog = await openRefusal(events);
+    await writeJustification(events, dialog, 'Refazer.');
+    await choose(events, dialog, file('a.pdf'));
+
+    await events.click(refuseButton(dialog));
+
+    expect(
+      await within(dialog).findByText(/Não foi possível conectar ao servidor/),
+    ).toBeVisible();
+    expect(within(dialog).getByText('a.pdf')).toBeVisible();
+    expect(dialog).toBeVisible();
   });
 });
 
 describe('Revisão: alterações não enviadas (RNF28)', () => {
-  it('sem texto não há aviso nem confirmação ao voltar', async () => {
+  it('sem texto nem arquivos não há aviso nem confirmação ao voltar', async () => {
     const { events } = setup();
     const dialog = await openRefusal(events);
 
@@ -383,8 +674,23 @@ describe('Revisão: alterações não enviadas (RNF28)', () => {
     );
   });
 
+  it('só com arquivos escolhidos já mostra o aviso e pede confirmação ao voltar', async () => {
+    const { events } = setup();
+    const dialog = await openRefusal(events);
+    await choose(events, dialog, file('correcoes.pdf'));
+
+    expect(
+      within(dialog).getByText(/Você tem alterações não salvas/),
+    ).toBeVisible();
+    await events.click(within(dialog).getByRole('button', { name: 'Voltar' }));
+
+    expect(
+      await screen.findByRole('dialog', { name: 'Descartar alterações?' }),
+    ).toBeVisible();
+  });
+
   it('com texto mostra o aviso no topo e pede confirmação ao voltar', async () => {
-    const { fetchMock, events } = setup();
+    const { fetchMock, events, refusals } = setup();
     const dialog = await openRefusal(events);
     await writeJustification(events, dialog, 'Rascunho');
 
@@ -413,6 +719,7 @@ describe('Revisão: alterações não enviadas (RNF28)', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
     expect(reviewBodies(fetchMock)).toEqual([]);
+    expect(refusals).toEqual([]);
   });
 });
 
@@ -504,24 +811,21 @@ describe('Revisão: erros', () => {
   ])(
     'um %i ao recusar fecha o diálogo, avisa e recarrega o detalhe',
     async (status, message) => {
-      const { fetchMock, events } = setup({}, 'teacher', {
-        [REVIEW]: {
-          status,
-          body: {
-            detail:
-              status === 409
-                ? 'Só uma atividade em revisão pode ser revisada.'
-                : 'Atividade não encontrada.',
-          },
+      const { fetchMock, events } = setup({}, 'teacher', {}, () => () => ({
+        status,
+        body: {
+          detail:
+            status === 409
+              ? 'Só uma atividade em revisão pode ser revisada.'
+              : 'Atividade não encontrada.',
         },
-      });
+      }));
       const dialog = await openRefusal(events);
       await writeJustification(events, dialog, 'Refazer.');
+      await choose(events, dialog, file('correcoes.pdf'));
       const reads = requestsTo(fetchMock, 'GET /api/atividades/5').length;
 
-      await events.click(
-        within(dialog).getByRole('button', { name: 'Recusar atividade' }),
-      );
+      await events.click(refuseButton(dialog));
 
       expect(await screen.findByText(message)).toBeVisible();
       await waitFor(() =>
