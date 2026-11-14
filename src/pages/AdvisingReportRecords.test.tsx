@@ -177,6 +177,20 @@ describe('AdvisingReportPage: o filtro "Tipo de registro" e a URL (RNF30)', () =
     expect(pressed('Reuniões')).toBe('true');
   });
 
+  it('o filtro funciona só pelo teclado, com a seta e o Espaço', async () => {
+    setup(records);
+    const user = userEvent.setup();
+    await screen.findByText('3 registros');
+
+    screen.getByRole('button', { name: 'Todos' }).focus();
+    await user.keyboard('{ArrowRight}');
+    expect(screen.getByRole('button', { name: 'Reuniões' })).toHaveFocus();
+    await user.keyboard(' ');
+
+    expect(await screen.findByText('1 registro')).toBeVisible();
+    expect(pressed('Reuniões')).toBe('true');
+  });
+
   it('"Atividades" mostra só atividades e "Todos" volta a URL ao padrão', async () => {
     setup(records);
     const user = userEvent.setup();

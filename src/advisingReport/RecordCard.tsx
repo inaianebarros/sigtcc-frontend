@@ -25,7 +25,7 @@ const ACTIVITY_STATUS_LABELS: Record<RecordActivityStatus, string> = {
   archived: 'Arquivada',
 };
 
-export const MEETING_RECORD_TITLE = 'Reunião realizada';
+const MEETING_RECORD_TITLE = 'Reunião realizada';
 
 function recordTitle(record: AdvisingRecord): string {
   return record.type === 'meeting' ? MEETING_RECORD_TITLE : record.title;
