@@ -1,11 +1,12 @@
 import { Alert, Button, Skeleton, Stack, Typography } from '@mui/material';
-import { useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { ActivityCards } from '../activities/ActivityCards';
 import { ActivityFormDialog } from '../activities/ActivityFormDialog';
 import { ActivityTotals } from '../activities/ActivityTotals';
 import { ActivityFiltersBar } from '../activities/ActivityFiltersBar';
 import type { ActivityFormValues } from '../activities/activityForm';
 import { useActivityFilters } from '../activities/useActivityFilters';
+import type { StudentOption } from '../activities/useStudentFilterOptions';
 import { useStateChangedNotice } from '../hooks/useStateChangedNotice';
 import { PagePagination } from '../components/PagePagination';
 import { useDialogSlot } from '../hooks/useDialogSlot';
@@ -20,6 +21,7 @@ import {
   getActivitySummary,
   listActivities,
 } from '../services/activityService';
+import { getLinkedStudentProfile } from '../services/linkedStudentService';
 
 function foundText(count: number): string {
   return `${count} ${count === 1 ? 'atividade encontrada' : 'atividades encontradas'}`;
@@ -43,8 +45,9 @@ export function ActivitiesPage() {
         status: filters.status,
         overdueOnly: filters.overdueOnly,
         studentId: filters.studentId,
+        search: filters.search,
       }),
-    `${page}|${filters.status}|${filters.overdueOnly}|${filters.studentId}|${reload}`,
+    `${page}|${filters.status}|${filters.overdueOnly}|${filters.studentId}|${filters.search}|${reload}`,
   );
   // Os totais não dependem de filtro nem de página: só se relêem quando uma atividade muda
   // (criar, ou um conflito de estado) ou quando o usuário pede de novo.
@@ -56,23 +59,36 @@ export function ActivitiesPage() {
   );
   useReturnToLastPage(fallbackPage, page, setPage);
 
-  // O nome do aluno do chip vem das atividades carregadas; fica guardado para o chip não piscar
-  // enquanto a lista recarrega.
-  const [studentNames, setStudentNames] = useState<Record<number, string>>({});
-  if (list.status === 'ready') {
-    for (const item of list.data.items) {
-      if (studentNames[item.student.id] !== item.student.fullName) {
-        setStudentNames((current) => ({
-          ...current,
-          [item.student.id]: item.student.fullName,
-        }));
-      }
+  // O aluno do filtro: o que o professor escolheu na lista já traz o nome; um id que veio da URL
+  // (de outra tela) tem o nome lido do perfil do orientando. Um id que não é de um orientando do
+  // professor é ignorado, e o parâmetro sai da URL.
+  const [chosen, setChosen] = useState<StudentOption | null>(null);
+  const studentId = filters.studentId;
+  const profile = useLoad(
+    () => getLinkedStudentProfile(studentId!),
+    studentId !== null && chosen?.id !== studentId ? studentId : null,
+  );
+  const dropInvalidStudent = useEffectEvent(() => filters.setStudent(null));
+  useEffect(() => {
+    if (
+      filters.invalidStudentParam ||
+      (profile.status === 'ready' && profile.data === null)
+    ) {
+      dropInvalidStudent();
     }
-  }
-  const studentName =
-    filters.studentId === null
+  }, [profile, filters.invalidStudentParam]);
+  const student: StudentOption | null =
+    studentId === null
       ? null
-      : (studentNames[filters.studentId] ?? 'Aluno selecionado');
+      : {
+          id: studentId,
+          name:
+            chosen?.id === studentId
+              ? chosen.name
+              : profile.status === 'ready' && profile.data
+                ? profile.data.fullName
+                : 'Aluno selecionado',
+        };
 
   const dialog = useDialogSlot();
 
@@ -115,10 +131,16 @@ export function ActivitiesPage() {
       <ActivityFiltersBar
         status={filters.status}
         overdueOnly={filters.overdueOnly}
-        studentName={studentName}
+        search={filters.search}
+        student={student}
+        canFilterByStudent={isTeacher}
         onStatus={filters.setStatus}
         onOverdueOnly={filters.setOverdueOnly}
-        onClearStudent={filters.clearStudent}
+        onSearch={filters.setSearch}
+        onStudent={(next) => {
+          setChosen(next);
+          filters.setStudent(next?.id ?? null);
+        }}
       />
       <Typography role="status" aria-live="polite" color="text.secondary">
         {list.status === 'ready' && list.data.count > 0
@@ -193,11 +215,7 @@ export function ActivitiesPage() {
             description: '',
             deadline: '',
           }}
-          preselectedStudent={
-            filters.studentId === null
-              ? null
-              : { id: filters.studentId, name: studentName ?? '' }
-          }
+          preselectedStudent={student}
           onSave={saveActivity}
           onStateChanged={onStateChanged}
           onClose={dialog.hide}

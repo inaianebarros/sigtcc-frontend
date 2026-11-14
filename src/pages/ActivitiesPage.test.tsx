@@ -1,8 +1,10 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { tokenStore } from '../services/tokenStore';
 import { activitiesServer, makeActivity } from '../test/activitiesApi';
+import { makeAdvisee } from '../test/adviseesApi';
+import type { FakeAdvisee } from '../test/adviseesApi';
 import type { FakeActivity } from '../test/activitiesApi';
 import { mockApi, requestsTo } from '../test/mockApi';
 import { renderApp } from '../test/renderApp';
@@ -16,8 +18,9 @@ function setup(
   activities: FakeActivity[],
   user: 'student' | 'teacher',
   path = user === 'student' ? STUDENT_PATH : TEACHER_PATH,
+  advisees: FakeAdvisee[] = [],
 ) {
-  const server = activitiesServer(activities, { user });
+  const server = activitiesServer(activities, { user, advisees });
   const fetchMock = mockApi(server.routes);
   const events = userEvent.setup();
   renderApp(path);
@@ -425,41 +428,6 @@ describe('ActivitiesPage: filtros e página na URL (RNF30)', () => {
     );
   });
 
-  it('mostra o chip do aluno vindo da URL, filtra por ele no servidor e o remove', async () => {
-    const { fetchMock, events } = setup(
-      [
-        makeActivity(1, {
-          title: 'Da Maria',
-          student: { id: 101, full_name: 'Maria Lima' },
-        }),
-        makeActivity(2, {
-          title: 'Do João',
-          student: { id: 102, full_name: 'João Reis' },
-        }),
-      ],
-      'teacher',
-      '/professor/atividades?aluno=101',
-    );
-
-    await screen.findByText('Da Maria');
-
-    expect(screen.queryByText('Do João')).not.toBeInTheDocument();
-    expect(listRequests(fetchMock).at(-1)?.get('student_id')).toBe('101');
-    const chip = screen.getByText('Aluno: Maria Lima');
-    expect(chip).toBeVisible();
-
-    await events.click(
-      within(chip.closest('.MuiChip-root') as HTMLElement).getByTestId(
-        'CancelIcon',
-      ),
-    );
-
-    expect(await screen.findByText('Do João')).toBeVisible();
-    expect(screen.getByTestId('location')).toHaveTextContent(
-      /^\/professor\/atividades$/,
-    );
-  });
-
   it('um aluno logado ignora o parâmetro aluno da URL', async () => {
     const { fetchMock } = setup(
       [makeActivity(1)],
@@ -470,7 +438,9 @@ describe('ActivitiesPage: filtros e página na URL (RNF30)', () => {
     await screen.findByText('Atividade 1');
 
     expect(listRequests(fetchMock).at(-1)?.has('student_id')).toBe(false);
-    expect(screen.queryByText(/^Aluno: /)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('combobox', { name: 'Aluno' }),
+    ).not.toBeInTheDocument();
   });
 
   it('com filtros sem resultado mostra a mensagem e o botão Limpar filtros, que volta ao padrão', async () => {
@@ -743,4 +713,375 @@ describe('ActivitiesPage: os totais', () => {
     expect(totalOf('Total Concluídas')).toBeVisible();
     expect(totalOf('Total Pendentes')).toBeVisible();
   });
+});
+
+const ADVISEES_REQUESTS = 'GET /api/orientacao/orientandos';
+
+function adviseeNamed(id: number, name: string) {
+  const base = makeAdvisee(id);
+  return { ...base, student: { ...base.student, full_name: name } };
+}
+
+/** Os orientandos "Orientando 1" a "Orientando N", de 20 em 20 por página como a API. */
+function manyAdvisees(total: number) {
+  return Array.from({ length: total }, (_, index) =>
+    adviseeNamed(index + 1, `Orientando ${String(index + 1).padStart(2, '0')}`),
+  );
+}
+
+function adviseeRequests(fetchMock: ReturnType<typeof mockApi>) {
+  return requestsTo(fetchMock, ADVISEES_REQUESTS).map(
+    ([input]) => new URL(String(input), 'http://localhost').searchParams,
+  );
+}
+
+/** O jsdom não mede nada: a lista da rolagem recebe as medidas que o teste quer simular. */
+function scrollListTo(
+  listbox: HTMLElement,
+  {
+    scrollTop,
+    clientHeight = 200,
+    scrollHeight = 1000,
+  }: { scrollTop: number; clientHeight?: number; scrollHeight?: number },
+) {
+  Object.defineProperty(listbox, 'scrollHeight', {
+    configurable: true,
+    value: scrollHeight,
+  });
+  Object.defineProperty(listbox, 'clientHeight', {
+    configurable: true,
+    value: clientHeight,
+  });
+  listbox.scrollTop = scrollTop;
+  fireEvent.scroll(listbox);
+}
+
+describe('ActivitiesPage: a busca por título', () => {
+  const ACTIVITIES = [
+    makeActivity(1, { title: 'Capítulo 2' }),
+    makeActivity(2, { title: 'Resumo' }),
+  ];
+
+  it('espera 400 ms de pausa, filtra no servidor sem diferenciar acentos e guarda busca na URL', async () => {
+    const { fetchMock, events } = setup(ACTIVITIES, 'student');
+    await screen.findByText('Capítulo 2');
+
+    await events.type(
+      screen.getByRole('textbox', { name: 'Título da atividade' }),
+      'capitulo',
+    );
+
+    // Durante a digitação nenhum pedido de busca sai.
+    expect(listRequests(fetchMock).some((p) => p.has('search'))).toBe(false);
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/aluno/atividades?busca=capitulo',
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.queryByText('Resumo')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText('Capítulo 2')).toBeVisible();
+    expect(listRequests(fetchMock).at(-1)?.get('search')).toBe('capitulo');
+  });
+
+  it('volta à primeira página ao mudar a busca e combina com os demais filtros', async () => {
+    const many = Array.from({ length: 25 }, (_, index) =>
+      makeActivity(index + 1, {
+        title: `Texto ${String(index + 1).padStart(2, '0')}`,
+        status: index % 2 === 0 ? 'pending' : 'completed',
+      }),
+    );
+    const { fetchMock, events } = setup(
+      many,
+      'student',
+      '/aluno/atividades?situacao=pending&pagina=2',
+    );
+    await screen.findByText('Texto 21');
+
+    await events.type(
+      screen.getByRole('textbox', { name: 'Título da atividade' }),
+      'texto 0',
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        /^\/aluno\/atividades\?situacao=pending&busca=texto\+0$/,
+      ),
+    );
+    const last = listRequests(fetchMock).at(-1)!;
+    expect(last.get('status')).toBe('pending');
+    expect(last.get('search')).toBe('texto 0');
+    expect(last.get('offset')).toBe('0');
+  });
+
+  it('restaura a busca da URL no campo e o Limpar filtros a esvazia', async () => {
+    const { fetchMock, events } = setup(
+      [makeActivity(1, { title: 'Capítulo 2' })],
+      'student',
+      '/aluno/atividades?busca=zzz',
+    );
+
+    expect(
+      await screen.findByRole('textbox', { name: 'Título da atividade' }),
+    ).toHaveValue('zzz');
+    expect(listRequests(fetchMock).at(-1)?.get('search')).toBe('zzz');
+
+    await events.click(
+      await screen.findByRole('button', { name: 'Limpar filtros' }),
+    );
+
+    expect(await screen.findByText('Capítulo 2')).toBeVisible();
+    expect(
+      screen.getByRole('textbox', { name: 'Título da atividade' }),
+    ).toHaveValue('');
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/aluno\/atividades$/,
+    );
+  });
+});
+
+describe('ActivitiesPage: o filtro por Aluno do professor', () => {
+  const ACTIVITIES = [
+    makeActivity(1, {
+      title: 'Da Maria',
+      student: { id: 101, full_name: 'Maria Lima' },
+    }),
+    makeActivity(2, {
+      title: 'Do João',
+      student: { id: 102, full_name: 'João Reis' },
+    }),
+  ];
+  const ADVISEES = [
+    adviseeNamed(1, 'Maria Lima'),
+    adviseeNamed(2, 'João Reis'),
+  ];
+
+  it('começa em Todos, filtra ao escolher um aluno, guarda aluno na URL e volta a Todos', async () => {
+    const { fetchMock, events } = setup(
+      ACTIVITIES,
+      'teacher',
+      TEACHER_PATH,
+      ADVISEES,
+    );
+    const field = await screen.findByRole('combobox', { name: 'Aluno' });
+    expect(field).toHaveValue('Todos');
+    await screen.findByText('Do João');
+
+    await events.click(field);
+    await events.click(
+      await screen.findByRole('option', { name: 'Maria Lima' }),
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/professor/atividades?aluno=101',
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.queryByText('Do João')).not.toBeInTheDocument(),
+    );
+    expect(listRequests(fetchMock).at(-1)?.get('student_id')).toBe('101');
+    expect(screen.getByRole('combobox', { name: 'Aluno' })).toHaveValue(
+      'Maria Lima',
+    );
+
+    await events.click(screen.getByRole('combobox', { name: 'Aluno' }));
+    await events.click(await screen.findByRole('option', { name: 'Todos' }));
+
+    expect(await screen.findByText('Do João')).toBeVisible();
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      /^\/professor\/atividades$/,
+    );
+    expect(screen.getByRole('combobox', { name: 'Aluno' })).toHaveValue(
+      'Todos',
+    );
+  });
+
+  it('não mostra o chip Aluno: ... e o aluno logado não vê o filtro', async () => {
+    setup(ACTIVITIES, 'teacher', '/professor/atividades?aluno=101', ADVISEES);
+    await screen.findByText('Da Maria');
+    expect(screen.queryByText(/^Aluno: /)).not.toBeInTheDocument();
+  });
+
+  it('digitar busca no servidor, esconde Todos e mostra só os que casam; reabrir com aluno escolhido mostra todos', async () => {
+    const { fetchMock, events } = setup(
+      ACTIVITIES,
+      'teacher',
+      TEACHER_PATH,
+      ADVISEES,
+    );
+    const field = await screen.findByRole('combobox', { name: 'Aluno' });
+    await events.click(field);
+    expect(await screen.findByRole('option', { name: 'Todos' })).toBeVisible();
+
+    // Como o navegador, que seleciona o texto do campo ao focá-lo: a digitação o substitui.
+    (field as HTMLInputElement).select();
+    await events.keyboard('joao');
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('option', { name: 'Maria Lima' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByRole('option', { name: 'Todos' }),
+    ).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole('option', { name: 'João Reis' }),
+    ).toBeVisible();
+    expect(adviseeRequests(fetchMock).at(-1)?.get('search')).toBe('joao');
+
+    await events.click(screen.getByRole('option', { name: 'João Reis' }));
+    await events.click(screen.getByRole('combobox', { name: 'Aluno' }));
+
+    expect(
+      await screen.findByRole('option', { name: 'Maria Lima' }),
+    ).toBeVisible();
+    expect(screen.getByRole('option', { name: 'João Reis' })).toBeVisible();
+    expect(adviseeRequests(fetchMock).at(-1)?.has('search')).toBe(false);
+  });
+
+  it('carrega mais orientandos ao rolar perto do fim da lista, com indicador e sem dica de refinar a busca, até acabarem', async () => {
+    const { fetchMock, events } = setup(
+      [],
+      'teacher',
+      TEACHER_PATH,
+      manyAdvisees(45),
+    );
+    await events.click(await screen.findByRole('combobox', { name: 'Aluno' }));
+    const listbox = await screen.findByRole('listbox');
+    await waitFor(() =>
+      expect(within(listbox).getAllByRole('option')).toHaveLength(21),
+    );
+    expect(screen.queryByText(/refine/i)).not.toBeInTheDocument();
+
+    // Longe do fim: nada novo é pedido.
+    scrollListTo(listbox, { scrollTop: 0 });
+    expect(
+      adviseeRequests(fetchMock).filter((p) => p.get('offset') === '20'),
+    ).toHaveLength(0);
+
+    scrollListTo(listbox, { scrollTop: 780 });
+    await waitFor(() =>
+      expect(within(listbox).getAllByRole('option')).toHaveLength(41),
+    );
+    scrollListTo(listbox, { scrollTop: 780 });
+    await waitFor(() =>
+      expect(within(listbox).getAllByRole('option')).toHaveLength(46),
+    );
+
+    // Acabaram: rolar de novo não pede mais nada.
+    const before = adviseeRequests(fetchMock).length;
+    scrollListTo(listbox, { scrollTop: 780 });
+    expect(adviseeRequests(fetchMock)).toHaveLength(before);
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.queryByText(/refine/i)).not.toBeInTheDocument();
+  });
+
+  it('mostra o indicador de carregamento no fim da lista enquanto chegam mais nomes', async () => {
+    const server = activitiesServer([], {
+      user: 'teacher',
+      advisees: manyAdvisees(45),
+    });
+    const original = server.routes[ADVISEES_REQUESTS] as (
+      body: unknown,
+      url: URL,
+    ) => { body: unknown };
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    server.routes[ADVISEES_REQUESTS] = async (body, url) => {
+      if (url.searchParams.get('offset') === '20') await gate;
+      return original(body, url);
+    };
+    mockApi(server.routes);
+    const events = userEvent.setup();
+    renderApp(TEACHER_PATH);
+    await events.click(await screen.findByRole('combobox', { name: 'Aluno' }));
+    const listbox = await screen.findByRole('listbox');
+    await waitFor(() =>
+      expect(within(listbox).getAllByRole('option')).toHaveLength(21),
+    );
+
+    scrollListTo(listbox, { scrollTop: 780 });
+
+    expect(
+      await screen.findByRole('progressbar', {
+        name: 'Carregando mais orientandos',
+      }),
+    ).toBeVisible();
+    release();
+    await waitFor(() =>
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('também carrega mais ao descer pelo teclado até o fim da lista', async () => {
+    const { events } = setup([], 'teacher', TEACHER_PATH, manyAdvisees(45));
+    await events.click(await screen.findByRole('combobox', { name: 'Aluno' }));
+    const listbox = await screen.findByRole('listbox');
+    await waitFor(() =>
+      expect(within(listbox).getAllByRole('option')).toHaveLength(21),
+    );
+
+    for (let step = 0; step < 19; step += 1) {
+      await events.keyboard('{ArrowDown}');
+    }
+
+    await waitFor(() =>
+      expect(within(listbox).getAllByRole('option').length).toBeGreaterThan(21),
+    );
+  });
+
+  it('com ?aluno=ID de um orientando fora da primeira leva, mostra o nome certo e a lista já filtrada', async () => {
+    const advisees = manyAdvisees(30);
+    const { fetchMock } = setup(
+      [
+        makeActivity(1, {
+          title: 'Do vinte e cinco',
+          student: { id: 125, full_name: 'Orientando 25' },
+        }),
+        makeActivity(2, {
+          title: 'De outro',
+          student: { id: 101, full_name: 'Orientando 01' },
+        }),
+      ],
+      'teacher',
+      '/professor/atividades?aluno=125',
+      advisees,
+    );
+
+    expect(await screen.findByText('Do vinte e cinco')).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', { name: 'Aluno' })).toHaveValue(
+        'Orientando 25',
+      ),
+    );
+    expect(screen.queryByText('De outro')).not.toBeInTheDocument();
+    expect(listRequests(fetchMock).at(-1)?.get('student_id')).toBe('125');
+  });
+
+  it.each(['abc', '999'])(
+    'com ?aluno=%s inválido ou de quem não é orientando, volta a Todos e tira o parâmetro da URL',
+    async (value) => {
+      setup(
+        ACTIVITIES,
+        'teacher',
+        `/professor/atividades?aluno=${value}`,
+        ADVISEES,
+      );
+
+      await waitFor(() =>
+        expect(screen.getByTestId('location')).toHaveTextContent(
+          /^\/professor\/atividades$/,
+        ),
+      );
+      expect(
+        await screen.findByRole('combobox', { name: 'Aluno' }),
+      ).toHaveValue('Todos');
+      expect(await screen.findByText('Do João')).toBeVisible();
+    },
+  );
 });

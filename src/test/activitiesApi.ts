@@ -1,4 +1,5 @@
 import type { FakeAdvisee } from './adviseesApi';
+import { makeLinkedStudent } from './linkedStudentApi';
 import type { MockResponse } from './mockApi';
 
 export interface FakeActivity {
@@ -52,6 +53,14 @@ export function makeActivity(
   };
 }
 
+/** Sem maiúsculas nem acentos, como a busca do servidor. */
+function normalize(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+}
+
 type Handler = (
   body: unknown,
   url: URL,
@@ -103,15 +112,33 @@ export function activitiesServer(
   const routes: Record<string, MockResponse | Handler> = {
     'POST /api/auth/refresh': { body: { access_token: 't' } },
     'GET /api/auth/me': { body: ME[user] },
+    // A busca pelo nome é feita aqui como no servidor: sem diferenciar maiúsculas nem acentos.
     'GET /api/orientacao/orientandos': (_body, url) => {
       const limit = Number(url.searchParams.get('limit') ?? 20);
       const offset = Number(url.searchParams.get('offset') ?? 0);
+      const search = normalize(url.searchParams.get('search') ?? '');
+      const matching = advisees.filter((item) =>
+        normalize(item.student.full_name).includes(search),
+      );
       return {
         body: {
-          items: advisees.slice(offset, offset + limit),
-          count: advisees.length,
+          items: matching.slice(offset, offset + limit),
+          count: matching.length,
         },
       };
+    },
+    // O perfil do orientando: um id que não é dele cai no 404, como no servidor.
+    'GET /api/alunos/:id/perfil': (_body, _url, params) => {
+      const found = advisees.find(
+        (item) => item.student.id === Number(params.id),
+      );
+      return found
+        ? {
+            body: makeLinkedStudent(found.student.id, {
+              full_name: found.student.full_name,
+            }),
+          }
+        : { status: 404, body: { detail: 'Aluno não encontrado.' } };
     },
     'GET /api/atividades': (_body, url) => {
       const status = url.searchParams.get('status');
@@ -119,8 +146,10 @@ export function activitiesServer(
       const studentId = url.searchParams.get('student_id');
       const limit = Number(url.searchParams.get('limit') ?? 20);
       const offset = Number(url.searchParams.get('offset') ?? 0);
+      const search = normalize(url.searchParams.get('search') ?? '');
       const matching = state.filter(
         (item) =>
+          normalize(item.title).includes(search) &&
           (status === null || item.status === status) &&
           (overdue !== 'true' || item.overdue) &&
           (studentId === null || item.student.id === Number(studentId)),
