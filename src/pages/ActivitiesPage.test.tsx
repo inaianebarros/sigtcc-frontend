@@ -576,18 +576,18 @@ const MIXED = [
 
 describe('ActivitiesPage: os totais', () => {
   it.each(['student', 'teacher'] as const)(
-    'mostra Total Atividades, Total Concluídas e Total Pendentes (%s)',
+    'mostra Total de atividades, Concluídas e Pendentes (%s)',
     async (user) => {
       setup(MIXED, user);
 
       expect(
         await within(
-          await screen.findByRole('group', { name: 'Total Atividades' }),
+          await screen.findByRole('group', { name: 'Total de atividades' }),
         ).findByText('5'),
       ).toBeVisible();
-      expect(within(totalOf('Total Concluídas')).getByText('1')).toBeVisible();
+      expect(within(totalOf('Concluídas')).getByText('1')).toBeVisible();
       // Pendentes é só a situação Pendente: em andamento e em revisão ficam de fora.
-      expect(within(totalOf('Total Pendentes')).getByText('2')).toBeVisible();
+      expect(within(totalOf('Pendentes')).getByText('2')).toBeVisible();
     },
   );
 
@@ -595,16 +595,16 @@ describe('ActivitiesPage: os totais', () => {
     setup([], 'student');
 
     await within(
-      await screen.findByRole('group', { name: 'Total Atividades' }),
+      await screen.findByRole('group', { name: 'Total de atividades' }),
     ).findByText('0');
-    expect(within(totalOf('Total Concluídas')).getByText('0')).toBeVisible();
-    expect(within(totalOf('Total Pendentes')).getByText('0')).toBeVisible();
+    expect(within(totalOf('Concluídas')).getByText('0')).toBeVisible();
+    expect(within(totalOf('Pendentes')).getByText('0')).toBeVisible();
   });
 
   it('não muda os números ao filtrar por situação, atrasadas ou aluno', async () => {
     const { fetchMock, events } = setup(MIXED, 'student');
     await within(
-      await screen.findByRole('group', { name: 'Total Atividades' }),
+      await screen.findByRole('group', { name: 'Total de atividades' }),
     ).findByText('5');
 
     await events.click(screen.getByRole('combobox', { name: 'Situação' }));
@@ -620,8 +620,8 @@ describe('ActivitiesPage: os totais', () => {
     );
     await events.click(screen.getByRole('switch', { name: /atrasadas/i }));
 
-    expect(within(totalOf('Total Atividades')).getByText('5')).toBeVisible();
-    expect(within(totalOf('Total Pendentes')).getByText('2')).toBeVisible();
+    expect(within(totalOf('Total de atividades')).getByText('5')).toBeVisible();
+    expect(within(totalOf('Pendentes')).getByText('2')).toBeVisible();
     for (const [input] of requestsTo(fetchMock, SUMMARY)) {
       expect(new URL(String(input), 'http://localhost').search).toBe('');
     }
@@ -654,7 +654,7 @@ describe('ActivitiesPage: os totais', () => {
 
     expect(
       await within(
-        await screen.findByRole('group', { name: 'Total Atividades' }),
+        await screen.findByRole('group', { name: 'Total de atividades' }),
       ).findByText('1'),
     ).toBeVisible();
     expect(screen.getByText('Capítulo 2')).toBeVisible();
@@ -670,7 +670,7 @@ describe('ActivitiesPage: os totais', () => {
 
     expect(
       await within(
-        await screen.findByRole('group', { name: 'Total Atividades' }),
+        await screen.findByRole('group', { name: 'Total de atividades' }),
       ).findByText('1'),
     ).toBeVisible();
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -697,7 +697,7 @@ describe('ActivitiesPage: os totais', () => {
     release();
     expect(
       await within(
-        await screen.findByRole('group', { name: 'Total Atividades' }),
+        await screen.findByRole('group', { name: 'Total de atividades' }),
       ).findByText('1'),
     ).toBeVisible();
     expect(screen.queryByTestId('totals-skeleton')).not.toBeInTheDocument();
@@ -708,10 +708,10 @@ describe('ActivitiesPage: os totais', () => {
     setup(MIXED, 'student');
 
     await within(
-      await screen.findByRole('group', { name: 'Total Atividades' }),
+      await screen.findByRole('group', { name: 'Total de atividades' }),
     ).findByText('5');
-    expect(totalOf('Total Concluídas')).toBeVisible();
-    expect(totalOf('Total Pendentes')).toBeVisible();
+    expect(totalOf('Concluídas')).toBeVisible();
+    expect(totalOf('Pendentes')).toBeVisible();
   });
 });
 
@@ -1233,7 +1233,7 @@ describe('ActivitiesPage: o filtro por Situação e o interruptor Somente atrasa
     const sequence = [
       screen.getByRole('heading', { level: 1, name: 'Atividades' }),
       screen.getByRole('button', { name: 'Nova atividade' }),
-      screen.getByRole('group', { name: 'Total Atividades' }),
+      screen.getByRole('group', { name: 'Total de atividades' }),
       screen.getByRole('textbox', { name: 'Título da atividade' }),
       screen.getByRole('combobox', { name: 'Aluno' }),
       screen.getByRole('combobox', { name: 'Situação' }),

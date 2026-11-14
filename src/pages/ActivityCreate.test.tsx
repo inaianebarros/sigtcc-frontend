@@ -117,7 +117,7 @@ describe('Nova atividade: o envio', () => {
   it('lê os totais de novo depois de criar a atividade', async () => {
     const { events } = setup();
     await within(
-      await screen.findByRole('group', { name: 'Total Atividades' }),
+      await screen.findByRole('group', { name: 'Total de atividades' }),
     ).findByText('0');
     const dialog = await openDialog(events);
 
@@ -132,14 +132,12 @@ describe('Nova atividade: o envio', () => {
     await waitFor(() =>
       expect(
         within(
-          screen.getByRole('group', { name: 'Total Atividades' }),
+          screen.getByRole('group', { name: 'Total de atividades' }),
         ).getByText('1'),
       ).toBeVisible(),
     );
     expect(
-      within(screen.getByRole('group', { name: 'Total Pendentes' })).getByText(
-        '1',
-      ),
+      within(screen.getByRole('group', { name: 'Pendentes' })).getByText('1'),
     ).toBeVisible();
   });
 

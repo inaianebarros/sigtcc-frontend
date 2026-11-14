@@ -11,9 +11,9 @@ import type { ActivitySummary } from '../services/activityService';
 
 const TOTALS: { label: string; value: (summary: ActivitySummary) => number }[] =
   [
-    { label: 'Total Atividades', value: (summary) => summary.total },
-    { label: 'Total Concluídas', value: (summary) => summary.completed },
-    { label: 'Total Pendentes', value: (summary) => summary.pending },
+    { label: 'Total de atividades', value: (summary) => summary.total },
+    { label: 'Concluídas', value: (summary) => summary.completed },
+    { label: 'Pendentes', value: (summary) => summary.pending },
   ];
 
 interface ActivityTotalsProps {
