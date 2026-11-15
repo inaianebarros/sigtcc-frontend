@@ -1,15 +1,16 @@
-import { ThemeProvider, createTheme } from '@mui/material';
+import { ThemeProvider } from '@mui/material';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { contrast, opaque } from '../test/contrast';
 import { NO_DELIVERY_REASON, StatusAndDelivery } from './StatusAndDelivery';
+import { theme } from '../theme';
 
 const WHITE: [number, number, number] = [255, 255, 255];
 const MINIMUM = 4.5;
 
 function renderSection(hasDelivery: boolean) {
   render(
-    <ThemeProvider theme={createTheme()}>
+    <ThemeProvider theme={theme}>
       <StatusAndDelivery
         status="pending"
         statusBusy={false}
@@ -35,7 +36,7 @@ describe('Entrega e status: contraste mínimo de 4,5:1 (WCAG 2.1 AA)', () => {
 
   it('o texto do botão Enviar para revisão lê-se sobre a cor do botão (tema)', () => {
     // O jsdom não resolve as variáveis CSS do botão do MUI: as cores vêm do tema.
-    const { primary } = createTheme().palette;
+    const { primary } = theme.palette;
 
     expect(
       contrast(
@@ -46,7 +47,7 @@ describe('Entrega e status: contraste mínimo de 4,5:1 (WCAG 2.1 AA)', () => {
   });
 
   it('o texto de erro de cada arquivo (cor de erro do tema) lê-se sobre o fundo do diálogo', () => {
-    const { error } = createTheme().palette;
+    const { error } = theme.palette;
 
     expect(contrast(opaque(error.main, WHITE), WHITE)).toBeGreaterThanOrEqual(
       MINIMUM,

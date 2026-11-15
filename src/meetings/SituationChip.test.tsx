@@ -1,16 +1,16 @@
-import { ThemeProvider, createTheme } from '@mui/material';
+import { ThemeProvider } from '@mui/material';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { MEETING_SITUATIONS } from '../services/meetingService';
 import { contrast, opaque } from '../test/contrast';
 import { SituationChip } from './SituationChip';
 import { SITUATIONS } from './situationDisplay';
+import { theme } from '../theme';
 
 describe('a etiqueta da situação da reunião', () => {
   it.each(MEETING_SITUATIONS)(
     'tem texto e ícone, e o texto %s tem contraste de pelo menos 4,5:1 com o fundo',
     (situation) => {
-      const theme = createTheme();
       render(
         <ThemeProvider theme={theme}>
           <SituationChip situation={situation} />

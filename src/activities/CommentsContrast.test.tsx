@@ -1,12 +1,13 @@
-import { createTheme } from '@mui/material';
+import {} from '@mui/material';
 import { describe, expect, it } from 'vitest';
 import { contrast, opaque } from '../test/contrast';
+import { theme } from '../theme';
 
 const WHITE: [number, number, number] = [255, 255, 255];
 const MINIMUM = 4.5;
 
 // O jsdom não resolve as variáveis CSS do MUI: as cores vêm do tema.
-const { primary, text, error } = createTheme().palette;
+const { primary, text, error } = theme.palette;
 
 describe('Comentários: contraste mínimo de 4,5:1 (WCAG 2.1 AA)', () => {
   it('o texto do botão Comentar lê-se sobre a cor primária', () => {

@@ -1,13 +1,13 @@
-import { Alert, Chip, ThemeProvider, createTheme } from '@mui/material';
+import { Alert, Chip, ThemeProvider } from '@mui/material';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { contrast, opaque } from '../test/contrast';
+import { theme } from '../theme';
 
 const WHITE: [number, number, number] = [255, 255, 255];
 const MINIMUM = 4.5;
 
 // O jsdom não resolve as variáveis CSS do MUI: as cores vêm do tema.
-const theme = createTheme();
 const { text } = theme.palette;
 
 describe('Histórico de orientações: contraste mínimo de 4,5:1 (WCAG 2.1 AA)', () => {

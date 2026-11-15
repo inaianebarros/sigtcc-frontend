@@ -1,4 +1,4 @@
-import { createTheme } from '@mui/material';
+import {} from '@mui/material';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,6 +12,7 @@ import { mockApi, requestsTo } from '../test/mockApi';
 import type { MockResponse } from '../test/mockApi';
 import { renderApp } from '../test/renderApp';
 import { DESKTOP_WIDTH, setViewportWidth } from '../test/viewport';
+import { theme } from '../theme';
 
 type Overrides = Record<
   string,
@@ -667,7 +668,7 @@ describe('Linha do tempo: dados que a tela não conhece', () => {
 });
 
 describe('Linha do tempo: contraste (WCAG 2.1 AA)', () => {
-  const { primary, success, error } = createTheme().palette;
+  const { primary, success, error } = theme.palette;
   const white: [number, number, number] = [255, 255, 255];
 
   it.each([

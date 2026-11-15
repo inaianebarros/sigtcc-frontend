@@ -1,8 +1,9 @@
-import { Chip, ThemeProvider, createTheme } from '@mui/material';
+import { Chip, ThemeProvider } from '@mui/material';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { contrast, opaque } from '../test/contrast';
 import { RecordTypeFilter } from './RecordTypeFilter';
+import { theme } from '../theme';
 
 type Rgb = [number, number, number];
 
@@ -10,7 +11,6 @@ const WHITE: Rgb = [255, 255, 255];
 const MINIMUM = 4.5;
 
 // O jsdom não resolve as variáveis CSS do MUI: as cores vêm do tema.
-const theme = createTheme();
 
 function colorsOf(element: HTMLElement, surface: Rgb) {
   const style = getComputedStyle(element);

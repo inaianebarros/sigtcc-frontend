@@ -1,4 +1,4 @@
-import { createTheme } from '@mui/material';
+import {} from '@mui/material';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,6 +11,7 @@ import { contrast, opaque } from '../test/contrast';
 import { mockApi } from '../test/mockApi';
 import { renderApp } from '../test/renderApp';
 import { DESKTOP_WIDTH, PHONE_WIDTH, setViewportWidth } from '../test/viewport';
+import { theme } from '../theme';
 
 const TEACHER = { id: 9, full_name: 'Carlos Lima', type: 'teacher' } as const;
 const STUDENT = { id: 7, full_name: 'Ana Souza', type: 'student' } as const;
@@ -275,7 +276,7 @@ describe('Linha do tempo: a mesma ordem nos dois layouts', () => {
 });
 
 describe('Linha do tempo: contraste dos números (WCAG 2.1 AA)', () => {
-  const { primary, secondary } = createTheme().palette;
+  const { primary, secondary } = theme.palette;
   const white: [number, number, number] = [255, 255, 255];
 
   it.each([

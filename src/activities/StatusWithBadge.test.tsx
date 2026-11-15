@@ -1,5 +1,6 @@
-import { createTheme } from '@mui/material';
+import {} from '@mui/material';
 import { describe, expect, it } from 'vitest';
+import { theme } from '../theme';
 
 /** A luminância relativa e a razão de contraste da WCAG 2.1, sobre cores em #rrggbb. */
 function expand(hex: string): string {
@@ -27,7 +28,7 @@ function contrastRatio(first: string, second: string): number {
 
 describe('o selo Atrasada', () => {
   it('tem o contraste mínimo de 4,5:1 do WCAG 2.1 AA entre o texto e o fundo do tema', () => {
-    const { main, contrastText } = createTheme().palette.error;
+    const { main, contrastText } = theme.palette.error;
 
     expect(contrastRatio(main, contrastText)).toBeGreaterThanOrEqual(4.5);
   });
