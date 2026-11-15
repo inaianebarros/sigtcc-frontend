@@ -2,7 +2,6 @@ import {
   Card,
   CardActions,
   CardContent,
-  Chip,
   Stack,
   Typography,
 } from '@mui/material';
@@ -11,14 +10,14 @@ import { VisuallyHidden } from '../components/VisuallyHidden';
 import { OriginLink } from '../navigation/OriginLink';
 import { studentAdvisorPath } from '../navigation/paths';
 import type { Advisor } from '../services/advisorService';
+import { AdvisorAreaChips } from './AdvisorAreaChips';
+import { AvailabilityBadge } from './AvailabilityBadge';
 import { RequestAdvisingButton } from './RequestAdvisingButton';
 import type { AdvisorToAsk } from './useRequestAdvising';
 
 function moreProposalsText(hidden: number): string {
   return `+ ${hidden} ${hidden === 1 ? 'outra proposta' : 'outras propostas'}`;
 }
-
-const BADGE_SX = { flexShrink: 0, alignSelf: 'flex-start' } as const;
 
 interface AdvisorCardProps {
   advisor: Advisor;
@@ -61,22 +60,7 @@ export function AdvisorCard({
                   {advisor.fullName}
                 </OriginLink>
               </Typography>
-              {advisor.isAvailable ? (
-                <Chip
-                  label="Disponível para orientar"
-                  size="small"
-                  color="success"
-                  variant="outlined"
-                  sx={BADGE_SX}
-                />
-              ) : (
-                <Chip
-                  label="Indisponível"
-                  size="small"
-                  variant="outlined"
-                  sx={BADGE_SX}
-                />
-              )}
+              <AvailabilityBadge isAvailable={advisor.isAvailable} />
             </Stack>
             <Typography color="text.secondary">
               {advisor.institute.name}
@@ -87,31 +71,7 @@ export function AdvisorCard({
               <Typography id={areasId} variant="subtitle2" component="h3">
                 Áreas de interesse
               </Typography>
-              <Stack
-                component="ul"
-                aria-labelledby={areasId}
-                direction="row"
-                useFlexGap
-                sx={{ flexWrap: 'wrap', gap: 1, m: 0, p: 0, listStyle: 'none' }}
-              >
-                {advisor.areas.map((area) => (
-                  <li key={area.id}>
-                    <Chip
-                      size="small"
-                      color={area.isCommon ? 'success' : 'default'}
-                      variant={area.isCommon ? 'filled' : 'outlined'}
-                      label={
-                        <>
-                          {area.name}
-                          {area.isCommon && (
-                            <VisuallyHidden>, em comum</VisuallyHidden>
-                          )}
-                        </>
-                      }
-                    />
-                  </li>
-                ))}
-              </Stack>
+              <AdvisorAreaChips areas={advisor.areas} labelledBy={areasId} />
             </Stack>
           )}
           {proposals.length > 0 && (
