@@ -34,3 +34,16 @@ export function originPathname(state: unknown): string | null {
   const origin = originPath(state, 'professor') ?? originPath(state, 'aluno');
   return origin?.split('?')[0] ?? null;
 }
+
+const BACK_LABELS: Record<string, string> = {
+  '/professor/orientandos': 'Voltar para meus orientandos',
+  '/professor/solicitacoes': 'Voltar para as solicitações',
+  '/professor/atividades': 'Voltar para as atividades',
+  '/professor/historico': 'Voltar para o histórico',
+};
+
+/** O texto do "Voltar" do professor: diz para qual lista leva, e só "Voltar" quando não se sabe. */
+export function teacherBackLabel(origin: string | null): string {
+  const pathname = origin?.split('?')[0];
+  return (pathname && BACK_LABELS[pathname]) || 'Voltar';
+}

@@ -1,7 +1,6 @@
 import { Chip, Stack, Typography } from '@mui/material';
 import { useId, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { AdvisorAreaChips } from '../advisors/AdvisorAreaChips';
 import { AdvisorProfileHeader } from '../advisors/AdvisorProfileHeader';
 import { EligibilityNotice } from '../advisors/EligibilityNotice';
 import { RequestAdvisingButton } from '../advisors/RequestAdvisingButton';
@@ -14,6 +13,7 @@ import { positiveIntFrom } from '../navigation/positiveInt';
 import { paths } from '../navigation/paths';
 import { AdvisorThesisProposals } from '../proposals/AdvisorThesisProposals';
 import { ArticleList } from '../profile/ArticleList';
+import { AreaChips } from '../profile/AreaChips';
 import { ProfileView } from '../profile/ProfileView';
 import { getAdvisorProfile } from '../services/advisorProfileService';
 
@@ -100,7 +100,7 @@ export function AdvisorProfilePage() {
               {advisor.areas.length === 0 ? (
                 <Typography>Nenhuma área de interesse cadastrada.</Typography>
               ) : (
-                <AdvisorAreaChips areas={advisor.areas} labelledBy={areasId} />
+                <AreaChips areas={advisor.areas} labelledBy={areasId} />
               )}
             </Stack>
             <Stack

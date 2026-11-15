@@ -40,22 +40,31 @@ beforeEach(() => {
 });
 
 describe('StudentProfileViewPage: o conteúdo', () => {
-  it('mostra o nome no título, o instituto e o curso, sem e-mail, matrícula nem botões', async () => {
+  it('mostra o nome no título, com o curso e o instituto abaixo, sem e-mail, matrícula nem botões', async () => {
     open();
 
-    expect(
-      await screen.findByRole('heading', { level: 1, name: 'Ana Souza' }),
-    ).toBeInTheDocument();
+    const title = await screen.findByRole('heading', {
+      level: 1,
+      name: 'Ana Souza',
+    });
 
-    const facts = within(main());
-    expect(facts.getByText('Instituto')).toBeVisible();
+    const content = within(main());
+    const course = content.getByText('Ciência da Computação');
+    const institute = content.getByText(
+      'Instituto de Engenharia e Geociências',
+    );
+    expect(course).toBeVisible();
+    expect(institute).toBeVisible();
+    // Curso e instituto vêm logo abaixo do nome, nessa ordem.
     expect(
-      facts.getByText('Instituto de Engenharia e Geociências'),
-    ).toBeVisible();
-    expect(facts.getByText('Curso')).toBeVisible();
-    expect(facts.getByText('Ciência da Computação')).toBeVisible();
+      title.compareDocumentPosition(course) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      course.compareDocumentPosition(institute) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     expect(main().textContent).not.toMatch(/@|Matrícula/);
-    expect(facts.queryByRole('button')).not.toBeInTheDocument();
+    expect(content.queryByRole('button')).not.toBeInTheDocument();
   });
 
   it('mostra as áreas, com as em comum como chips preenchidos e as outras só com contorno', async () => {
@@ -76,10 +85,19 @@ describe('StudentProfileViewPage: o conteúdo', () => {
     const chip = (name: RegExp) =>
       within(list).getByText(name).closest('.MuiChip-root')!;
 
-    expect(screen.getByText('2 áreas em comum')).toBeVisible();
     expect(chip(/Banco de Dados/)).toHaveClass('MuiChip-filled');
     expect(chip(/Engenharia de Software/)).toHaveClass('MuiChip-filled');
     expect(chip(/Inteligência Artificial/)).toHaveClass('MuiChip-outlined');
+    // As em comum com o professor vêm primeiro, mesmo quando o servidor as mistura.
+    expect(
+      within(list)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual([
+      'Banco de Dados, em comum',
+      'Engenharia de Software, em comum',
+      'Inteligência Artificial',
+    ]);
   });
 
   it('a diferença das áreas em comum não depende só da cor: o leitor de tela ouve "em comum"', async () => {
@@ -96,25 +114,39 @@ describe('StudentProfileViewPage: o conteúdo', () => {
     ]);
   });
 
-  it.each([
-    [0, 'Nenhuma área em comum'],
-    [1, '1 área em comum'],
-    [3, '3 áreas em comum'],
-  ])('com compatibilidade %i, diz "%s"', async (compatibility, text) => {
-    open([
-      makeLinkedStudent(7, {
-        full_name: 'Ana Souza',
-        compatibility,
-        areas: [
-          { id: 1, name: 'Banco de Dados', is_common: compatibility > 0 },
-        ],
-      }),
-    ]);
+  it.each([0, 1, 3])(
+    'com compatibilidade %i, não escreve frase sobre as áreas em comum',
+    async (compatibility) => {
+      open([
+        makeLinkedStudent(7, {
+          full_name: 'Ana Souza',
+          compatibility,
+          areas: [
+            { id: 1, name: 'Banco de Dados', is_common: compatibility > 0 },
+          ],
+        }),
+      ]);
+      await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
 
-    expect(await screen.findByText(text)).toBeVisible();
+      expect(main().textContent).not.toMatch(/áreas? em comum/i);
+      expect(screen.queryByText('Em comum')).not.toBeInTheDocument();
+    },
+  );
+
+  it('sem áreas, diz isso em texto', async () => {
+    open([makeLinkedStudent(7, { full_name: 'Ana Souza', areas: [] })]);
+
+    expect(
+      await screen.findByText(
+        'Este aluno ainda não cadastrou áreas de interesse.',
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('list', { name: 'Áreas de interesse' }),
+    ).not.toBeInTheDocument();
   });
 
-  it('mostra os artigos: o título com ano e, havendo endereço, como link externo que avisa da nova aba', async () => {
+  it('mostra os artigos em cartões: título e ano e, havendo endereço, o link "Consultar publicação" que avisa da nova aba', async () => {
     open([
       makeLinkedStudent(7, {
         full_name: 'Ana Souza',
@@ -131,24 +163,33 @@ describe('StudentProfileViewPage: o conteúdo', () => {
     await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
 
     const link = screen.getByRole('link', {
-      name: 'Bancos de dados em nuvem (abre em uma nova aba)',
+      name: 'Consultar publicação de "Bancos de dados em nuvem" (abre em nova aba)',
     });
+    expect(link).toHaveTextContent('Consultar publicação');
     expect(link).toHaveAttribute('href', 'https://exemplo.com/a');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     const articles = within(
       screen.getByRole('list', { name: 'Artigos publicados' }),
     ).getAllByRole('listitem');
+    expect(
+      within(articles[0]!).getByRole('heading', {
+        level: 3,
+        name: 'Bancos de dados em nuvem',
+      }),
+    ).toBeVisible();
     expect(articles[0]).toHaveTextContent('2025');
     expect(articles[1]).toHaveTextContent('Notas de aula');
     expect(articles[1]).toHaveTextContent('2024');
     expect(within(articles[1]!).queryByRole('link')).not.toBeInTheDocument();
   });
 
-  it('sem artigos, diz "Nenhum artigo cadastrado"', async () => {
+  it('sem artigos, diz que o aluno ainda não cadastrou', async () => {
     open();
 
-    expect(await screen.findByText('Nenhum artigo cadastrado')).toBeVisible();
+    expect(
+      await screen.findByText('Este aluno ainda não cadastrou artigos.'),
+    ).toBeVisible();
   });
 
   it('não faz link de um endereço que não seja http ou https', async () => {
@@ -294,7 +335,9 @@ describe('StudentProfileViewPage: acesso e celular', () => {
     expect(
       screen.getByRole('list', { name: 'Áreas de interesse' }),
     ).toBeVisible();
-    expect(screen.getByText('Nenhum artigo cadastrado')).toBeVisible();
+    expect(
+      screen.getByText('Este aluno ainda não cadastrou artigos.'),
+    ).toBeVisible();
     expect(screen.getByRole('link', { name: 'Voltar' })).toBeVisible();
   });
 });
@@ -327,7 +370,9 @@ describe('StudentProfileViewPage: o "Voltar"', () => {
     );
     await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
 
-    expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
+    expect(
+      screen.getByRole('link', { name: 'Voltar para as solicitações' }),
+    ).toHaveAttribute(
       'href',
       '/professor/solicitacoes?situacao=accepted&pagina=2',
     );
@@ -344,9 +389,21 @@ describe('StudentProfileViewPage: o "Voltar"', () => {
     );
     await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
 
-    expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
+    expect(
+      screen.getByRole('link', { name: 'Voltar para meus orientandos' }),
+    ).toHaveAttribute('href', '/professor/orientandos?pagina=3');
+  });
+
+  it.each([
+    ['/professor/atividades', 'Voltar para as atividades'],
+    ['/professor/historico', 'Voltar para o histórico'],
+  ])('a origem %s diz "%s"', async (from, label) => {
+    open(undefined, '/professor/alunos/7', {}, { entries: FROM_ENTRY(from) });
+    await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
+
+    expect(screen.getByRole('link', { name: label })).toHaveAttribute(
       'href',
-      '/professor/orientandos?pagina=3',
+      from,
     );
   });
 
@@ -419,7 +476,9 @@ describe('Links para o perfil nas listas', () => {
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/professor/alunos/220',
     );
-    await user.click(screen.getByRole('link', { name: 'Voltar' }));
+    await user.click(
+      screen.getByRole('link', { name: 'Voltar para as solicitações' }),
+    );
 
     expect(await screen.findByText('Aluno 120')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
@@ -451,7 +510,9 @@ describe('Links para o perfil nas listas', () => {
     ).toHaveAttribute('href', '/professor/alunos/121');
     await user.click(within(card).getByRole('link', { name: 'Orientando 21' }));
     await screen.findByRole('heading', { level: 1, name: 'Orientando 21' });
-    await user.click(screen.getByRole('link', { name: 'Voltar' }));
+    await user.click(
+      screen.getByRole('link', { name: 'Voltar para meus orientandos' }),
+    );
 
     expect(await screen.findByText('Orientando 21')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(

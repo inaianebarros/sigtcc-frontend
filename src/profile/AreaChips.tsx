@@ -1,13 +1,18 @@
 import { Chip, Stack } from '@mui/material';
 import { VisuallyHidden } from '../components/VisuallyHidden';
-import type { ProfileArea } from '../profile/CommonAreaChips';
+export interface ProfileArea {
+  id: number;
+  name: string;
+  isCommon: boolean;
+}
 
 /**
- * As áreas de interesse de um professor, as em comum com o aluno primeiro (RN23): as em comum em
- * verde e preenchidas, as outras neutras e só com contorno. O leitor de tela ouve "em comum" junto
+ * As áreas de interesse de um perfil só para leitura, o do professor visto pelo aluno e o do aluno
+ * visto pelo professor, as em comum primeiro (RN23): as em comum em verde e preenchidas, as outras
+ * neutras e só com contorno. O leitor de tela ouve "em comum" junto
  * do nome, porque a cor sozinha não basta (WCAG 1.4.1). `labelledBy` aponta para o título da seção.
  */
-export function AdvisorAreaChips({
+export function AreaChips({
   areas,
   labelledBy,
 }: {

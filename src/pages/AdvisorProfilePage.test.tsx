@@ -161,7 +161,7 @@ describe('AdvisorProfilePage: o conteúdo', () => {
     await loaded();
 
     const link = screen.getByRole('link', {
-      name: 'Redes definidas por software (abre em uma nova aba)',
+      name: 'Consultar publicação de "Redes definidas por software" (abre em nova aba)',
     });
     expect(link).toHaveAttribute('href', 'https://exemplo.com/r');
     expect(link).toHaveAttribute('target', '_blank');
