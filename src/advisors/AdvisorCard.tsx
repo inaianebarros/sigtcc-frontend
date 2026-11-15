@@ -18,6 +18,8 @@ function moreProposalsText(hidden: number): string {
   return `+ ${hidden} ${hidden === 1 ? 'outra proposta' : 'outras propostas'}`;
 }
 
+const BADGE_SX = { flexShrink: 0, alignSelf: 'flex-start' } as const;
+
 interface AdvisorCardProps {
   advisor: Advisor;
   /** Verdadeiro quando o servidor disse que o aluno pode solicitar. */
@@ -46,9 +48,15 @@ export function AdvisorCard({
             <Stack
               direction="row"
               useFlexGap
-              sx={{ flexWrap: 'wrap', gap: 1, alignItems: 'center' }}
+              sx={{ gap: 1, alignItems: 'flex-start' }}
             >
-              <Typography id={titleId} variant="h6" component="h2">
+              {/* O nome ocupa o que sobra e quebra em mais linhas; o selo fica na borda direita. */}
+              <Typography
+                id={titleId}
+                variant="h6"
+                component="h2"
+                sx={{ flex: 1, minWidth: 0, overflowWrap: 'anywhere' }}
+              >
                 <OriginLink to={studentAdvisorPath(advisor.id)}>
                   {advisor.fullName}
                 </OriginLink>
@@ -59,9 +67,15 @@ export function AdvisorCard({
                   size="small"
                   color="success"
                   variant="outlined"
+                  sx={BADGE_SX}
                 />
               ) : (
-                <Chip label="Indisponível" size="small" variant="outlined" />
+                <Chip
+                  label="Indisponível"
+                  size="small"
+                  variant="outlined"
+                  sx={BADGE_SX}
+                />
               )}
             </Stack>
             <Typography color="text.secondary">
@@ -107,9 +121,11 @@ export function AdvisorCard({
               </Typography>
               <Stack
                 component="ul"
+                // Sem marcadores o Safari deixa de anunciar a lista: o papel a mantém.
+                role="list"
                 aria-labelledby={proposalsId}
                 spacing={0.5}
-                sx={{ m: 0, pl: 2.5 }}
+                sx={{ m: 0, p: 0, listStyle: 'none' }}
               >
                 {proposals.map((proposal) => (
                   <Typography key={proposal.id} component="li">

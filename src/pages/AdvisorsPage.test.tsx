@@ -107,6 +107,36 @@ describe('AdvisorsPage: a lista', () => {
     expect(status).toHaveStyle({ position: 'absolute', width: '1px' });
   });
 
+  it.each([
+    ['Ana Pereira', 'Disponível para orientar'],
+    ['Carla Dias', 'Indisponível'],
+  ])(
+    'o selo de %s fica na borda direita da primeira linha, sem encolher, e o nome ocupa o resto',
+    async (name, badge) => {
+      mockApi(advisorRoutes(THREE));
+      const user = userEvent.setup();
+      renderApp('/aluno/orientadores');
+      await screen.findByText('Ana Pereira');
+      await user.click(screen.getByRole('switch', { name: 'Mostrar todos' }));
+      await screen.findByText('Carla Dias');
+
+      const card = screen.getByRole('article', { name });
+      const chip = within(card)
+        .getByText(badge)
+        .closest<HTMLElement>('.MuiChip-root')!;
+      expect(chip).toHaveStyle({ flexShrink: '0', alignSelf: 'flex-start' });
+      const heading = within(card).getByRole('heading', { level: 2, name });
+      expect(heading).toHaveStyle({ flex: '1 1 0%', minWidth: '0' });
+      const row = heading.parentElement!;
+      expect(row).toContainElement(chip);
+      expect(row).not.toHaveStyle({ flexWrap: 'wrap' });
+      expect(
+        within(card).getByText('Instituto de Engenharia e Geociências')
+          .parentElement,
+      ).not.toBe(row);
+    },
+  );
+
   describe('as áreas de interesse', () => {
     const AREA_C = { id: 3, name: 'Redes' };
     const AREA_D = { id: 4, name: 'Compiladores' };
@@ -178,6 +208,10 @@ describe('AdvisorsPage: a lista', () => {
           .getAllByRole('listitem')
           .map((item) => item.textContent),
       ).toEqual(['Tema 3', 'Tema 2', 'Tema 1']);
+      // Sem marcadores nem recuo, mas ainda uma lista para o leitor de tela.
+      const list = within(card).getByRole('list', { name: 'Temas propostos' });
+      expect(list).toHaveAttribute('role', 'list');
+      expect(list).toHaveStyle({ listStyle: 'none', padding: '0px' });
       expect(within(card).queryByText('Proposta')).not.toBeInTheDocument();
       expect(
         within(card).queryByText(/temas? proposto/),
