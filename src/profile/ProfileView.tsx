@@ -26,7 +26,7 @@ interface ProfileViewProps<T> {
   /** O título da página já carregada: o nome da pessoa. */
   title: (data: T) => string;
   /** Troca o `<h1>` simples do título por um cabeçalho próprio, que deve conter o `<h1>`. */
-  heading?: (data: T, title: string) => ReactNode;
+  heading?: (data: T) => ReactNode;
   children: (data: T) => ReactNode;
 }
 
@@ -85,7 +85,7 @@ export function ProfileView<T>({
       {profile.status === 'ready' && profile.data !== null && (
         <>
           {heading ? (
-            heading(profile.data, title(profile.data))
+            heading(profile.data)
           ) : (
             <Typography variant="h4" component="h1">
               {title(profile.data)}

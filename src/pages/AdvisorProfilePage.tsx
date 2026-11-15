@@ -36,6 +36,7 @@ export function AdvisorProfilePage() {
   });
   const coursesId = useId();
   const areasId = useId();
+  const articlesId = useId();
   const requestId = useId();
   const unavailableId = useId();
 
@@ -60,7 +61,11 @@ export function AdvisorProfilePage() {
       >
         {(advisor) => (
           <>
-            <Stack spacing={1.5} component="section">
+            <Stack
+              spacing={1.5}
+              component="section"
+              aria-labelledby={coursesId}
+            >
               <Typography id={coursesId} variant="h6" component="h2">
                 Cursos vinculados
               </Typography>
@@ -88,7 +93,7 @@ export function AdvisorProfilePage() {
                 </Stack>
               )}
             </Stack>
-            <Stack spacing={1.5} component="section">
+            <Stack spacing={1.5} component="section" aria-labelledby={areasId}>
               <Typography id={areasId} variant="h6" component="h2">
                 Áreas de interesse
               </Typography>
@@ -98,8 +103,12 @@ export function AdvisorProfilePage() {
                 <AdvisorAreaChips areas={advisor.areas} labelledBy={areasId} />
               )}
             </Stack>
-            <Stack spacing={1.5} component="section">
-              <Typography variant="h6" component="h2">
+            <Stack
+              spacing={1.5}
+              component="section"
+              aria-labelledby={articlesId}
+            >
+              <Typography id={articlesId} variant="h6" component="h2">
                 Artigos publicados
               </Typography>
               <ArticleList articles={advisor.articles} />
