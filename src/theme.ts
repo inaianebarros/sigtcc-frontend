@@ -72,7 +72,11 @@ export const theme = createTheme({
       styleOverrides: { root: { minHeight: 40 } },
     },
     MuiOutlinedInput: {
-      styleOverrides: { notchedOutline: { borderColor: '#76766a' } },
+      // Campo de fundo branco (DESIGN.md), também quando fica direto sobre o papel de fundo.
+      styleOverrides: {
+        root: { backgroundColor: '#ffffff' },
+        notchedOutline: { borderColor: '#76766a' },
+      },
     },
     MuiLink: { defaultProps: { underline: 'always' } },
     MuiCard: {

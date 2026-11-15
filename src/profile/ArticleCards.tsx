@@ -100,9 +100,9 @@ export function ArticleCards() {
             return (
               <Card component="li" key={field.id} sx={{ p: 2 }}>
                 <Stack
-                  direction="row"
+                  direction={{ xs: 'column', sm: 'row' }}
                   spacing={1}
-                  sx={{ alignItems: 'flex-start' }}
+                  sx={{ alignItems: { sm: 'flex-start' } }}
                 >
                   <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                     <Typography
@@ -138,23 +138,30 @@ export function ArticleCards() {
                       </Typography>
                     )}
                   </Box>
-                  <IconButton
-                    aria-label={`Editar o artigo "${field.title}"`}
-                    onClick={() => open(index)}
-                    sx={TOUCH_TARGET}
+                  {/* No celular as ações descem para uma linha própria: o título ganha a largura toda. */}
+                  <Stack
+                    direction="row"
+                    spacing={0.5}
+                    sx={{ alignSelf: { xs: 'flex-end', sm: 'flex-start' } }}
                   >
-                    <EditOutlinedIcon />
-                  </IconButton>
-                  <IconButton
-                    aria-label={`Excluir o artigo "${field.title}"`}
-                    onClick={() => {
-                      setLastRemoving(field.title);
-                      setRemoving(index);
-                    }}
-                    sx={TOUCH_TARGET}
-                  >
-                    <DeleteOutlinedIcon />
-                  </IconButton>
+                    <IconButton
+                      aria-label={`Editar o artigo "${field.title}"`}
+                      onClick={() => open(index)}
+                      sx={TOUCH_TARGET}
+                    >
+                      <EditOutlinedIcon />
+                    </IconButton>
+                    <IconButton
+                      aria-label={`Excluir o artigo "${field.title}"`}
+                      onClick={() => {
+                        setLastRemoving(field.title);
+                        setRemoving(index);
+                      }}
+                      sx={TOUCH_TARGET}
+                    >
+                      <DeleteOutlinedIcon />
+                    </IconButton>
+                  </Stack>
                 </Stack>
               </Card>
             );

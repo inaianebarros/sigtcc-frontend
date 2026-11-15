@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Divider,
   Paper,
   Stack,
   TextField,
@@ -150,24 +151,20 @@ export function ProfileEditor<
   );
 
   if (layout === 'sections') {
+    // As seções ficam direto sobre o papel de fundo, sem caixa em volta: os cartões dos artigos são
+    // as únicas caixas, e só a barra de salvar tem fundo próprio.
     return (
       <FormProvider {...form}>
-        <Paper
+        <Box
           component="form"
           onSubmit={onSubmit}
           noValidate
-          variant="outlined"
-          sx={{
-            maxWidth: 720,
-            mx: 'auto',
-            p: { xs: 2, sm: 4 },
-            borderRadius: '12px',
-          }}
+          sx={{ maxWidth: 720, mx: 'auto' }}
         >
-          <Stack spacing={5}>
+          <Stack spacing={4} divider={<Divider />}>
             <Box>
               <Typography
-                variant="h2"
+                variant="h1"
                 component="h1"
                 tabIndex={-1}
                 id={titleId}
@@ -180,8 +177,13 @@ export function ProfileEditor<
               </Typography>
             </Box>
             <ProfileSection title="Informações pessoais">
-              {facts}
               {nameField}
+              <Stack spacing={1}>
+                <Typography variant="body2" color="text.secondary">
+                  Dados do seu cadastro, que não são editados aqui:
+                </Typography>
+                {facts}
+              </Stack>
             </ProfileSection>
             {extraFields}
             <ProfileSection
@@ -196,7 +198,12 @@ export function ProfileEditor<
               <Stack
                 direction="row"
                 spacing={2}
-                sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+                useFlexGap
+                sx={{
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  justifyContent: 'space-between',
+                }}
               >
                 <Box>
                   <Typography variant="subtitle1" component="h3">
@@ -215,13 +222,13 @@ export function ProfileEditor<
                 </Button>
               </Stack>
             </ProfileSection>
-            <SaveBar
-              visible={isDirty}
-              saving={isSubmitting}
-              note={externalPending ? externalPendingNote : undefined}
-            />
           </Stack>
-        </Paper>
+          <SaveBar
+            visible={isDirty}
+            saving={isSubmitting}
+            note={externalPending ? externalPendingNote : undefined}
+          />
+        </Box>
         {afterForm}
         <UnsavedChangesDialog blocker={blocker} />
       </FormProvider>

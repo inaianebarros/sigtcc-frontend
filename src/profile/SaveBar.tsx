@@ -22,17 +22,17 @@ export function SaveBar({
           position: 'sticky',
           bottom: 0,
           zIndex: (theme) => theme.zIndex.appBar - 1,
-          mx: { xs: -2, sm: -4 },
-          mb: { xs: -2, sm: -4 },
+          mt: 4,
         },
         visible && {
-          px: { xs: 2, sm: 4 },
+          px: { xs: 2, sm: 3 },
           py: 1.5,
           bgcolor: 'background.paper',
-          borderTop: 1,
+          border: 1,
+          borderBottom: 0,
           borderColor: 'divider',
-          borderBottomLeftRadius: '12px',
-          borderBottomRightRadius: '12px',
+          borderTopLeftRadius: '12px',
+          borderTopRightRadius: '12px',
         },
       ]}
     >

@@ -64,6 +64,23 @@ describe('StudentProfilePage: carregamento', () => {
     }
   });
 
+  it('põe o nome editável antes dos dados do cadastro e explica por que eles não editam', async () => {
+    mockApi(studentProfileRoutes());
+    renderApp('/aluno/perfil');
+
+    const name = await screen.findByLabelText('Nome completo');
+    const note = screen.getByText(
+      'Dados do seu cadastro, que não são editados aqui:',
+    );
+    expect(
+      name.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      note.compareDocumentPosition(await screen.findByText('ana@example.com')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('mostra um indicador enquanto o perfil carrega', async () => {
     const fetchMock = mockApi({
       ...studentProfileRoutes(),
