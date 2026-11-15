@@ -19,8 +19,8 @@ import { ProposalCards } from './ProposalCards';
 
 /**
  * As propostas de tema de um professor no perfil visto pelo aluno (RF56, RN42), só para leitura:
- * cartões só com o título, 5 por página, com a página na URL (RNF30). Sem propostas a seção inteira some, sem estado vazio. Aparece mesmo com o professor
- * indisponível (RN26).
+ * cartões só com o título, 5 por página, com a página na URL (RNF30). Sem propostas a seção
+ * inteira some, sem estado vazio. Aparece mesmo com o professor indisponível (RN26).
  */
 export function AdvisorThesisProposals({ teacherId }: { teacherId: number }) {
   const [page, setPage] = useUrlPage();

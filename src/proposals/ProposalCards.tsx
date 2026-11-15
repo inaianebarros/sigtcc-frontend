@@ -1,15 +1,15 @@
-import { Card, CardContent, Stack, Typography } from '@mui/material';
+import { Box, Card, CardContent, Stack, Typography } from '@mui/material';
 import { PagePagination } from '../components/PagePagination';
 import { THESIS_PROPOSALS_PAGE_SIZE } from '../services/thesisProposalService';
 import type { ThesisProposal } from '../services/thesisProposalService';
 
-/** A altura de um cartão de título curto e o espaço entre cartões, em px. */
-const CARD_HEIGHT = 56;
-const CARD_GAP = 8;
+/** A altura de um cartão de título curto e o espaço entre cartões, em rem (acompanham o zoom do texto). */
+const CARD_HEIGHT_REM = 3.5;
+const CARD_GAP_REM = 0.5;
 /** A caixa de várias páginas tem a altura de uma página cheia (5 cartões), em qualquer página. */
-const FIXED_BOX_HEIGHT =
-  THESIS_PROPOSALS_PAGE_SIZE * CARD_HEIGHT +
-  (THESIS_PROPOSALS_PAGE_SIZE - 1) * CARD_GAP;
+const FIXED_BOX_HEIGHT_REM =
+  THESIS_PROPOSALS_PAGE_SIZE * CARD_HEIGHT_REM +
+  (THESIS_PROPOSALS_PAGE_SIZE - 1) * CARD_GAP_REM;
 
 interface ProposalCardsProps {
   items: readonly ThesisProposal[];
@@ -34,43 +34,47 @@ export function ProposalCards({
   const paged = count > THESIS_PROPOSALS_PAGE_SIZE;
   return (
     <Stack spacing={2}>
-      <Stack
-        component="ul"
-        aria-label="Propostas de tema"
-        // Uma região rolável precisa de foco para ser lida e rolada pelo teclado.
+      <Box
+        // Uma região rolável precisa de nome e de foco para ser lida e rolada pelo teclado.
+        role={paged ? 'region' : undefined}
+        aria-label={paged ? 'Lista de propostas de tema' : undefined}
         tabIndex={paged ? 0 : undefined}
-        spacing={`${CARD_GAP}px`}
-        style={paged ? { height: `${FIXED_BOX_HEIGHT}px` } : undefined}
-        sx={{
-          m: 0,
-          p: 0,
-          listStyle: 'none',
-          overflowY: paged ? 'auto' : 'visible',
-        }}
+        sx={
+          paged
+            ? { height: `${FIXED_BOX_HEIGHT_REM}rem`, overflowY: 'auto' }
+            : undefined
+        }
       >
-        {items.map((proposal) => (
-          <Card
-            component="li"
-            key={proposal.id}
-            variant="outlined"
-            sx={{ flexShrink: 0, minHeight: CARD_HEIGHT }}
-          >
-            <CardContent
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                minHeight: CARD_HEIGHT,
-                py: 1,
-                '&:last-child': { pb: 1 },
-              }}
+        <Stack
+          component="ul"
+          aria-label="Propostas de tema"
+          spacing={`${CARD_GAP_REM}rem`}
+          sx={{ m: 0, p: 0, listStyle: 'none' }}
+        >
+          {items.map((proposal) => (
+            <Card
+              component="li"
+              key={proposal.id}
+              variant="outlined"
+              sx={{ flexShrink: 0, minHeight: `${CARD_HEIGHT_REM}rem` }}
             >
-              <Typography sx={{ overflowWrap: 'anywhere' }}>
-                {proposal.title}
-              </Typography>
-            </CardContent>
-          </Card>
-        ))}
-      </Stack>
+              <CardContent
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  minHeight: `${CARD_HEIGHT_REM}rem`,
+                  py: 1,
+                  '&:last-child': { pb: 1 },
+                }}
+              >
+                <Typography sx={{ overflowWrap: 'anywhere' }}>
+                  {proposal.title}
+                </Typography>
+              </CardContent>
+            </Card>
+          ))}
+        </Stack>
+      </Box>
       <PagePagination
         ariaLabel="Paginação das propostas de tema"
         knownCount={count}

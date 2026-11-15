@@ -668,8 +668,11 @@ describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
     expect(items[0]!.textContent).toBe(
       items[0]!.querySelector('p')!.textContent,
     );
-    expect(list).not.toHaveAttribute('tabindex');
-    expect(list.style.height).toBe('');
+    expect(
+      within(section).queryByRole('region', {
+        name: 'Lista de propostas de tema',
+      }),
+    ).not.toBeInTheDocument();
     expect(
       within(section).queryByRole('navigation', {
         name: 'Paginação das propostas de tema',
@@ -695,7 +698,11 @@ describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
     });
 
     expect(within(list).getAllByRole('listitem')).toHaveLength(5);
-    expect(list).not.toHaveAttribute('tabindex');
+    expect(
+      within(section).queryByRole('region', {
+        name: 'Lista de propostas de tema',
+      }),
+    ).not.toBeInTheDocument();
     expect(within(section).queryByRole('navigation')).not.toBeInTheDocument();
   });
 
@@ -717,10 +724,11 @@ describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
     expect(within(section).queryByText('Ações')).not.toBeInTheDocument();
     expect(proposalRequests(fetchMock)).toEqual([{ limit: '5', offset: '0' }]);
     // A caixa tem a altura de 5 cartões e rola por dentro, também pelo teclado.
-    expect(list.style.height).toBe('312px');
-    expect(list).toHaveStyle({ overflowY: 'auto' });
-    expect(list).toHaveAttribute('tabindex', '0');
-    const heightOfPage1 = list.style.height;
+    const box = within(section).getByRole('region', {
+      name: 'Lista de propostas de tema',
+    });
+    expect(box).toHaveStyle({ height: '19.5rem', overflowY: 'auto' });
+    expect(box).toHaveAttribute('tabindex', '0');
 
     await user.click(
       within(section).getByRole('button', { name: 'Ir para a página 2' }),
@@ -737,9 +745,10 @@ describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
     ).toBeVisible();
     expect(within(section).getByText('Página 2 de 3.')).toBeInTheDocument();
     expect(
-      within(section).getByRole('list', { name: 'Propostas de tema' }).style
-        .height,
-    ).toBe(heightOfPage1);
+      within(section).getByRole('region', {
+        name: 'Lista de propostas de tema',
+      }),
+    ).toHaveStyle({ height: '19.5rem' });
   });
 
   it('a última página, com menos itens, mantém a caixa na mesma altura', async () => {
@@ -757,7 +766,11 @@ describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
     });
 
     expect(within(list).getAllByRole('listitem')).toHaveLength(2);
-    expect(list.style.height).toBe('312px');
+    expect(
+      within(section).getByRole('region', {
+        name: 'Lista de propostas de tema',
+      }),
+    ).toHaveStyle({ height: '19.5rem' });
   });
 
   it('o foco continua no botão da paginação depois de trocar de página', async () => {
