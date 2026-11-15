@@ -14,9 +14,6 @@ import type { Advisor } from '../services/advisorService';
 import { RequestAdvisingButton } from './RequestAdvisingButton';
 import type { AdvisorToAsk } from './useRequestAdvising';
 
-/** Quantas propostas a API devolve por professor: o que passa disso vira "+ N outras propostas". */
-const SHOWN_PROPOSALS = 3;
-
 function moreProposalsText(hidden: number): string {
   return `+ ${hidden} ${hidden === 1 ? 'outra proposta' : 'outras propostas'}`;
 }
@@ -120,9 +117,9 @@ export function AdvisorCard({
                   </Typography>
                 ))}
               </Stack>
-              {total > SHOWN_PROPOSALS && (
+              {total > proposals.length && (
                 <Typography variant="body2" color="text.secondary">
-                  {moreProposalsText(total - SHOWN_PROPOSALS)}
+                  {moreProposalsText(total - proposals.length)}
                 </Typography>
               )}
             </Stack>
