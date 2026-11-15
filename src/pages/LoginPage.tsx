@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Alert,
   Button,
+  Divider,
   Link,
   Paper,
   Stack,
@@ -80,48 +81,81 @@ export function LoginPage() {
       component="form"
       onSubmit={onSubmit}
       noValidate
-      sx={{ maxWidth: 440, mx: 'auto', p: { xs: 2, sm: 4 } }}
+      variant="outlined"
+      sx={{
+        maxWidth: 440,
+        mx: 'auto',
+        mt: { xs: 0, sm: 4 },
+        p: { xs: 3, sm: 4 },
+        borderRadius: 3,
+      }}
     >
-      <Stack spacing={2}>
-        <Typography variant="h4" component="h1">
+      <Stack spacing={3}>
+        <Typography variant="h2" component="h1">
           Entrar
         </Typography>
-        {notice && <Alert severity="success">{notice}</Alert>}
-        {expiredMessage && <Alert severity="warning">{expiredMessage}</Alert>}
-        {submitError && <Alert severity="error">{submitError}</Alert>}
-        <TextField
-          label="E-mail"
-          type="email"
-          autoComplete="email"
-          error={Boolean(errors.email)}
-          helperText={errors.email?.message}
-          {...register('email')}
-        />
-        <PasswordField
-          label="Senha"
-          autoComplete="current-password"
-          error={Boolean(errors.password)}
-          helperText={errors.password?.message}
-          {...register('password')}
-        />
+        {(notice || expiredMessage || submitError) && (
+          <Stack spacing={1.5}>
+            {notice && <Alert severity="success">{notice}</Alert>}
+            {expiredMessage && (
+              <Alert severity="warning">{expiredMessage}</Alert>
+            )}
+            {submitError && <Alert severity="error">{submitError}</Alert>}
+          </Stack>
+        )}
+        <Stack spacing={2}>
+          <TextField
+            label="E-mail"
+            type="email"
+            autoComplete="email"
+            error={Boolean(errors.email)}
+            helperText={errors.email?.message}
+            {...register('email')}
+          />
+          <PasswordField
+            label="Senha"
+            autoComplete="current-password"
+            error={Boolean(errors.password)}
+            helperText={errors.password?.message}
+            {...register('password')}
+          />
+          <Link
+            component={RouterLink}
+            to={paths.forgotPassword}
+            variant="body2"
+            sx={{ alignSelf: 'flex-end' }}
+          >
+            Esqueci minha senha
+          </Link>
+        </Stack>
         <Button
           type="submit"
           variant="contained"
           size="large"
           disabled={isSubmitting}
+          aria-busy={isSubmitting}
         >
           {isSubmitting ? 'Entrando…' : 'Entrar'}
         </Button>
-        <Stack spacing={1}>
-          <Link component={RouterLink} to={paths.forgotPassword}>
-            Esqueci minha senha
-          </Link>
-          <Link component={RouterLink} to={paths.registerStudent}>
+        <Divider />
+        <Stack spacing={1.5}>
+          <Typography variant="body2" color="text.secondary">
+            Ainda não tem conta?
+          </Typography>
+          <Button
+            component={RouterLink}
+            to={paths.registerStudent}
+            variant="outlined"
+          >
             Cadastrar como aluno
-          </Link>
-          <Link component={RouterLink} to={paths.registerTeacher}>
+          </Button>
+          <Button
+            component={RouterLink}
+            to={paths.registerTeacher}
+            variant="outlined"
+          >
             Cadastrar como professor
-          </Link>
+          </Button>
         </Stack>
       </Stack>
     </Paper>

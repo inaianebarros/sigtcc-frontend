@@ -1,4 +1,4 @@
-import { createTheme } from '@mui/material';
+import {} from '@mui/material';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -10,6 +10,7 @@ import { contrast, opaque } from '../test/contrast';
 import { mockApi } from '../test/mockApi';
 import { renderApp } from '../test/renderApp';
 import { DESKTOP_WIDTH, PHONE_WIDTH, setViewportWidth } from '../test/viewport';
+import { theme } from '../theme';
 
 const LONG_DESCRIPTION = [
   'Primeiro parágrafo da descrição, com o que o professor pede.',
@@ -138,7 +139,7 @@ describe('Detalhe da atividade: a Descrição fixa', () => {
   });
 
   it('o texto lê-se com contraste mínimo de 4,5:1 sobre o fundo do bloco', () => {
-    const { text, action } = createTheme().palette;
+    const { text, action } = theme.palette;
     const white: [number, number, number] = [255, 255, 255];
 
     expect(

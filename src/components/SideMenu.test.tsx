@@ -1,4 +1,4 @@
-import { ThemeProvider, createTheme } from '@mui/material';
+import { ThemeProvider } from '@mui/material';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -7,6 +7,7 @@ import type { NavigationItem } from '../navigation/areas';
 import { LocationProbe } from '../test/LocationProbe';
 import { DESKTOP_WIDTH, setViewportWidth } from '../test/viewport';
 import { SideMenu } from './SideMenu';
+import { theme } from '../theme';
 
 const REASON = 'Disponível após ter um orientador ativo';
 
@@ -21,7 +22,7 @@ const items: readonly NavigationItem[] = [
 
 function renderMenu(hasActiveAdvising: boolean) {
   return render(
-    <ThemeProvider theme={createTheme()}>
+    <ThemeProvider theme={theme}>
       <MemoryRouter initialEntries={['/aluno/orientadores']}>
         <LocationProbe />
         <SideMenu items={items} hasActiveAdvising={hasActiveAdvising} />
