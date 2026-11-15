@@ -48,6 +48,7 @@ export function AdvisorProfilePage() {
         genericTitle="Perfil do professor"
         skeletonTestId="advisor-profile-skeleton"
         invalidId={id === null}
+        profileLayout
         profile={profile}
         onRetry={() => setReload((current) => current + 1)}
         title={(advisor) => advisor.fullName}
@@ -66,7 +67,7 @@ export function AdvisorProfilePage() {
               component="section"
               aria-labelledby={coursesId}
             >
-              <Typography id={coursesId} variant="h6" component="h2">
+              <Typography id={coursesId} variant="h3" component="h2">
                 Cursos vinculados
               </Typography>
               {advisor.courses.length === 0 ? (
@@ -94,7 +95,7 @@ export function AdvisorProfilePage() {
               )}
             </Stack>
             <Stack spacing={1.5} component="section" aria-labelledby={areasId}>
-              <Typography id={areasId} variant="h6" component="h2">
+              <Typography id={areasId} variant="h3" component="h2">
                 Áreas de interesse
               </Typography>
               {advisor.areas.length === 0 ? (
@@ -108,7 +109,7 @@ export function AdvisorProfilePage() {
               component="section"
               aria-labelledby={articlesId}
             >
-              <Typography id={articlesId} variant="h6" component="h2">
+              <Typography id={articlesId} variant="h3" component="h2">
                 Artigos publicados
               </Typography>
               <ArticleList articles={advisor.articles} />
@@ -119,7 +120,7 @@ export function AdvisorProfilePage() {
               component="section"
               aria-labelledby={requestId}
             >
-              <Typography id={requestId} variant="h6" component="h2">
+              <Typography id={requestId} variant="h3" component="h2">
                 Solicitar orientação
               </Typography>
               <Typography>

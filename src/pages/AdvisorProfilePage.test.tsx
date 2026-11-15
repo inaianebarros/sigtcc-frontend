@@ -161,13 +161,13 @@ describe('AdvisorProfilePage: o conteúdo', () => {
     await loaded();
 
     const link = screen.getByRole('link', {
-      name: 'Consultar publicação de "Redes definidas por software" (abre em nova aba)',
+      name: 'Redes definidas por software (abre em nova aba)',
     });
     expect(link).toHaveAttribute('href', 'https://exemplo.com/r');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     const articles = within(
-      screen.getByRole('list', { name: 'Artigos publicados' }),
+      screen.getByRole('region', { name: 'Artigos publicados' }),
     ).getAllByRole('listitem');
     expect(articles[0]).toHaveTextContent('2025');
     expect(within(articles[1]!).queryByRole('link')).not.toBeInTheDocument();
@@ -417,7 +417,7 @@ describe('AdvisorProfilePage: professor não encontrado e erros', () => {
           String(input).includes('/professores/'),
         ),
       ).toHaveLength(0);
-      expect(screen.getByRole('link', { name: 'Voltar' })).toBeVisible();
+      expect(screen.getAllByRole('link', { name: 'Voltar' })[0]!).toBeVisible();
     },
   );
 
@@ -431,7 +431,7 @@ describe('AdvisorProfilePage: professor não encontrado e erros', () => {
       }),
     ).toBeInTheDocument();
     expect(main().textContent).not.toMatch(/curso|inativ|permiss/i);
-    expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: 'Voltar' })[0]!).toHaveAttribute(
       'href',
       '/aluno/orientadores',
     );
@@ -513,7 +513,7 @@ describe('AdvisorProfilePage: o "Voltar"', () => {
     open();
     await loaded();
 
-    expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: 'Voltar' })[0]!).toHaveAttribute(
       'href',
       '/aluno/orientadores',
     );
@@ -532,7 +532,7 @@ describe('AdvisorProfilePage: o "Voltar"', () => {
     );
     await loaded();
 
-    expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
+    expect(screen.getAllByRole('link', { name: 'Voltar' })[0]!).toHaveAttribute(
       'href',
       '/aluno/orientadores?nome=Marta&show_all=true&pagina=2',
     );
@@ -555,10 +555,9 @@ describe('AdvisorProfilePage: o "Voltar"', () => {
       );
       await loaded();
 
-      expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
-        'href',
-        '/aluno/orientadores',
-      );
+      expect(
+        screen.getAllByRole('link', { name: 'Voltar' })[0]!,
+      ).toHaveAttribute('href', '/aluno/orientadores');
     },
   );
 });
@@ -604,7 +603,7 @@ describe('Link para o perfil na lista de orientadores', () => {
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/aluno/orientadores/7',
     );
-    await user.click(screen.getByRole('link', { name: 'Voltar' }));
+    await user.click(screen.getAllByRole('link', { name: 'Voltar' })[0]!);
 
     expect(await screen.findByText('Marta Rocha')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(

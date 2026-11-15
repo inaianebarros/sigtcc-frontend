@@ -35,6 +35,7 @@ export function StudentProfileViewPage() {
       genericTitle="Perfil do aluno"
       skeletonTestId="student-profile-skeleton"
       invalidId={id === null}
+      profileLayout
       profile={profile}
       onRetry={() => setReload((current) => current + 1)}
       title={(student) => student.fullName}

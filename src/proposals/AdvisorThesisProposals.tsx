@@ -65,7 +65,7 @@ export function AdvisorThesisProposals({ teacherId }: { teacherId: number }) {
       aria-labelledby="advisor-proposals-title"
       spacing={1}
     >
-      <Typography id="advisor-proposals-title" variant="h6" component="h2">
+      <Typography id="advisor-proposals-title" variant="h3" component="h2">
         Propostas de tema
       </Typography>
       {fallbackPage === null && (

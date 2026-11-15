@@ -16,13 +16,11 @@ describe('ArticleList', () => {
 
     expect(screen.getAllByRole('listitem')).toHaveLength(3);
     expect(
-      screen.getByRole('link', {
-        name: 'Consultar publicação de "Com link" (abre em nova aba)',
-      }),
+      screen.getByRole('link', { name: 'Com link (abre em nova aba)' }),
     ).toHaveAttribute('href', 'http://exemplo.com');
     expect(
       screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent),
-    ).toEqual(['Com link', 'Sem link', 'Esquisito']);
+    ).toEqual(['Com link (abre em nova aba)', 'Sem link', 'Esquisito']);
     expect(screen.getAllByRole('link')).toHaveLength(1);
   });
 

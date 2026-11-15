@@ -1,3 +1,4 @@
+import Done from '@mui/icons-material/Done';
 import { Chip, Stack } from '@mui/material';
 import { VisuallyHidden } from '../components/VisuallyHidden';
 export interface ProfileArea {
@@ -33,6 +34,9 @@ export function AreaChips({
             size="small"
             color={area.isCommon ? 'success' : 'default'}
             variant={area.isCommon ? 'filled' : 'outlined'}
+            // Além da cor: um sinal de certo nas em comum e uma borda firme nas outras.
+            icon={area.isCommon ? <Done aria-hidden /> : undefined}
+            sx={area.isCommon ? undefined : { borderColor: '#76766a' }}
             label={
               <>
                 {area.name}
