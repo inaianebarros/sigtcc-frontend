@@ -6,8 +6,8 @@ import type { ThesisProposal } from '../services/thesisProposalService';
 /** A altura de um cartão de título curto e o espaço entre cartões, em rem (acompanham o zoom do texto). */
 const CARD_HEIGHT_REM = 3.5;
 const CARD_GAP_REM = 0.5;
-/** A caixa de várias páginas tem a altura de uma página cheia (5 cartões), em qualquer página. */
-const FIXED_BOX_HEIGHT_REM =
+/** A caixa de várias páginas tem, no mínimo, a altura de uma página cheia (5 cartões). */
+const MIN_BOX_HEIGHT_REM =
   THESIS_PROPOSALS_PAGE_SIZE * CARD_HEIGHT_REM +
   (THESIS_PROPOSALS_PAGE_SIZE - 1) * CARD_GAP_REM;
 
@@ -21,9 +21,9 @@ interface ProposalCardsProps {
 
 /**
  * As propostas de tema vistas pelo aluno (RF56, RN42): um cartão só com o título, na ordem do
- * servidor. Até 5 propostas, a caixa se ajusta ao conteúdo. Com mais de uma página, a caixa tem a
- * altura de 5 cartões, para o indicador de páginas ficar no mesmo lugar em todas elas; títulos
- * longos rolam por dentro da caixa, que recebe o foco do teclado.
+ * servidor. Até 5 propostas, a caixa se ajusta ao conteúdo. Com mais de uma página, a caixa tem, no
+ * mínimo, a altura de 5 cartões, para o indicador de páginas ficar no mesmo lugar em todas elas;
+ * títulos longos a fazem crescer, sem barra de rolagem.
  */
 export function ProposalCards({
   items,
@@ -35,15 +35,9 @@ export function ProposalCards({
   return (
     <Stack spacing={2}>
       <Box
-        // Uma região rolável precisa de nome e de foco para ser lida e rolada pelo teclado.
-        role={paged ? 'region' : undefined}
-        aria-label={paged ? 'Lista de propostas de tema' : undefined}
-        tabIndex={paged ? 0 : undefined}
-        sx={
-          paged
-            ? { height: `${FIXED_BOX_HEIGHT_REM}rem`, overflowY: 'auto' }
-            : undefined
-        }
+        // Com várias páginas a caixa tem, no mínimo, a altura de 5 cartões, para o indicador de
+        // páginas ficar no mesmo lugar; títulos longos a fazem crescer, sem barra de rolagem.
+        sx={paged ? { minHeight: `${MIN_BOX_HEIGHT_REM}rem` } : undefined}
       >
         <Stack
           component="ul"

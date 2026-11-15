@@ -70,11 +70,11 @@ describe('AdvisorProfilePage: o conteúdo', () => {
     await loaded();
 
     const page = within(main());
-    expect(page.getByText('Perfil do professor')).toBeVisible();
+    expect(page.queryByText('Perfil do professor')).not.toBeInTheDocument();
     expect(
       page.getByText('Instituto de Engenharia e Geociências'),
     ).toBeVisible();
-    expect(page.getByText('MR')).toBeInTheDocument();
+    expect(main().querySelector('.MuiAvatar-root')).toBeNull();
     expect(page.queryByText(/Professora/)).not.toBeInTheDocument();
     expect(
       within(page.getByRole('list', { name: 'Cursos vinculados' }))
@@ -88,7 +88,7 @@ describe('AdvisorProfilePage: o conteúdo', () => {
     [true, 'Disponível para orientar'],
     [false, 'Indisponível'],
   ])(
-    'com is_available %s, a barra mostra o selo "%s" à direita',
+    'com is_available %s, o selo fica na linha do nome, à direita: "%s" à direita',
     async (isAvailable, badge) => {
       open([
         makeAdvisorProfile(7, {
@@ -98,13 +98,16 @@ describe('AdvisorProfilePage: o conteúdo', () => {
       ]);
       await loaded();
 
-      const bar = within(main())
-        .getByText('Perfil do professor')
-        .closest('div')!;
-      const chip = within(bar).getByText(badge);
+      const heading = within(main()).getByRole('heading', {
+        level: 1,
+        name: 'Marta Rocha',
+      });
+      const row = heading.parentElement!;
+      const chip = within(row).getByText(badge);
       expect(chip).toBeVisible();
       expect(chip.closest('.MuiChip-root')).toHaveStyle({ flexShrink: '0' });
-      expect(bar.lastElementChild).toContainElement(chip);
+      // O selo vem depois do nome, na mesma linha, à direita.
+      expect(row.lastElementChild).toContainElement(chip);
     },
   );
 
@@ -668,11 +671,7 @@ describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
     expect(items[0]!.textContent).toBe(
       items[0]!.querySelector('p')!.textContent,
     );
-    expect(
-      within(section).queryByRole('region', {
-        name: 'Lista de propostas de tema',
-      }),
-    ).not.toBeInTheDocument();
+    expect(list.parentElement).not.toHaveStyle({ minHeight: '19.5rem' });
     expect(
       within(section).queryByRole('navigation', {
         name: 'Paginação das propostas de tema',
@@ -698,15 +697,11 @@ describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
     });
 
     expect(within(list).getAllByRole('listitem')).toHaveLength(5);
-    expect(
-      within(section).queryByRole('region', {
-        name: 'Lista de propostas de tema',
-      }),
-    ).not.toBeInTheDocument();
+    expect(list.parentElement).not.toHaveStyle({ minHeight: '19.5rem' });
     expect(within(section).queryByRole('navigation')).not.toBeInTheDocument();
   });
 
-  it('com 6 ou mais mostra cartões de 5 em 5 numa caixa de altura fixa que rola por dentro, com a página na URL', async () => {
+  it('com 6 ou mais mostra cartões de 5 em 5 numa caixa de altura mínima de 5 cartões, sem rolagem, com a página na URL', async () => {
     const { fetchMock, user } = open(
       undefined,
       '/aluno/orientadores/7',
@@ -724,11 +719,11 @@ describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
     expect(within(section).queryByText('Ações')).not.toBeInTheDocument();
     expect(proposalRequests(fetchMock)).toEqual([{ limit: '5', offset: '0' }]);
     // A caixa tem a altura de 5 cartões e rola por dentro, também pelo teclado.
-    const box = within(section).getByRole('region', {
-      name: 'Lista de propostas de tema',
-    });
-    expect(box).toHaveStyle({ height: '19.5rem', overflowY: 'auto' });
-    expect(box).toHaveAttribute('tabindex', '0');
+    // A caixa tem, no mínimo, a altura de 5 cartões e cresce com títulos longos, sem rolagem.
+    const box = list.parentElement!;
+    expect(box).toHaveStyle({ minHeight: '19.5rem' });
+    expect(box).not.toHaveStyle({ overflowY: 'auto' });
+    expect(box).not.toHaveAttribute('tabindex');
 
     await user.click(
       within(section).getByRole('button', { name: 'Ir para a página 2' }),
@@ -745,13 +740,12 @@ describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
     ).toBeVisible();
     expect(within(section).getByText('Página 2 de 3.')).toBeInTheDocument();
     expect(
-      within(section).getByRole('region', {
-        name: 'Lista de propostas de tema',
-      }),
-    ).toHaveStyle({ height: '19.5rem' });
+      within(section).getByRole('list', { name: 'Propostas de tema' })
+        .parentElement,
+    ).toHaveStyle({ minHeight: '19.5rem' });
   });
 
-  it('a última página, com menos itens, mantém a caixa na mesma altura', async () => {
+  it('a última página, com menos itens, mantém a caixa com a altura mínima', async () => {
     open(
       undefined,
       '/aluno/orientadores/7?pagina=3',
@@ -767,10 +761,9 @@ describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
 
     expect(within(list).getAllByRole('listitem')).toHaveLength(2);
     expect(
-      within(section).getByRole('region', {
-        name: 'Lista de propostas de tema',
-      }),
-    ).toHaveStyle({ height: '19.5rem' });
+      within(section).getByRole('list', { name: 'Propostas de tema' })
+        .parentElement,
+    ).toHaveStyle({ minHeight: '19.5rem' });
   });
 
   it('o foco continua no botão da paginação depois de trocar de página', async () => {

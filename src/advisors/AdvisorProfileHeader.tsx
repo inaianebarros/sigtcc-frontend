@@ -1,5 +1,4 @@
-import { Avatar, Stack, Typography } from '@mui/material';
-import { initialsOf } from './initialsOf';
+import { Box, Stack, Typography } from '@mui/material';
 import { AvailabilityBadge } from './AvailabilityBadge';
 
 interface AdvisorProfileHeaderProps {
@@ -8,14 +7,14 @@ interface AdvisorProfileHeaderProps {
   isAvailable: boolean;
 }
 
-/** A barra "Perfil do professor" com o selo à direita e, abaixo, o avatar, o nome e o instituto. */
+/** O nome do professor com o selo de disponibilidade à direita, alinhado a ele, e o instituto abaixo. */
 export function AdvisorProfileHeader({
   fullName,
   institute,
   isAvailable,
 }: AdvisorProfileHeaderProps) {
   return (
-    <Stack spacing={2}>
+    <Stack spacing={0.5}>
       <Stack
         direction="row"
         sx={{
@@ -24,29 +23,26 @@ export function AdvisorProfileHeader({
           gap: 1,
         }}
       >
-        <Typography variant="subtitle1" component="p" sx={{ fontWeight: 500 }}>
-          Perfil do professor
-        </Typography>
-        <AvailabilityBadge isAvailable={isAvailable} />
-      </Stack>
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-        <Avatar
-          aria-hidden
-          sx={{ bgcolor: 'primary.main', color: 'primary.contrastText' }}
+        <Typography
+          variant="h4"
+          component="h1"
+          sx={{ minWidth: 0, overflowWrap: 'anywhere' }}
         >
-          {initialsOf(fullName)}
-        </Avatar>
-        <Stack sx={{ minWidth: 0 }}>
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{ overflowWrap: 'anywhere' }}
-          >
-            {fullName}
-          </Typography>
-          <Typography color="text.secondary">{institute}</Typography>
-        </Stack>
+          {fullName}
+        </Typography>
+        {/* Tem a altura da primeira linha do nome, para o selo ficar centrado nela. */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            flexShrink: 0,
+            height: '2.625rem',
+          }}
+        >
+          <AvailabilityBadge isAvailable={isAvailable} />
+        </Box>
       </Stack>
+      <Typography color="text.secondary">{institute}</Typography>
     </Stack>
   );
 }
