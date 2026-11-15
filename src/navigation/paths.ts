@@ -30,7 +30,7 @@ export const paths = {
   studentAdvisingReport: '/aluno/historico/:advisingId/relatorio',
   teacherAdvisingReport: '/professor/historico/:advisingId/relatorio',
   studentActivities: '/aluno/atividades',
-  studentThesis: '/aluno/tema',
+  studentThesis: '/aluno/perfil#tema',
   studentMeetings: '/aluno/reunioes',
   teacherMeetings: '/professor/reunioes',
   teacherActivities: '/professor/atividades',

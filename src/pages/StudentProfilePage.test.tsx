@@ -35,15 +35,13 @@ describe('StudentProfilePage: carregamento', () => {
     expect(chips.getByText('Inteligência Artificial')).toBeInTheDocument();
     expect(chips.getByText('Engenharia de Software')).toBeInTheDocument();
     expect(chips.queryByText('Banco de Dados')).not.toBeInTheDocument();
-    const titles = screen.getAllByLabelText('Título do artigo');
-    expect(titles.map((title) => (title as HTMLInputElement).value)).toEqual([
+    const articles = within(
+      screen.getByRole('region', { name: 'Artigos publicados' }),
+    ).getAllByRole('heading', { level: 3 });
+    expect(articles.map((title) => title.textContent)).toEqual([
       'Gestão de TCC com Django',
       'Orientação por áreas',
     ]);
-    expect(screen.getAllByLabelText('Ano')[0]).toHaveValue(2024);
-    expect(screen.getAllByLabelText('Endereço (URL)')[0]).toHaveValue(
-      'https://example.com/a',
-    );
   });
 
   it('mostra e-mail, matrícula, instituto e curso como texto, sem campos editáveis', async () => {
@@ -64,6 +62,23 @@ describe('StudentProfilePage: carregamento', () => {
         screen.queryByRole('textbox', { name: label }),
       ).not.toBeInTheDocument();
     }
+  });
+
+  it('põe o nome editável antes dos dados do cadastro e explica por que eles não editam', async () => {
+    mockApi(studentProfileRoutes());
+    renderApp('/aluno/perfil');
+
+    const name = await screen.findByLabelText('Nome completo');
+    const note = screen.getByText(
+      'Dados do seu cadastro, que não são editados aqui:',
+    );
+    expect(
+      name.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      note.compareDocumentPosition(await screen.findByText('ana@example.com')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('mostra um indicador enquanto o perfil carrega', async () => {
@@ -120,16 +135,37 @@ describe('StudentProfilePage: salvar', () => {
     setViewportWidth(DESKTOP_WIDTH);
   });
 
-  it('mantém o botão Salvar desabilitado enquanto não há alteração', async () => {
+  it('só mostra a barra de salvar quando há alteração', async () => {
     mockApi(studentProfileRoutes());
     const user = userEvent.setup();
     renderApp('/aluno/perfil');
     const name = await screen.findByLabelText('Nome completo');
-    expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: 'Salvar alterações' }),
+    ).not.toBeInTheDocument();
 
     await user.type(name, ' Lima');
 
-    expect(screen.getByRole('button', { name: 'Salvar' })).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'Salvar alterações' }),
+    ).toBeEnabled();
+  });
+
+  it('depois de salvar, o foco vai para o título da tela, e não se perde com a barra que some', async () => {
+    mockApi({
+      ...studentProfileRoutes(),
+      [PATCH_URL]: () => ({
+        body: savedProfile({ full_name: 'Ana Souza Lima' }),
+      }),
+    });
+    const user = userEvent.setup();
+    renderApp('/aluno/perfil');
+    await user.type(await screen.findByLabelText('Nome completo'), ' Lima');
+
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    await screen.findByText('Perfil atualizado com sucesso.');
+    expect(screen.getByRole('heading', { name: 'Meu perfil' })).toHaveFocus();
   });
 
   it('envia só o que mudou, mostra o sucesso, limpa o estado e atualiza o nome do cabeçalho', async () => {
@@ -156,7 +192,7 @@ describe('StudentProfilePage: salvar', () => {
 
     await user.clear(name);
     await user.type(name, '  Ana Souza Lima  ');
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     expect(
       await screen.findByText('Perfil atualizado com sucesso.'),
@@ -168,7 +204,9 @@ describe('StudentProfilePage: salvar', () => {
     expect(screen.getByLabelText('Nome completo')).toHaveValue(
       'Ana Souza Lima',
     );
-    expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled();
+    expect(
+      screen.queryByRole('button', { name: 'Salvar alterações' }),
+    ).not.toBeInTheDocument();
     await waitFor(() =>
       expect(
         screen.getByText('Ana Souza Lima', { selector: 'span' }),
@@ -209,7 +247,7 @@ describe('StudentProfilePage: áreas de interesse e validação', () => {
     await user.click(
       await screen.findByRole('option', { name: 'Banco de Dados' }),
     );
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     await screen.findByText('Perfil atualizado com sucesso.');
     expect(patchBody(fetchMock)).toEqual({ area_ids: [1, 3, 2] });
@@ -228,7 +266,7 @@ describe('StudentProfilePage: áreas de interesse e validação', () => {
       .closest('.MuiChip-root') as HTMLElement;
 
     await user.click(within(chip).getByTestId('CancelIcon'));
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     await screen.findByText('Perfil atualizado com sucesso.');
     expect(patchBody(fetchMock)).toEqual({ area_ids: [3] });
@@ -246,7 +284,7 @@ describe('StudentProfilePage: áreas de interesse e validação', () => {
         .closest('.MuiChip-root') as HTMLElement;
       await user.click(within(chip).getByTestId('CancelIcon'));
     }
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     expect(
       await screen.findByText('Escolha ao menos uma área de interesse.'),
@@ -261,13 +299,13 @@ describe('StudentProfilePage: áreas de interesse e validação', () => {
     const name = await screen.findByLabelText('Nome completo');
 
     await user.clear(name);
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
     expect(
       await screen.findByText('Informe o nome completo.'),
     ).toBeInTheDocument();
 
     await user.type(name, 'a'.repeat(151));
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
     expect(
       await screen.findByText('O nome deve ter no máximo 150 caracteres.'),
     ).toBeInTheDocument();
@@ -288,7 +326,29 @@ describe('StudentProfilePage: artigos publicados', () => {
     setViewportWidth(DESKTOP_WIDTH);
   });
 
-  it('adiciona um artigo e envia a lista completa, com os artigos que já existiam', async () => {
+  it('mostra os artigos em cartões, com título, ano e o link para a publicação', async () => {
+    mockApi(studentProfileRoutes());
+    renderApp('/aluno/perfil');
+    await screen.findByLabelText('Nome completo');
+
+    const section = screen.getByRole('region', { name: 'Artigos publicados' });
+    expect(within(section).getByText('2 artigos')).toBeInTheDocument();
+    const cards = within(section).getAllByRole('listitem');
+    expect(cards).toHaveLength(2);
+    expect(
+      within(cards[0]!).getByRole('heading', {
+        name: 'Gestão de TCC com Django',
+      }),
+    ).toBeInTheDocument();
+    expect(within(cards[0]!).getByText('2024')).toBeInTheDocument();
+    expect(
+      within(cards[0]!).getByRole('link', { name: /Acessar publicação/ }),
+    ).toHaveAttribute('href', 'https://example.com/a');
+    // O segundo artigo não tem endereço: não há link.
+    expect(within(cards[1]!).queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('adiciona um artigo pelo diálogo e envia a lista completa só ao salvar o perfil', async () => {
     const fetchMock = mockApi({
       ...studentProfileRoutes(),
       [PATCH_URL]: () => ({ body: STUDENT_PROFILE }),
@@ -298,15 +358,26 @@ describe('StudentProfilePage: artigos publicados', () => {
     await screen.findByLabelText('Nome completo');
 
     await user.click(screen.getByRole('button', { name: 'Adicionar artigo' }));
-    const titles = screen.getAllByLabelText('Título do artigo');
-    expect(titles).toHaveLength(3);
-    await user.type(titles[2]!, '  Novo artigo  ');
-    await user.type(screen.getAllByLabelText('Ano')[2]!, '2022');
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Adicionar artigo',
+    });
     await user.type(
-      screen.getAllByLabelText('Endereço (URL)')[2]!,
+      within(dialog).getByLabelText('Título do artigo'),
+      '  Novo artigo  ',
+    );
+    await user.type(within(dialog).getByLabelText('Ano'), '2022');
+    await user.type(
+      within(dialog).getByLabelText('Endereço (URL)'),
       'https://example.com/novo',
     );
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Adicionar' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+
+    expect(requestsTo(fetchMock, PATCH_URL)).toHaveLength(0);
+    expect(screen.getByText('3 artigos')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     await screen.findByText('Perfil atualizado com sucesso.');
     expect(patchBody(fetchMock)).toEqual({
@@ -317,7 +388,131 @@ describe('StudentProfilePage: artigos publicados', () => {
     });
   });
 
-  it('pede confirmação ao remover e só tira a linha quando a pessoa confirma', async () => {
+  it('edita um artigo pelo diálogo, já preenchido, e envia a lista com a mudança', async () => {
+    const fetchMock = mockApi({
+      ...studentProfileRoutes(),
+      [PATCH_URL]: () => ({ body: STUDENT_PROFILE }),
+    });
+    const user = userEvent.setup();
+    renderApp('/aluno/perfil');
+    await screen.findByLabelText('Nome completo');
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Editar o artigo "Orientação por áreas"',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Editar artigo' });
+    expect(within(dialog).getByLabelText('Título do artigo')).toHaveValue(
+      'Orientação por áreas',
+    );
+    expect(within(dialog).getByLabelText('Ano')).toHaveValue('2023');
+    await user.clear(within(dialog).getByLabelText('Ano'));
+    await user.type(within(dialog).getByLabelText('Ano'), '2021');
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Aplicar alteração' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    await screen.findByText('Perfil atualizado com sucesso.');
+    expect(patchBody(fetchMock)).toEqual({
+      articles: [
+        STUDENT_PROFILE.articles[0],
+        { title: 'Orientação por áreas', year: 2021, url: '' },
+      ],
+    });
+  });
+
+  it('valida o artigo no diálogo e recusa o título e o ano repetidos (RN31)', async () => {
+    mockApi(studentProfileRoutes());
+    const user = userEvent.setup();
+    renderApp('/aluno/perfil');
+    await screen.findByLabelText('Nome completo');
+    await user.click(screen.getByRole('button', { name: 'Adicionar artigo' }));
+    const dialog = await screen.findByRole('dialog');
+
+    await user.type(within(dialog).getByLabelText('Ano'), '1899');
+    await user.type(
+      within(dialog).getByLabelText('Endereço (URL)'),
+      'ftp://exemplo.com',
+    );
+    await user.click(within(dialog).getByRole('button', { name: 'Adicionar' }));
+
+    expect(
+      await within(dialog).findByText('Informe o título do artigo.'),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        `Informe um ano entre 1900 e ${new Date().getFullYear()}.`,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(
+        'Informe um endereço http ou https de até 500 caracteres.',
+      ),
+    ).toBeInTheDocument();
+
+    await user.type(
+      within(dialog).getByLabelText('Título do artigo'),
+      '  GESTÃO de tcc com django ',
+    );
+    await user.clear(within(dialog).getByLabelText('Ano'));
+    await user.type(within(dialog).getByLabelText('Ano'), '2024');
+    await user.clear(within(dialog).getByLabelText('Endereço (URL)'));
+    await user.click(within(dialog).getByRole('button', { name: 'Adicionar' }));
+
+    expect(
+      await within(dialog).findByText(
+        'Você já cadastrou um artigo com este título e este ano.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText('2 artigos')).toBeInTheDocument();
+  });
+
+  it('pede confirmação ao fechar o diálogo com texto digitado (RNF28)', async () => {
+    mockApi(studentProfileRoutes());
+    const user = userEvent.setup();
+    renderApp('/aluno/perfil');
+    await screen.findByLabelText('Nome completo');
+    await user.click(screen.getByRole('button', { name: 'Adicionar artigo' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Adicionar artigo',
+    });
+    await user.type(
+      within(dialog).getByLabelText('Título do artigo'),
+      'Rascunho',
+    );
+
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+
+    const confirm = await screen.findByRole('dialog', {
+      name: 'Descartar alterações?',
+    });
+    await user.click(
+      within(confirm).getByRole('button', { name: 'Continuar editando' }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Descartar alterações?' }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByLabelText('Título do artigo')).toHaveValue('Rascunho');
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
+    await user.click(
+      within(
+        await screen.findByRole('dialog', { name: 'Descartar alterações?' }),
+      ).getByRole('button', { name: 'Sair sem salvar' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText('2 artigos')).toBeInTheDocument();
+  });
+
+  it('pede confirmação ao excluir e só tira o cartão quando a pessoa confirma', async () => {
     const fetchMock = mockApi({
       ...studentProfileRoutes(),
       [PATCH_URL]: () => ({
@@ -327,27 +522,33 @@ describe('StudentProfilePage: artigos publicados', () => {
     const user = userEvent.setup();
     renderApp('/aluno/perfil');
     await screen.findByLabelText('Nome completo');
+    const deleteFirst = () =>
+      screen.getByRole('button', {
+        name: 'Excluir o artigo "Gestão de TCC com Django"',
+      });
 
-    await user.click(screen.getByRole('button', { name: 'Remover artigo 1' }));
-    const dialog = await screen.findByRole('dialog');
+    await user.click(deleteFirst());
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Excluir artigo?',
+    });
     expect(dialog).toHaveTextContent('Gestão de TCC com Django');
     await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
-    expect(screen.getAllByLabelText('Título do artigo')).toHaveLength(2);
+    expect(screen.getByText('2 artigos')).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Remover artigo 1' }));
+    await user.click(deleteFirst());
     await user.click(
       within(await screen.findByRole('dialog')).getByRole('button', {
-        name: 'Remover',
+        name: 'Excluir',
       }),
     );
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
-    expect(screen.getAllByLabelText('Título do artigo')).toHaveLength(1);
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    expect(screen.getByText('1 artigo')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     await screen.findByText('Perfil atualizado com sucesso.');
     expect(patchBody(fetchMock)).toEqual({
@@ -360,47 +561,24 @@ describe('StudentProfilePage: artigos publicados', () => {
     renderApp('/aluno/perfil');
     await screen.findByLabelText('Nome completo');
 
-    // Consultas de texto: com 150 campos na tela, as por papel e por rótulo são lentas no jsdom.
-    expect(screen.getAllByText(/^Remover artigo \d+$/)).toHaveLength(50);
+    expect(screen.getByText('50 artigos')).toBeInTheDocument();
     expect(
-      screen.getByText('Adicionar artigo').closest('button'),
+      screen.getByRole('button', { name: 'Adicionar artigo' }),
     ).toBeDisabled();
     expect(
       screen.getByText('Você chegou ao limite de 50 artigos.'),
     ).toBeInTheDocument();
   }, 20000);
 
-  it('valida cada artigo no cliente, com o erro no campo certo', async () => {
-    const fetchMock = mockApi(studentProfileRoutes());
-    const user = userEvent.setup();
+  it('mostra uma mensagem quando não há artigos', async () => {
+    mockApi(studentProfileRoutes(savedProfile({ articles: [] })));
     renderApp('/aluno/perfil');
     await screen.findByLabelText('Nome completo');
-    await user.click(screen.getByRole('button', { name: 'Adicionar artigo' }));
-    const nextYear = new Date().getFullYear() + 1;
-    await user.type(screen.getAllByLabelText('Ano')[2]!, '1899');
-    await user.type(
-      screen.getAllByLabelText('Endereço (URL)')[2]!,
-      'ftp://exemplo.com',
-    );
-    await user.clear(screen.getAllByLabelText('Ano')[1]!);
-    await user.type(screen.getAllByLabelText('Ano')[1]!, String(nextYear));
-
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
 
     expect(
-      await screen.findByText('Informe o título do artigo.'),
+      screen.getByText('Você ainda não cadastrou artigos publicados.'),
     ).toBeInTheDocument();
-    expect(
-      screen.getAllByText(
-        `Informe um ano entre 1900 e ${new Date().getFullYear()}.`,
-      ),
-    ).toHaveLength(2);
-    expect(
-      screen.getByText(
-        'Informe um endereço http ou https de até 500 caracteres.',
-      ),
-    ).toBeInTheDocument();
-    expect(requestsTo(fetchMock, PATCH_URL)).toHaveLength(0);
+    expect(screen.getByText('0 artigos')).toBeInTheDocument();
   });
 });
 
@@ -442,7 +620,7 @@ describe('StudentProfilePage: falhas ao salvar', () => {
     const name = await screen.findByLabelText('Nome completo');
     await user.type(name, ' Lima');
 
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     expect(
       await screen.findByText('O nome é obrigatório.'),
@@ -456,7 +634,9 @@ describe('StudentProfilePage: falhas ao salvar', () => {
     expect(screen.getByLabelText('Nome completo')).toHaveValue(
       'Ana Souza Lima',
     );
-    expect(screen.getByRole('button', { name: 'Salvar' })).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'Salvar alterações' }),
+    ).toBeEnabled();
     expect(
       screen.queryByText('Perfil atualizado com sucesso.'),
     ).not.toBeInTheDocument();
@@ -471,7 +651,7 @@ describe('StudentProfilePage: falhas ao salvar', () => {
     renderApp('/aluno/perfil');
     await user.type(await screen.findByLabelText('Nome completo'), ' Lima');
 
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     expect(
       await screen.findByText(/Ocorreu um erro no servidor/),
@@ -479,7 +659,9 @@ describe('StudentProfilePage: falhas ao salvar', () => {
     expect(screen.getByLabelText('Nome completo')).toHaveValue(
       'Ana Souza Lima',
     );
-    expect(screen.getByRole('button', { name: 'Salvar' })).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'Salvar alterações' }),
+    ).toBeEnabled();
   });
 
   it('avisa quando o servidor não responde e mantém o que foi digitado', async () => {
@@ -493,7 +675,7 @@ describe('StudentProfilePage: falhas ao salvar', () => {
     renderApp('/aluno/perfil');
     await user.type(await screen.findByLabelText('Nome completo'), ' Lima');
 
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     expect(
       await screen.findByText(/Não foi possível conectar ao servidor/),
@@ -505,7 +687,7 @@ describe('StudentProfilePage: falhas ao salvar', () => {
 });
 
 const NOTICE =
-  'Você tem alterações não salvas. Clique em Salvar para gravá-las.';
+  'Você tem alterações não salvas. Clique em Salvar alterações para gravá-las.';
 
 describe('StudentProfilePage: alterações não salvas (RNF28)', () => {
   beforeEach(() => {
@@ -529,7 +711,7 @@ describe('StudentProfilePage: alterações não salvas (RNF28)', () => {
     await user.type(name, ' Lima');
     expect(screen.getByText(NOTICE).closest('[role="status"]')).not.toBeNull();
 
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     await screen.findByText('Perfil atualizado com sucesso.');
     expect(screen.queryByText(NOTICE)).not.toBeInTheDocument();
@@ -597,7 +779,7 @@ describe('StudentProfilePage: alterações não salvas (RNF28)', () => {
 
     await user.click(screen.getByRole('link', { name: 'Meu perfil' }));
     await user.type(await screen.findByLabelText('Nome completo'), ' Lima');
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
     await screen.findByText('Perfil atualizado com sucesso.');
     await user.click(screen.getByRole('link', { name: 'Orientadores' }));
 
@@ -670,7 +852,9 @@ describe('StudentProfilePage: celular e acessibilidade', () => {
     const user = userEvent.setup();
     renderApp('/aluno/perfil');
     await user.type(await screen.findByLabelText('Nome completo'), ' Lima');
-    expect(screen.getByRole('button', { name: 'Salvar' })).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'Salvar alterações' }),
+    ).toBeEnabled();
 
     await user.click(screen.getByRole('button', { name: 'Abrir menu' }));
     await user.click(
@@ -691,7 +875,7 @@ describe('StudentProfilePage: celular e acessibilidade', () => {
     const name = await screen.findByLabelText('Nome completo');
     await user.clear(name);
 
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     const message = await screen.findByText('Informe o nome completo.');
     expect(name).toHaveFocus();
@@ -740,7 +924,7 @@ describe('StudentProfilePage: falhas do catálogo e mudanças sem efeito', () =>
       await screen.findByRole('option', { name: 'Inteligência Artificial' }),
     );
 
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     expect(
       await screen.findByText('Nenhuma alteração para salvar.'),
@@ -753,14 +937,25 @@ describe('StudentProfilePage: falhas do catálogo e mudanças sem efeito', () =>
     const fetchMock = mockApi(studentProfileRoutes());
     const user = userEvent.setup();
     renderApp('/aluno/perfil');
-    const titles = await screen.findAllByLabelText('Título do artigo');
-    await user.type(titles[0]!, '   ');
+    await screen.findByLabelText('Nome completo');
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Editar o artigo "Gestão de TCC com Django"',
+      }),
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Editar artigo' });
+    await user.type(within(dialog).getByLabelText('Título do artigo'), '   ');
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Aplicar alteração' }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
 
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
-
+    // O artigo ficou igual ao salvo: não há alteração, então não há barra de salvar nem envio.
     expect(
-      await screen.findByText('Nenhuma alteração para salvar.'),
-    ).toBeVisible();
+      screen.queryByRole('button', { name: 'Salvar alterações' }),
+    ).not.toBeInTheDocument();
     expect(requestsTo(fetchMock, PATCH_URL)).toHaveLength(0);
   });
 });
@@ -777,13 +972,16 @@ describe('StudentProfilePage: acessibilidade do aviso e dos diálogos', () => {
     const user = userEvent.setup();
     const { container } = renderApp('/aluno/perfil');
     const name = await screen.findByLabelText('Nome completo');
-    const region = container.querySelector('[aria-live="polite"]');
-    expect(region).not.toBeNull();
+    // A tela tem duas regiões de aviso, a do tema e a da barra de salvar; a da barra é a última.
+    const lastRegion = () =>
+      [...container.querySelectorAll('[aria-live="polite"]')].at(-1);
+    const region = lastRegion();
+    expect(region).not.toBeUndefined();
     expect(region).toBeEmptyDOMElement();
 
     await user.type(name, ' Lima');
 
-    expect(container.querySelector('[aria-live="polite"]')).toBe(region);
+    expect(lastRegion()).toBe(region);
     expect(region).toHaveTextContent(NOTICE);
   });
 
@@ -793,10 +991,14 @@ describe('StudentProfilePage: acessibilidade do aviso e dos diálogos', () => {
     renderApp('/aluno/perfil');
     await screen.findByLabelText('Nome completo');
 
-    await user.click(screen.getByRole('button', { name: 'Remover artigo 1' }));
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Excluir o artigo "Gestão de TCC com Django"',
+      }),
+    );
 
     const dialog = await screen.findByRole('dialog');
-    expect(dialog).toHaveAccessibleName('Remover artigo?');
+    expect(dialog).toHaveAccessibleName('Excluir artigo?');
     expect(dialog).toHaveAccessibleDescription(/Gestão de TCC com Django/);
   });
 

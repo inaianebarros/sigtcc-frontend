@@ -1,6 +1,14 @@
-import { Button, Paper, Stack, TextField, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Divider,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import type {
@@ -16,8 +24,11 @@ import { useSession } from '../hooks/useSession';
 import { useUnsavedChangesGuard } from '../hooks/useUnsavedChangesGuard';
 import { AreasField } from '../registration/CatalogFields';
 import type { AreaOfInterest } from '../services/catalogService';
+import { ArticleCards } from './ArticleCards';
 import { ArticlesField } from './ArticlesField';
 import { PendingChangesNotice } from './PendingChangesNotice';
+import { ProfileSection } from './ProfileSection';
+import { SaveBar } from './SaveBar';
 import type {
   DirtyFields,
   ProfileBase,
@@ -50,6 +61,15 @@ interface ProfileEditorProps<
   afterForm?: ReactNode;
   /** Para onde o botão "Alterar senha" leva. */
   changePasswordPath: string;
+  /**
+   * `sections` é o perfil do aluno: seções com título, artigos em cartões e a barra de salvar fixa.
+   * O padrão, `classic`, é o formulário corrido do professor.
+   */
+  layout?: 'classic' | 'sections';
+  /** Uma alteração pendente fora deste formulário (como o tema do aluno), para o aviso de sair da tela. */
+  externalPending?: boolean;
+  /** O que a barra de salvar diz quando há alteração pendente fora do formulário. */
+  externalPendingNote?: string;
 }
 
 /**
@@ -73,6 +93,9 @@ export function ProfileEditor<
   trailingFields,
   afterForm,
   changePasswordPath,
+  layout = 'classic',
+  externalPending = false,
+  externalPendingNote,
 }: ProfileEditorProps<TProfile, TValues, TChanges>) {
   const { notify } = useFeedback();
   const { status, refreshUser } = useSession();
@@ -87,7 +110,13 @@ export function ProfileEditor<
     setError,
     formState: { isDirty, dirtyFields, isSubmitting },
   } = form;
-  const blocker = useUnsavedChangesGuard(isDirty && status === 'authenticated');
+  // Depois de salvar a barra some com o botão: o foco vai para o título, e não para o `body`.
+  const titleId = useId();
+  const focusTitle = () =>
+    document.getElementById(titleId)?.focus({ preventScroll: true });
+  const blocker = useUnsavedChangesGuard(
+    (isDirty || externalPending) && status === 'authenticated',
+  );
   const common = form as unknown as UseFormReturn<ProfileFormValues>;
 
   const onSubmit = handleSubmit(async (values) => {
@@ -95,6 +124,7 @@ export function ProfileEditor<
     if (Object.keys(changes).length === 0) {
       reset(toValues(baseline) as unknown as TValues);
       notify('Nenhuma alteração para salvar.', 'info');
+      focusTitle();
       return;
     }
     try {
@@ -102,12 +132,108 @@ export function ProfileEditor<
       setBaseline(saved);
       reset(toValues(saved) as unknown as TValues);
       notify('Perfil atualizado com sucesso.', 'success');
+      focusTitle();
       void refreshUser();
     } catch (error) {
       const message = applyApiFieldErrors(error, fieldByApiField, setError);
       if (message) notify(message, 'error');
     }
   });
+
+  const nameField = (
+    <TextField
+      label="Nome completo"
+      autoComplete="name"
+      error={Boolean(common.formState.errors.fullName)}
+      helperText={common.formState.errors.fullName?.message}
+      {...common.register('fullName')}
+    />
+  );
+
+  if (layout === 'sections') {
+    // As seções ficam direto sobre o papel de fundo, sem caixa em volta: os cartões dos artigos são
+    // as únicas caixas, e só a barra de salvar tem fundo próprio.
+    return (
+      <FormProvider {...form}>
+        <Box
+          component="form"
+          onSubmit={onSubmit}
+          noValidate
+          sx={{ maxWidth: 720, mx: 'auto' }}
+        >
+          <Stack spacing={4} divider={<Divider />}>
+            <Box>
+              <Typography
+                variant="h1"
+                component="h1"
+                tabIndex={-1}
+                id={titleId}
+                sx={{ outline: 'none' }}
+              >
+                Meu perfil
+              </Typography>
+              <Typography color="text.secondary">
+                Gerencie suas informações pessoais e acadêmicas.
+              </Typography>
+            </Box>
+            <ProfileSection title="Informações pessoais">
+              {nameField}
+              <Stack spacing={1}>
+                <Typography variant="body2" color="text.secondary">
+                  Dados do seu cadastro, que não são editados aqui:
+                </Typography>
+                {facts}
+              </Stack>
+            </ProfileSection>
+            {extraFields}
+            <ProfileSection
+              title="Áreas de interesse"
+              description="Áreas relacionadas aos seus interesses acadêmicos."
+            >
+              <AreasField areas={{ status: 'ready', data: areas }} />
+            </ProfileSection>
+            <ArticleCards />
+            {trailingFields}
+            <ProfileSection title="Segurança">
+              <Stack
+                direction="row"
+                spacing={2}
+                useFlexGap
+                sx={{
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Box>
+                  <Typography variant="subtitle1" component="h3">
+                    Senha
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Altere sua senha de acesso ao sistema.
+                  </Typography>
+                </Box>
+                <Button
+                  component={RouterLink}
+                  to={changePasswordPath}
+                  variant="outlined"
+                >
+                  Alterar senha
+                </Button>
+              </Stack>
+            </ProfileSection>
+          </Stack>
+          <SaveBar
+            visible={isDirty}
+            saving={isSubmitting}
+            note={externalPending ? externalPendingNote : undefined}
+          />
+        </Box>
+        {afterForm}
+        <UnsavedChangesDialog blocker={blocker} />
+      </FormProvider>
+    );
+  }
 
   return (
     <FormProvider {...form}>
@@ -123,13 +249,7 @@ export function ProfileEditor<
             Meu perfil
           </Typography>
           {facts}
-          <TextField
-            label="Nome completo"
-            autoComplete="name"
-            error={Boolean(common.formState.errors.fullName)}
-            helperText={common.formState.errors.fullName?.message}
-            {...common.register('fullName')}
-          />
+          {nameField}
           {extraFields}
           <AreasField areas={{ status: 'ready', data: areas }} />
           <ArticlesField />

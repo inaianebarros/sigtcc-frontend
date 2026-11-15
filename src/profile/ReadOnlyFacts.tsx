@@ -22,7 +22,7 @@ export function ReadOnlyFacts({
           <Typography component="dt" color="text.secondary">
             {label}
           </Typography>
-          <Typography component="dd" sx={{ m: 0 }}>
+          <Typography component="dd" sx={{ m: 0, overflowWrap: 'anywhere' }}>
             {value}
           </Typography>
         </Box>

@@ -87,7 +87,7 @@ export function LoginPage() {
         mx: 'auto',
         mt: { xs: 0, sm: 4 },
         p: { xs: 3, sm: 4 },
-        borderRadius: 3,
+        borderRadius: '12px',
       }}
     >
       <Stack spacing={3}>

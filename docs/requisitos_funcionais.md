@@ -6,7 +6,7 @@ RF02 - **Cadastrar Professor:** O sistema deve permitir que o professor faça ca
 
 RF03 - **Realizar Login:** O sistema deve permitir que usuários cadastrados realizem o login utilizando e-mail e senha, concedendo acesso às funcionalidades de acordo com seu perfil. Ao acessar o endereço raiz do sistema, o usuário é levado à tela de login; se já estiver autenticado, vai direto à sua Dashboard (RF50, RF51).
 
-RF04 - **Editar Perfil do Aluno:** O sistema deve permitir que o aluno edite suas informações de perfil, como nome, áreas de interesse (ao menos uma deve permanecer cadastrada) e artigos publicados.
+RF04 - **Editar Perfil do Aluno:** O sistema deve permitir que o aluno edite suas informações de perfil, como nome, áreas de interesse (ao menos uma deve permanecer cadastrada) e artigos publicados. A tela "Meu perfil" tem, de cima para baixo, as seções Informações pessoais (só o nome é editável; e-mail, matrícula, instituto e curso são somente leitura), Tema do TCC (RF23, RF24), Áreas de interesse, Artigos publicados e Segurança (acesso a "Alterar senha"). Os artigos aparecem em cartões, com título, ano e o link "Acessar publicação" quando há, e ações de editar e excluir (a exclusão exige confirmação explícita, RNF21); adicionar e editar abrem um diálogo com título, ano e endereço, com aviso de alterações não salvas (RNF28), e o artigo repetido (RN31) é recusado. Nome, áreas e artigos são gravados juntos pelo botão "Salvar alterações", numa barra fixa no rodapé da tela que só aparece com alteração pendente e traz o aviso de alterações não salvas (RNF28).
 
 RF05 - **Editar Perfil do Professor:** O sistema deve permitir que o professor edite suas informações de perfil, como nome, cursos (um ou mais), áreas de interesse (ao menos uma deve permanecer cadastrada) e artigos publicados. O professor também informa se está disponível para orientar.
 
@@ -44,9 +44,9 @@ RF21 - **Editar Reunião:** O sistema deve permitir que reuniões sejam editadas
 
 RF22 - **Cancelar Reunião:** O sistema deve permitir que o autor cancele uma reunião pendente e que qualquer das partes da orientação cancele uma reunião aceita, desde que ainda não realizada, informando o motivo (RN10).
 
-RF23 - **Cadastrar Tema do TCC:** O sistema deve permitir que o **aluno** ou o **professor** cadastre o tema do TCC da orientação enquanto ela estiver ativa, após a aceitação da solicitação de orientação (RN12).
+RF23 - **Cadastrar Tema do TCC:** O sistema deve permitir que o **aluno** ou o **professor** cadastre o tema do TCC da orientação enquanto ela estiver ativa, após a aceitação da solicitação de orientação (RN12). O aluno o faz na seção Tema do TCC do próprio perfil (RF04), não há tela separada de tema: a seção tem o botão "Salvar tema", que grava na hora, fora do "Salvar alterações" do perfil. Sem orientação ativa o campo aparece bloqueado, com a explicação de que o tema só pode ser cadastrado com orientação ativa.
 
-RF24 - **Alterar Tema do TCC:** O sistema deve permitir que o aluno e o professor alterem o tema do TCC enquanto a orientação estiver ativa. Depois do encerramento da orientação o tema não pode mais ser alterado (RN12).
+RF24 - **Alterar Tema do TCC:** O sistema deve permitir que o aluno e o professor alterem o tema do TCC enquanto a orientação estiver ativa. Depois do encerramento da orientação o tema não pode mais ser alterado (RN12). O aluno altera o tema na seção Tema do TCC do perfil (RF04, RF23), que mostra o tema atual; depois do encerramento o texto continua visível, sem edição. A alteração não salva do tema também dispara o aviso de RNF28.
 
 RF25 - **Criar Atividade:** O sistema deve permitir que o professor crie atividades relacionadas ao TCC para seus orientados, informando título, descrição e prazo, que não pode ser anterior à data atual.
 
