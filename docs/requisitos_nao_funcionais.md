@@ -44,7 +44,7 @@ RNF16 - **Banco de Dados:** O sistema deve utilizar PostgreSQL como sistema gere
 
 ## Usabilidade
 
-RNF17 - **Tema de Interface:** O sistema deve utilizar o tema padrão do Material UI como base visual da interface, sem customizações de paleta de cores.
+RNF17 - **Tema de Interface:** O sistema deve utilizar o Material UI com um tema próprio baseado na paleta institucional do portal da UFOPA (cor primária `#0f6460`), definido em `docs/design-system-ufopa.md`, sempre com contraste mínimo de 4,5:1 (RNF de acessibilidade).
 
 RNF18 - **Consistência Visual:** A interface do sistema deve seguir os padrões de componentes e espaçamento do Material UI, mantendo consistência visual entre todas as telas.
 
