@@ -1,4 +1,4 @@
-import { Box, Button, Stack } from '@mui/material';
+import { Box, Button, GlobalStyles, Stack, Typography } from '@mui/material';
 import { PendingChangesNotice } from './PendingChangesNotice';
 
 /**
@@ -8,9 +8,12 @@ import { PendingChangesNotice } from './PendingChangesNotice';
 export function SaveBar({
   visible,
   saving,
+  note,
 }: {
   visible: boolean;
   saving: boolean;
+  /** Uma frase a mais sob o aviso, como a de que o tema grava à parte. */
+  note?: string;
 }) {
   return (
     <Box
@@ -28,11 +31,22 @@ export function SaveBar({
           bgcolor: 'background.paper',
           borderTop: 1,
           borderColor: 'divider',
-          borderBottomLeftRadius: 12,
-          borderBottomRightRadius: 12,
+          borderBottomLeftRadius: '12px',
+          borderBottomRightRadius: '12px',
         },
       ]}
     >
+      {/* O foco que o teclado leva a um campo não pode parar escondido atrás da barra fixa. */}
+      {visible && (
+        <GlobalStyles
+          styles={{
+            html: {
+              scrollPaddingBottom: 144,
+              '@media (min-width:600px)': { scrollPaddingBottom: 96 },
+            },
+          }}
+        />
+      )}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         spacing={1.5}
@@ -43,6 +57,11 @@ export function SaveBar({
             visible={visible}
             actionLabel="Salvar alterações"
           />
+          {visible && note && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {note}
+            </Typography>
+          )}
         </Box>
         {visible && (
           <Button type="submit" variant="contained" disabled={saving}>

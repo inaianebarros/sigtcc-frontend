@@ -7,7 +7,7 @@ import {
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import type {
@@ -67,6 +67,8 @@ interface ProfileEditorProps<
   layout?: 'classic' | 'sections';
   /** Uma alteração pendente fora deste formulário (como o tema do aluno), para o aviso de sair da tela. */
   externalPending?: boolean;
+  /** O que a barra de salvar diz quando há alteração pendente fora do formulário. */
+  externalPendingNote?: string;
 }
 
 /**
@@ -92,6 +94,7 @@ export function ProfileEditor<
   changePasswordPath,
   layout = 'classic',
   externalPending = false,
+  externalPendingNote,
 }: ProfileEditorProps<TProfile, TValues, TChanges>) {
   const { notify } = useFeedback();
   const { status, refreshUser } = useSession();
@@ -106,6 +109,10 @@ export function ProfileEditor<
     setError,
     formState: { isDirty, dirtyFields, isSubmitting },
   } = form;
+  // Depois de salvar a barra some com o botão: o foco vai para o título, e não para o `body`.
+  const titleId = useId();
+  const focusTitle = () =>
+    document.getElementById(titleId)?.focus({ preventScroll: true });
   const blocker = useUnsavedChangesGuard(
     (isDirty || externalPending) && status === 'authenticated',
   );
@@ -116,6 +123,7 @@ export function ProfileEditor<
     if (Object.keys(changes).length === 0) {
       reset(toValues(baseline) as unknown as TValues);
       notify('Nenhuma alteração para salvar.', 'info');
+      focusTitle();
       return;
     }
     try {
@@ -123,6 +131,7 @@ export function ProfileEditor<
       setBaseline(saved);
       reset(toValues(saved) as unknown as TValues);
       notify('Perfil atualizado com sucesso.', 'success');
+      focusTitle();
       void refreshUser();
     } catch (error) {
       const message = applyApiFieldErrors(error, fieldByApiField, setError);
@@ -152,12 +161,18 @@ export function ProfileEditor<
             maxWidth: 720,
             mx: 'auto',
             p: { xs: 2, sm: 4 },
-            borderRadius: 3,
+            borderRadius: '12px',
           }}
         >
           <Stack spacing={5}>
             <Box>
-              <Typography variant="h2" component="h1">
+              <Typography
+                variant="h2"
+                component="h1"
+                tabIndex={-1}
+                id={titleId}
+                sx={{ outline: 'none' }}
+              >
                 Meu perfil
               </Typography>
               <Typography color="text.secondary">
@@ -200,7 +215,11 @@ export function ProfileEditor<
                 </Button>
               </Stack>
             </ProfileSection>
-            <SaveBar visible={isDirty} saving={isSubmitting} />
+            <SaveBar
+              visible={isDirty}
+              saving={isSubmitting}
+              note={externalPending ? externalPendingNote : undefined}
+            />
           </Stack>
         </Paper>
         {afterForm}

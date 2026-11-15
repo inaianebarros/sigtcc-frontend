@@ -60,6 +60,7 @@ export function StudentProfilePage() {
             <ProfileThesisSection onPendingChange={setTopicPending} />
           }
           externalPending={topicPending}
+          externalPendingNote="O tema tem alterações que só são gravadas com o botão Salvar tema."
           layout="sections"
           changePasswordPath={paths.studentPassword}
         />

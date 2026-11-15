@@ -120,18 +120,46 @@ describe('Perfil do aluno: seção Tema do TCC', () => {
     expect(saveButton()).toBeDisabled();
   });
 
-  it('sem orientação ativa o campo fica bloqueado, com o motivo escrito e ligado ao campo', async () => {
+  it('sem orientação e sem tema não mostra o campo: só o motivo e o caminho para buscar orientadores', async () => {
     setup({ advising: false });
+    await screen.findByLabelText('Nome completo');
+    const tema = await screen.findByRole('region', { name: 'Tema do TCC' });
+
+    expect(await within(tema).findByText(NO_ADVISING)).toBeVisible();
+    expect(
+      within(tema).queryByRole('textbox', { name: /Tema do TCC/ }),
+    ).not.toBeInTheDocument();
+    expect(within(tema).queryByText(/\/1000/)).not.toBeInTheDocument();
+    expect(
+      within(tema).getByRole('link', { name: 'Buscar orientadores' }),
+    ).toHaveAttribute('href', '/aluno/orientadores');
+    expect(
+      within(tema).queryByRole('button', { name: 'Salvar tema' }),
+    ).not.toBeInTheDocument();
+    // A frase de apoio da seção muda para explicar o caminho, sem mandar "informar" o tema.
+    expect(
+      within(tema).queryByText(/Informe o tema do seu Trabalho/),
+    ).not.toBeInTheDocument();
+    expect(
+      within(tema).getByText(/depois que um professor aceita sua solicitação/),
+    ).toBeVisible();
+  });
+
+  it('sem orientação, mas com tema congelado, mostra o texto bloqueado com o motivo ligado ao campo', async () => {
+    setup({
+      advising: false,
+      topic: { description: VALID, updated_at: SAVED_AT },
+    });
     await ready();
 
+    expect(field()).toHaveValue(VALID);
     expect(field()).toHaveAttribute('readonly');
-    expect(within(section()).getByText(NO_ADVISING)).toBeVisible();
     expect(field()).toHaveAccessibleDescription(NO_ADVISING);
     expect(
       within(section()).queryByRole('button', { name: 'Salvar tema' }),
     ).not.toBeInTheDocument();
     expect(
-      within(section()).queryByText('Você ainda não cadastrou o tema do TCC.'),
+      within(section()).queryByRole('link', { name: 'Buscar orientadores' }),
     ).not.toBeInTheDocument();
   });
 
@@ -152,6 +180,17 @@ describe('Perfil do aluno: seção Tema do TCC', () => {
     await events.type(field(), '1234567890');
 
     expect(saveButton()).toBeEnabled();
+  });
+
+  it('depois de salvar o tema, o foco volta ao campo e não se perde no botão desabilitado', async () => {
+    const { events } = setup();
+    await ready();
+    await events.type(field(), VALID);
+
+    await events.click(saveButton());
+    await screen.findByText('Tema salvo.');
+
+    await waitFor(() => expect(field()).toHaveFocus());
   });
 
   it('grava o tema aparado por conta própria, sem enviar o perfil', async () => {
@@ -257,25 +296,44 @@ describe('Perfil do aluno: seção Tema do TCC', () => {
 });
 
 describe('Perfil do aluno: tema e alterações não salvas (RNF28)', () => {
-  it('mostra o aviso na seção enquanto o tema tem alteração, e o tira depois de salvar', async () => {
+  it('mostra uma frase discreta abaixo do campo enquanto o tema tem alteração, e a tira depois de salvar', async () => {
     const { events } = setup();
     await ready();
+    const hint = 'Tema não salvo: use o botão Salvar tema.';
+    expect(screen.queryByText(hint)).not.toBeInTheDocument();
+
+    await events.type(field(), VALID);
+
+    expect(await within(section()).findByText(hint)).toBeVisible();
+    // Um aviso por vez: não há o alerta amarelo do topo da seção nem a barra do perfil.
     expect(
       screen.queryByText(/Você tem alterações não salvas/),
+    ).not.toBeInTheDocument();
+    await events.click(saveButton());
+    await screen.findByText('Tema salvo.');
+    await waitFor(() =>
+      expect(screen.queryByText(hint)).not.toBeInTheDocument(),
+    );
+  });
+
+  it('com o perfil e o tema alterados, a barra avisa que o tema grava à parte', async () => {
+    const { events } = setup();
+    await ready();
+    await events.type(screen.getByLabelText('Nome completo'), ' Lima');
+    expect(
+      screen.queryByText(/só são gravadas com o botão Salvar tema/),
     ).not.toBeInTheDocument();
 
     await events.type(field(), VALID);
 
     expect(
-      await within(section()).findByText(/Você tem alterações não salvas/),
+      await screen.findByText(
+        'O tema tem alterações que só são gravadas com o botão Salvar tema.',
+      ),
     ).toBeVisible();
-    await events.click(saveButton());
-    await screen.findByText('Tema salvo.');
-    await waitFor(() =>
-      expect(
-        screen.queryByText(/Você tem alterações não salvas/),
-      ).not.toBeInTheDocument(),
-    );
+    expect(
+      screen.getByRole('button', { name: 'Salvar alterações' }),
+    ).toBeEnabled();
   });
 
   it('sair pelo menu com o tema alterado pede confirmação, e continuar editando mantém o texto', async () => {

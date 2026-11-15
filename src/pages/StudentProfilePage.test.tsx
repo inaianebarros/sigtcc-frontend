@@ -134,6 +134,23 @@ describe('StudentProfilePage: salvar', () => {
     ).toBeEnabled();
   });
 
+  it('depois de salvar, o foco vai para o título da tela, e não se perde com a barra que some', async () => {
+    mockApi({
+      ...studentProfileRoutes(),
+      [PATCH_URL]: () => ({
+        body: savedProfile({ full_name: 'Ana Souza Lima' }),
+      }),
+    });
+    const user = userEvent.setup();
+    renderApp('/aluno/perfil');
+    await user.type(await screen.findByLabelText('Nome completo'), ' Lima');
+
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    await screen.findByText('Perfil atualizado com sucesso.');
+    expect(screen.getByRole('heading', { name: 'Meu perfil' })).toHaveFocus();
+  });
+
   it('envia só o que mudou, mostra o sucesso, limpa o estado e atualiza o nome do cabeçalho', async () => {
     let currentName = 'Ana Souza';
     const fetchMock = mockApi({

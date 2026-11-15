@@ -1,13 +1,21 @@
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import { Alert, Button, Skeleton, Stack, Typography } from '@mui/material';
+import {
+  Alert,
+  Button,
+  Link,
+  Skeleton,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { useEffect, useId, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { applyApiFieldErrors } from '../forms/applyApiFieldErrors';
 import { formatDateTime } from '../formatters/dateTime';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { useSession } from '../hooks/useSession';
 import { hasActiveAdvisingOf } from '../navigation/advisingState';
+import { paths } from '../navigation/paths';
 import { isStateChangedError } from '../services/apiError';
 import { getMyTopic, saveMyTopic } from '../services/thesisService';
 import type { ThesisTopic } from '../services/thesisService';
@@ -31,6 +39,7 @@ function TopicEditor({
   const { user, refreshUser } = useSession();
   const { notify } = useFeedback();
   const reasonId = useId();
+  const fieldId = useId();
   const [saved, setSaved] = useState(initial);
   const [ended, setEnded] = useState(false);
   const { form, trimmed, pending, canSave } = useThesisTopicForm(
@@ -56,6 +65,8 @@ function TopicEditor({
       setSaved(result);
       form.reset({ description: result.description ?? '' });
       notify('Tema salvo.', 'success');
+      // O botão fica desabilitado depois de salvar: o foco volta ao campo, e não se perde.
+      document.getElementById(fieldId)?.focus();
     } catch (error) {
       if (isStateChangedError(error)) {
         // A orientação terminou com a tela aberta: o texto fica, sem edição, e o menu atualiza.
@@ -78,19 +89,27 @@ function TopicEditor({
       ? NO_ADVISING_TOPIC_MESSAGE
       : null;
 
+  // Sem orientação e sem tema não há o que mostrar: só o motivo e o caminho para tê-la.
+  const nothingToShow = noAdvising && !saved.description;
+
   return (
     <Stack spacing={2}>
       {!locked && !saved.description && (
         <Alert severity="info">Você ainda não cadastrou o tema do TCC.</Alert>
       )}
-      <ThesisTopicField
-        form={form}
-        length={trimmed.length}
-        pending={livePending}
-        disabled={form.formState.isSubmitting}
-        readOnly={locked}
-        describedBy={reason ? reasonId : undefined}
-      />
+      {!nothingToShow && (
+        <ThesisTopicField
+          form={form}
+          length={trimmed.length}
+          pending={livePending}
+          // Somente leitura (e não desabilitado) enquanto grava: o campo segue focável e o foco
+          // pode voltar a ele depois de salvar.
+          readOnly={locked || form.formState.isSubmitting}
+          describedBy={reason ? reasonId : undefined}
+          inputId={fieldId}
+          pendingHint="Tema não salvo: use o botão Salvar tema."
+        />
+      )}
       {reason && (
         <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
           <LockOutlinedIcon fontSize="small" color="action" aria-hidden />
@@ -98,6 +117,15 @@ function TopicEditor({
             {reason}
           </Typography>
         </Stack>
+      )}
+      {nothingToShow && (
+        <Link
+          component={RouterLink}
+          to={paths.studentAdvisors}
+          sx={{ alignSelf: 'flex-start' }}
+        >
+          Buscar orientadores
+        </Link>
       )}
       {saved.updatedAt && saved.description && (
         <Typography variant="body2" color="text.secondary">
@@ -133,7 +161,9 @@ export function ProfileThesisSection({
   const [reload, setReload] = useState(0);
   const topic = useLoad(getMyTopic, reload);
   const { hash } = useLocation();
+  const { user } = useSession();
   const ready = topic.status === 'ready';
+  const noAdvising = user !== null && !hasActiveAdvisingOf(user);
 
   // O link "cadastrar tema" do Dashboard abre o perfil em #tema: leva a seção à vista e o foco ao título.
   useEffect(() => {
@@ -147,7 +177,11 @@ export function ProfileThesisSection({
     <ProfileSection
       id={THESIS_SECTION_ID}
       title="Tema do TCC"
-      description="Informe o tema do seu Trabalho de Conclusão de Curso."
+      description={
+        noAdvising
+          ? 'O tema pertence à orientação: ele é cadastrado depois que um professor aceita sua solicitação.'
+          : 'Informe o tema do seu Trabalho de Conclusão de Curso.'
+      }
     >
       {topic.status === 'loading' && (
         <Skeleton
