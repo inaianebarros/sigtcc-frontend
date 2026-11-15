@@ -7,12 +7,25 @@ export interface NamedItem {
   name: string;
 }
 
+export interface AdvisorArea extends NamedItem {
+  isCommon: boolean;
+}
+
+export interface ThesisProposalSummary {
+  id: number;
+  title: string;
+}
+
 export interface Advisor {
   id: number;
   fullName: string;
   institute: NamedItem;
   compatibility: number;
   commonAreas: NamedItem[];
+  /** Todas as áreas do professor, as em comum primeiro. */
+  areas: AdvisorArea[];
+  /** Os temas propostos mais recentes (até 3) e o total do professor. */
+  thesisProposals: { items: ThesisProposalSummary[]; total: number };
   isAvailable: boolean;
 }
 
@@ -27,6 +40,8 @@ interface ApiAdvisor {
   institute: NamedItem;
   compatibility: number;
   common_areas: NamedItem[];
+  areas: (NamedItem & { is_common: boolean })[];
+  thesis_proposals: { items: ThesisProposalSummary[]; total: number };
   is_available: boolean;
 }
 
@@ -56,6 +71,12 @@ export async function searchAdvisors({
       institute: advisor.institute,
       compatibility: advisor.compatibility,
       commonAreas: advisor.common_areas,
+      areas: advisor.areas.map(({ id, name, is_common: isCommon }) => ({
+        id,
+        name,
+        isCommon,
+      })),
+      thesisProposals: advisor.thesis_proposals,
       isAvailable: advisor.is_available,
     })),
   };

@@ -14,6 +14,7 @@ import { AdvisorCard } from '../advisors/AdvisorCard';
 import { EligibilityNotice } from '../advisors/EligibilityNotice';
 import { RequestAdvisingDialog } from '../advisors/RequestAdvisingDialog';
 import { useRequestAdvising } from '../advisors/useRequestAdvising';
+import { VisuallyHidden } from '../components/VisuallyHidden';
 import { PagePagination } from '../components/PagePagination';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useLoad } from '../hooks/useLoad';
@@ -119,16 +120,22 @@ export function AdvisorsPage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h4" component="h1">
-        Orientadores
-      </Typography>
+      <Stack spacing={0.5}>
+        <Typography variant="h4" component="h1">
+          Orientadores
+        </Typography>
+        <Typography color="text.secondary">
+          Encontre professores e solicite orientação para seu trabalho
+          acadêmico.
+        </Typography>
+      </Stack>
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         spacing={1}
         sx={{ alignItems: { sm: 'center' } }}
       >
         <TextField
-          label="Buscar por nome"
+          label="Buscar professor pelo nome..."
           value={typed}
           onChange={(event) => setTyped(event.target.value)}
           slotProps={{ htmlInput: { maxLength: 150 } }}
@@ -146,12 +153,12 @@ export function AdvisorsPage() {
         />
       </Stack>
       <EligibilityNotice {...request.notice} />
-      {/* Uma frase curta numa região própria: reler os 20 cards a cada busca seria ruído. */}
-      <Typography role="status" aria-live="polite" color="text.secondary">
+      {/* Só para leitor de tela: uma frase curta numa região própria, pois reler os 20 cards a cada busca seria ruído. */}
+      <VisuallyHidden role="status" aria-live="polite">
         {list.status === 'ready' && list.data.count > 0
           ? foundText(list.data.count, showAll)
           : ''}
-      </Typography>
+      </VisuallyHidden>
       <div ref={listTop}>
         {list.status === 'loading' && <ListSkeleton />}
         {list.status === 'error' && (
