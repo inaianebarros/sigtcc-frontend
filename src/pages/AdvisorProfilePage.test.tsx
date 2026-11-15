@@ -664,9 +664,42 @@ describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
     expect(items[2]).toHaveTextContent('número 01');
     expect(within(section).queryByRole('table')).not.toBeInTheDocument();
     expect(within(section).queryByRole('button')).not.toBeInTheDocument();
+    // Cada cartão só tem o título; a caixa se ajusta ao conteúdo e não rola.
+    expect(items[0]!.textContent).toBe(
+      items[0]!.querySelector('p')!.textContent,
+    );
+    expect(list).not.toHaveAttribute('tabindex');
+    expect(list.style.height).toBe('');
+    expect(
+      within(section).queryByRole('navigation', {
+        name: 'Paginação das propostas de tema',
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(section).queryByText(/Ver todas as propostas|^\d+ temas?$/),
+    ).toBeNull();
   });
 
-  it('com 6 ou mais mostra uma tabela paginada de 5 em 5, também só de leitura, com a página na URL', async () => {
+  it('com exatamente 5 propostas não há altura fixa nem indicador de páginas', async () => {
+    open(
+      undefined,
+      '/aluno/orientadores/7',
+      advisorProposalsRoute(7, proposalsOf(5)),
+    );
+    await loaded();
+    const section = await screen.findByRole('region', {
+      name: 'Propostas de tema',
+    });
+    const list = within(section).getByRole('list', {
+      name: 'Propostas de tema',
+    });
+
+    expect(within(list).getAllByRole('listitem')).toHaveLength(5);
+    expect(list).not.toHaveAttribute('tabindex');
+    expect(within(section).queryByRole('navigation')).not.toBeInTheDocument();
+  });
+
+  it('com 6 ou mais mostra cartões de 5 em 5 numa caixa de altura fixa que rola por dentro, com a página na URL', async () => {
     const { fetchMock, user } = open(
       undefined,
       '/aluno/orientadores/7',
@@ -676,13 +709,18 @@ describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
     const section = await screen.findByRole('region', {
       name: 'Propostas de tema',
     });
-    const table = await within(section).findByRole('table', {
+    const list = await within(section).findByRole('list', {
       name: 'Propostas de tema',
     });
-    expect(within(table).getAllByRole('row')).toHaveLength(6);
-    expect(within(table).queryByRole('button')).not.toBeInTheDocument();
-    expect(within(table).queryByText('Ações')).not.toBeInTheDocument();
+    expect(within(section).queryByRole('table')).not.toBeInTheDocument();
+    expect(within(list).getAllByRole('listitem')).toHaveLength(5);
+    expect(within(section).queryByText('Ações')).not.toBeInTheDocument();
     expect(proposalRequests(fetchMock)).toEqual([{ limit: '5', offset: '0' }]);
+    // A caixa tem a altura de 5 cartões e rola por dentro, também pelo teclado.
+    expect(list.style.height).toBe('312px');
+    expect(list).toHaveStyle({ overflowY: 'auto' });
+    expect(list).toHaveAttribute('tabindex', '0');
+    const heightOfPage1 = list.style.height;
 
     await user.click(
       within(section).getByRole('button', { name: 'Ir para a página 2' }),
@@ -694,11 +732,32 @@ describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
       limit: '5',
       offset: '5',
     });
-    // A tabela e a paginação continuam na tela, e a mudança de página é anunciada.
     expect(
       within(section).getByRole('button', { name: 'Página 2, atual' }),
     ).toBeVisible();
     expect(within(section).getByText('Página 2 de 3.')).toBeInTheDocument();
+    expect(
+      within(section).getByRole('list', { name: 'Propostas de tema' }).style
+        .height,
+    ).toBe(heightOfPage1);
+  });
+
+  it('a última página, com menos itens, mantém a caixa na mesma altura', async () => {
+    open(
+      undefined,
+      '/aluno/orientadores/7?pagina=3',
+      advisorProposalsRoute(7, proposalsOf(12)),
+    );
+    await loaded();
+    const section = await screen.findByRole('region', {
+      name: 'Propostas de tema',
+    });
+    const list = await within(section).findByRole('list', {
+      name: 'Propostas de tema',
+    });
+
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+    expect(list.style.height).toBe('312px');
   });
 
   it('o foco continua no botão da paginação depois de trocar de página', async () => {
@@ -711,7 +770,7 @@ describe('AdvisorProfilePage: propostas de tema (RF56, RN42)', () => {
     const section = await screen.findByRole('region', {
       name: 'Propostas de tema',
     });
-    await within(section).findByRole('table');
+    await within(section).findByRole('list', { name: 'Propostas de tema' });
 
     await user.click(
       within(section).getByRole('button', { name: 'Ir para a página 2' }),
