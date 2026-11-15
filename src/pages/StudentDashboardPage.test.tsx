@@ -106,7 +106,7 @@ describe('Dashboard do aluno: com orientação ativa', () => {
     ).toBeVisible();
     expect(
       within(card).getByRole('link', { name: 'Cadastrar tema' }),
-    ).toHaveAttribute('href', '/aluno/tema');
+    ).toHaveAttribute('href', '/aluno/perfil#tema');
   });
 
   it('mostra os indicadores com os números reais da API', async () => {

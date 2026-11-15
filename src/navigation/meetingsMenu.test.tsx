@@ -61,7 +61,6 @@ describe('item Reuniões do menu lateral', () => {
       'Minha solicitação',
       'Atividades',
       'Reuniões',
-      'Tema do TCC',
       'Histórico de orientações',
       'Meu perfil',
     ]);

@@ -38,6 +38,7 @@ export function studentProfileRoutes(
       },
     },
     'GET /api/alunos/me/perfil': { body: profile },
+    'GET /api/tcc/tema': { body: { description: null, updated_at: null } },
     'GET /api/areas-de-interesse': { body: AREAS },
     'GET /api/institutos': {
       body: [{ id: 1, name: 'Instituto de Engenharia e Geociências' }],

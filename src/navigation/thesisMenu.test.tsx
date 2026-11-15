@@ -20,35 +20,30 @@ function studentSession(hasActiveAdvising: boolean) {
   };
 }
 
-describe('item Tema do TCC do menu lateral do aluno', () => {
+describe('menu lateral do aluno sem o item Tema do TCC', () => {
   beforeEach(() => {
     tokenStore.clear();
     vi.unstubAllGlobals();
     setViewportWidth(DESKTOP_WIDTH);
   });
 
-  it('fica desabilitado, com o motivo, sem orientação ativa', async () => {
+  it('não tem o item Tema do TCC, nem sem orientação ativa: o tema fica no perfil', async () => {
     mockApi(studentSession(false));
 
     renderApp('/aluno');
 
-    const item = await screen.findByRole('button', { name: /Tema do TCC/ });
-    expect(item).toHaveAttribute('aria-disabled', 'true');
-    // Atividades, Reuniões e Tema do TCC exigem o mesmo vínculo: o motivo aparece nos três itens.
-    expect(screen.getAllByText('Requer orientação ativa')).toHaveLength(3);
-    const menu = screen.getByRole('navigation', { name: 'Menu principal' });
-    expect(
-      within(menu).queryByRole('link', { name: 'Tema do TCC' }),
-    ).not.toBeInTheDocument();
+    await screen.findByRole('link', { name: 'Meu perfil' });
+    expect(screen.queryByText(/Tema do TCC/)).not.toBeInTheDocument();
+    // Só Atividades e Reuniões exigem o vínculo ativo.
+    expect(screen.getAllByText('Requer orientação ativa')).toHaveLength(2);
   });
 
-  it('leva à página do tema com orientação ativa, entre Atividades e Meu perfil', async () => {
+  it('lista os itens do aluno com orientação ativa, sem o tema, entre Reuniões e o histórico', async () => {
     mockApi(studentSession(true));
 
     renderApp('/aluno');
 
-    const link = await screen.findByRole('link', { name: 'Tema do TCC' });
-    expect(link).toHaveAttribute('href', '/aluno/tema');
+    await screen.findByRole('link', { name: 'Atividades' });
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
     expect(
       within(menu)
@@ -60,7 +55,6 @@ describe('item Tema do TCC do menu lateral do aluno', () => {
       'Minha solicitação',
       'Atividades',
       'Reuniões',
-      'Tema do TCC',
       'Histórico de orientações',
       'Meu perfil',
     ]);

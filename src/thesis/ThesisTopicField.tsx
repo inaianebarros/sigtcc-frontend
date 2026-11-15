@@ -10,6 +10,10 @@ interface ThesisTopicFieldProps {
   length: number;
   pending: boolean;
   disabled?: boolean;
+  /** Somente leitura: o texto continua legível e focável, mas não muda (o tema congelado, RN12). */
+  readOnly?: boolean;
+  /** O id do texto que explica por que o campo está bloqueado. */
+  describedBy?: string;
 }
 
 /** O campo do tema com o aviso de alterações não salvas no topo e o contador de caracteres. */
@@ -18,6 +22,8 @@ export function ThesisTopicField({
   length,
   pending,
   disabled = false,
+  readOnly = false,
+  describedBy,
 }: ThesisTopicFieldProps) {
   const error = form.formState.errors.description?.message;
   return (
@@ -28,6 +34,10 @@ export function ThesisTopicField({
         multiline
         minRows={4}
         disabled={disabled}
+        slotProps={{
+          input: { readOnly },
+          htmlInput: { 'aria-describedby': describedBy },
+        }}
         error={Boolean(error)}
         helperText={error}
         {...form.register('description')}

@@ -25,7 +25,7 @@ function isHttpUrl(value: string): boolean {
   }
 }
 
-function articleSchema(currentYear: number) {
+export function articleSchema(currentYear: number) {
   return z.object({
     title: z
       .string()
@@ -70,6 +70,18 @@ export function profileShape(currentYear = new Date().getFullYear()) {
 
 export function profileSchema(currentYear = new Date().getFullYear()) {
   return z.object(profileShape(currentYear));
+}
+
+/** A chave que decide se dois artigos são o mesmo (RN31): título e ano, sem maiúsculas, acentos nem espaços nas pontas. */
+export function articleKey(
+  article: Pick<ArticleRow, 'title' | 'year'>,
+): string {
+  const title = article.title
+    .trim()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+  return `${title}|${article.year.trim()}`;
 }
 
 export function toArticleRow(article: PublishedArticle): ArticleRow {

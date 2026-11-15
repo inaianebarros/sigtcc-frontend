@@ -1,11 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useLoad } from '../hooks/useLoad';
 import { paths } from '../navigation/paths';
 import { profileSchema, toFormValues } from '../profile/profileForm';
 import { studentChanges } from '../profile/studentForm';
 import { ProfileEditor } from '../profile/ProfileEditor';
 import { ProfileScreen } from '../profile/ProfileScreen';
+import { ProfileThesisSection } from '../profile/ProfileThesisSection';
 import { ReadOnlyFacts } from '../profile/ReadOnlyFacts';
 import { catalogName } from '../profile/catalogName';
 import { listCourses, listInstitutes } from '../services/catalogService';
@@ -41,6 +42,8 @@ function StudentFacts({ profile }: { profile: StudentProfile }) {
 
 export function StudentProfilePage() {
   const resolver = useMemo(() => zodResolver(profileSchema()), []);
+  // O tema grava por conta própria, mas sair da tela com ele por salvar também pede confirmação (RNF28).
+  const [topicPending, setTopicPending] = useState(false);
   return (
     <ProfileScreen loadProfile={getStudentProfile}>
       {(profile, areas) => (
@@ -53,6 +56,11 @@ export function StudentProfilePage() {
           save={updateStudentProfile}
           fieldByApiField={FIELD_BY_API_FIELD}
           facts={<StudentFacts profile={profile} />}
+          extraFields={
+            <ProfileThesisSection onPendingChange={setTopicPending} />
+          }
+          externalPending={topicPending}
+          layout="sections"
           changePasswordPath={paths.studentPassword}
         />
       )}

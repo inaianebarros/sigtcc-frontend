@@ -1,4 +1,11 @@
-import { Button, Paper, Stack, TextField, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
@@ -16,8 +23,11 @@ import { useSession } from '../hooks/useSession';
 import { useUnsavedChangesGuard } from '../hooks/useUnsavedChangesGuard';
 import { AreasField } from '../registration/CatalogFields';
 import type { AreaOfInterest } from '../services/catalogService';
+import { ArticleCards } from './ArticleCards';
 import { ArticlesField } from './ArticlesField';
 import { PendingChangesNotice } from './PendingChangesNotice';
+import { ProfileSection } from './ProfileSection';
+import { SaveBar } from './SaveBar';
 import type {
   DirtyFields,
   ProfileBase,
@@ -50,6 +60,13 @@ interface ProfileEditorProps<
   afterForm?: ReactNode;
   /** Para onde o botão "Alterar senha" leva. */
   changePasswordPath: string;
+  /**
+   * `sections` é o perfil do aluno: seções com título, artigos em cartões e a barra de salvar fixa.
+   * O padrão, `classic`, é o formulário corrido do professor.
+   */
+  layout?: 'classic' | 'sections';
+  /** Uma alteração pendente fora deste formulário (como o tema do aluno), para o aviso de sair da tela. */
+  externalPending?: boolean;
 }
 
 /**
@@ -73,6 +90,8 @@ export function ProfileEditor<
   trailingFields,
   afterForm,
   changePasswordPath,
+  layout = 'classic',
+  externalPending = false,
 }: ProfileEditorProps<TProfile, TValues, TChanges>) {
   const { notify } = useFeedback();
   const { status, refreshUser } = useSession();
@@ -87,7 +106,9 @@ export function ProfileEditor<
     setError,
     formState: { isDirty, dirtyFields, isSubmitting },
   } = form;
-  const blocker = useUnsavedChangesGuard(isDirty && status === 'authenticated');
+  const blocker = useUnsavedChangesGuard(
+    (isDirty || externalPending) && status === 'authenticated',
+  );
   const common = form as unknown as UseFormReturn<ProfileFormValues>;
 
   const onSubmit = handleSubmit(async (values) => {
@@ -109,6 +130,85 @@ export function ProfileEditor<
     }
   });
 
+  const nameField = (
+    <TextField
+      label="Nome completo"
+      autoComplete="name"
+      error={Boolean(common.formState.errors.fullName)}
+      helperText={common.formState.errors.fullName?.message}
+      {...common.register('fullName')}
+    />
+  );
+
+  if (layout === 'sections') {
+    return (
+      <FormProvider {...form}>
+        <Paper
+          component="form"
+          onSubmit={onSubmit}
+          noValidate
+          variant="outlined"
+          sx={{
+            maxWidth: 720,
+            mx: 'auto',
+            p: { xs: 2, sm: 4 },
+            borderRadius: 3,
+          }}
+        >
+          <Stack spacing={5}>
+            <Box>
+              <Typography variant="h2" component="h1">
+                Meu perfil
+              </Typography>
+              <Typography color="text.secondary">
+                Gerencie suas informações pessoais e acadêmicas.
+              </Typography>
+            </Box>
+            <ProfileSection title="Informações pessoais">
+              {facts}
+              {nameField}
+            </ProfileSection>
+            {extraFields}
+            <ProfileSection
+              title="Áreas de interesse"
+              description="Áreas relacionadas aos seus interesses acadêmicos."
+            >
+              <AreasField areas={{ status: 'ready', data: areas }} />
+            </ProfileSection>
+            <ArticleCards />
+            {trailingFields}
+            <ProfileSection title="Segurança">
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <Box>
+                  <Typography variant="subtitle1" component="h3">
+                    Senha
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Altere sua senha de acesso ao sistema.
+                  </Typography>
+                </Box>
+                <Button
+                  component={RouterLink}
+                  to={changePasswordPath}
+                  variant="outlined"
+                >
+                  Alterar senha
+                </Button>
+              </Stack>
+            </ProfileSection>
+            <SaveBar visible={isDirty} saving={isSubmitting} />
+          </Stack>
+        </Paper>
+        {afterForm}
+        <UnsavedChangesDialog blocker={blocker} />
+      </FormProvider>
+    );
+  }
+
   return (
     <FormProvider {...form}>
       <Paper
@@ -123,13 +223,7 @@ export function ProfileEditor<
             Meu perfil
           </Typography>
           {facts}
-          <TextField
-            label="Nome completo"
-            autoComplete="name"
-            error={Boolean(common.formState.errors.fullName)}
-            helperText={common.formState.errors.fullName?.message}
-            {...common.register('fullName')}
-          />
+          {nameField}
           {extraFields}
           <AreasField areas={{ status: 'ready', data: areas }} />
           <ArticlesField />
