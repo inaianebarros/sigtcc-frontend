@@ -25,6 +25,8 @@ interface ProfileViewProps<T> {
   onRetry: () => void;
   /** O título da página já carregada: o nome da pessoa. */
   title: (data: T) => string;
+  /** Troca o `<h1>` simples do título por um cabeçalho próprio, que deve conter o `<h1>`. */
+  heading?: (data: T) => ReactNode;
   children: (data: T) => ReactNode;
 }
 
@@ -42,6 +44,7 @@ export function ProfileView<T>({
   profile,
   onRetry,
   title,
+  heading,
   children,
 }: ProfileViewProps<T>) {
   const notFound =
@@ -81,9 +84,13 @@ export function ProfileView<T>({
       )}
       {profile.status === 'ready' && profile.data !== null && (
         <>
-          <Typography variant="h4" component="h1">
-            {title(profile.data)}
-          </Typography>
+          {heading ? (
+            heading(profile.data)
+          ) : (
+            <Typography variant="h4" component="h1">
+              {title(profile.data)}
+            </Typography>
+          )}
           {children(profile.data)}
         </>
       )}

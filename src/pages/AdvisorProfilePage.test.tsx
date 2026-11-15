@@ -57,7 +57,7 @@ beforeEach(() => {
 });
 
 describe('AdvisorProfilePage: o conteúdo', () => {
-  it('mostra o nome no título, o instituto, os cursos e a disponibilidade, sem e-mail nem matrícula', async () => {
+  it('mostra o nome no título, o instituto, o avatar com as iniciais e os cursos em chips, sem e-mail nem matrícula', async () => {
     open([
       makeAdvisorProfile(7, {
         full_name: 'Marta Rocha',
@@ -70,19 +70,45 @@ describe('AdvisorProfilePage: o conteúdo', () => {
     await loaded();
 
     const page = within(main());
-    expect(page.getByText('Instituto')).toBeVisible();
+    expect(page.getByText('Perfil do professor')).toBeVisible();
     expect(
       page.getByText('Instituto de Engenharia e Geociências'),
     ).toBeVisible();
-    expect(page.getByText('Cursos')).toBeVisible();
+    expect(page.getByText('MR')).toBeInTheDocument();
+    expect(page.queryByText(/Professora/)).not.toBeInTheDocument();
     expect(
-      page.getByText('Ciência da Computação, Sistemas de Informação'),
-    ).toBeVisible();
-    expect(page.getByText('Disponível para orientar')).toBeVisible();
+      within(page.getByRole('list', { name: 'Cursos vinculados' }))
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Ciência da Computação', 'Sistemas de Informação']);
     expect(main().textContent).not.toMatch(/@|Matrícula/);
   });
 
-  it('mostra as áreas, com as em comum como chips preenchidos e as outras só com contorno', async () => {
+  it.each([
+    [true, 'Disponível para orientar'],
+    [false, 'Indisponível'],
+  ])(
+    'com is_available %s, a barra mostra o selo "%s" à direita',
+    async (isAvailable, badge) => {
+      open([
+        makeAdvisorProfile(7, {
+          full_name: 'Marta Rocha',
+          is_available: isAvailable,
+        }),
+      ]);
+      await loaded();
+
+      const bar = within(main())
+        .getByText('Perfil do professor')
+        .closest('div')!;
+      const chip = within(bar).getByText(badge);
+      expect(chip).toBeVisible();
+      expect(chip.closest('.MuiChip-root')).toHaveStyle({ flexShrink: '0' });
+      expect(bar.lastElementChild).toContainElement(chip);
+    },
+  );
+
+  it('mostra as áreas no padrão do cartão: as em comum em destaque, "em comum" só para o leitor de tela e sem a frase de contagem', async () => {
     open([
       makeAdvisorProfile(7, {
         full_name: 'Marta Rocha',
@@ -100,9 +126,8 @@ describe('AdvisorProfilePage: o conteúdo', () => {
     const chip = (name: RegExp) =>
       within(list).getByText(name).closest('.MuiChip-root')!;
 
-    expect(screen.getByText('2 áreas em comum')).toBeVisible();
     expect(chip(/Banco de Dados/)).toHaveClass('MuiChip-filled');
-    expect(chip(/Engenharia de Software/)).toHaveClass('MuiChip-filled');
+    expect(chip(/Banco de Dados/)).toHaveClass('MuiChip-colorSuccess');
     expect(chip(/Redes de Computadores/)).toHaveClass('MuiChip-outlined');
     expect(
       within(list)
@@ -113,23 +138,7 @@ describe('AdvisorProfilePage: o conteúdo', () => {
       'Redes de Computadores',
       'Engenharia de Software, em comum',
     ]);
-  });
-
-  it.each([
-    [0, 'Nenhuma área em comum'],
-    [1, '1 área em comum'],
-  ])('com compatibilidade %i, diz "%s"', async (compatibility, text) => {
-    open([
-      makeAdvisorProfile(7, {
-        full_name: 'Marta Rocha',
-        compatibility,
-        areas: [
-          { id: 1, name: 'Banco de Dados', is_common: compatibility > 0 },
-        ],
-      }),
-    ]);
-
-    expect(await screen.findByText(text)).toBeVisible();
+    expect(main().textContent).not.toMatch(/áreas? em comum/);
   });
 
   it('mostra os artigos, com o link externo em nova aba e o aviso acessível quando há endereço', async () => {
@@ -182,6 +191,29 @@ describe('AdvisorProfilePage: o conteúdo', () => {
 });
 
 describe('AdvisorProfilePage: solicitar orientação', () => {
+  it('o bloco "Solicitar orientação" fica no fim da tela, com o texto e o botão', async () => {
+    open();
+    await loaded();
+
+    const block = screen.getByRole('region', { name: 'Solicitar orientação' });
+    expect(
+      within(block).getByText('Envie uma solicitação para este professor.'),
+    ).toBeVisible();
+    expect(
+      within(block).getByRole('button', { name: 'Solicitar orientação' }),
+    ).toBeInTheDocument();
+    const sections = [...main().querySelectorAll('section')];
+    expect(sections.at(-1)).toBe(block);
+    expect(
+      sections.map((section) => section.querySelector('h2')?.textContent),
+    ).toEqual([
+      'Cursos vinculados',
+      'Áreas de interesse',
+      'Artigos publicados',
+      'Solicitar orientação',
+    ]);
+  });
+
   it('o botão fica habilitado, e o diálogo confirma, nomeia o professor e, ao cancelar, devolve o foco', async () => {
     const { fetchMock, user } = open();
     await loaded();
