@@ -58,7 +58,7 @@ describe('AdvisorsPage: a lista', () => {
     expect(names).toEqual(['Ana Pereira', 'Bruno Lima']);
   });
 
-  it('mostra em cada card o instituto, a compatibilidade com as áreas em comum e a disponibilidade', async () => {
+  it('mostra em cada card o nome, o instituto e o selo de disponibilidade', async () => {
     mockApi(advisorRoutes(THREE));
     const user = userEvent.setup();
     renderApp('/aluno/orientadores');
@@ -70,20 +70,154 @@ describe('AdvisorsPage: a lista', () => {
     expect(
       within(ana).getByText('Instituto de Engenharia e Geociências'),
     ).toBeInTheDocument();
-    expect(within(ana).getByText('2 áreas em comum')).toBeInTheDocument();
-    expect(
-      within(ana).getByText('Inteligência Artificial'),
-    ).toBeInTheDocument();
-    expect(within(ana).getByText('Banco de Dados')).toBeInTheDocument();
     expect(
       within(ana).getByText('Disponível para orientar'),
     ).toBeInTheDocument();
-    const bruno = screen.getByRole('article', { name: 'Bruno Lima' });
-    expect(within(bruno).getByText('1 área em comum')).toBeInTheDocument();
     const carla = screen.getByRole('article', { name: 'Carla Dias' });
+    expect(within(carla).getByText('Indisponível')).toBeInTheDocument();
     expect(
-      within(carla).getByText('Nenhuma área em comum'),
-    ).toBeInTheDocument();
+      within(carla).queryByText('Disponível para orientar'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('o topo tem o subtítulo e o campo "Buscar professor pelo nome..."', async () => {
+    mockApi(advisorRoutes(THREE));
+    renderApp('/aluno/orientadores');
+    await screen.findByText('Ana Pereira');
+
+    expect(
+      screen.getByText(
+        'Encontre professores e solicite orientação para seu trabalho acadêmico.',
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('textbox', { name: 'Buscar professor pelo nome...' }),
+    ).toBeVisible();
+  });
+
+  it('a contagem fica só numa região de status invisível, sem texto à vista', async () => {
+    mockApi(advisorRoutes(THREE));
+    const { container } = renderApp('/aluno/orientadores');
+    await screen.findByText('Ana Pereira');
+
+    const status = container.querySelector('[role="status"]')!;
+    expect(status).toHaveTextContent(
+      '2 professores com áreas em comum encontrados',
+    );
+    expect(status).toHaveStyle({ position: 'absolute', width: '1px' });
+  });
+
+  describe('as áreas de interesse', () => {
+    const AREA_C = { id: 3, name: 'Redes' };
+    const AREA_D = { id: 4, name: 'Compiladores' };
+    const withAreas = makeAdvisor(1, {
+      full_name: 'Ana Pereira',
+      compatibility: 2,
+      common_areas: [AREA_A, AREA_B],
+      areas: [
+        { ...AREA_A, is_common: true },
+        { ...AREA_B, is_common: true },
+        { ...AREA_D, is_common: false },
+        { ...AREA_C, is_common: false },
+      ],
+    });
+
+    it('lista todas as áreas na ordem da API, e o leitor de tela ouve "em comum" só nas em comum', async () => {
+      mockApi(advisorRoutes([withAreas]));
+      renderApp('/aluno/orientadores');
+      await screen.findByText('Ana Pereira');
+
+      const card = screen.getByRole('article', { name: 'Ana Pereira' });
+      expect(
+        within(card).getByRole('heading', { name: 'Áreas de interesse' }),
+      ).toBeVisible();
+      const names = within(
+        within(card).getByRole('list', { name: 'Áreas de interesse' }),
+      )
+        .getAllByRole('listitem')
+        .map((item) => item.textContent);
+      expect(names).toEqual([
+        'Inteligência Artificial, em comum',
+        'Banco de Dados, em comum',
+        'Compiladores',
+        'Redes',
+      ]);
+      expect(
+        within(card).queryByText(/áreas em comum/i),
+      ).not.toBeInTheDocument();
+      expect(within(card).queryByText(/destacadas/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('os temas propostos', () => {
+    const proposals = (total: number) => ({
+      items: [3, 2, 1]
+        .slice(0, Math.min(total, 3))
+        .map((id) => ({ id, title: `Tema ${id}` })),
+      total,
+    });
+
+    it('mostra os temas sem selo e sem o chip de total', async () => {
+      mockApi(
+        advisorRoutes([
+          makeAdvisor(1, {
+            full_name: 'Ana Pereira',
+            thesis_proposals: proposals(3),
+          }),
+        ]),
+      );
+      renderApp('/aluno/orientadores');
+      await screen.findByText('Ana Pereira');
+
+      const card = screen.getByRole('article', { name: 'Ana Pereira' });
+      expect(
+        within(card).getByRole('heading', { name: 'Temas propostos' }),
+      ).toBeVisible();
+      expect(
+        within(card)
+          .getAllByRole('listitem')
+          .map((item) => item.textContent),
+      ).toEqual(['Tema 3', 'Tema 2', 'Tema 1']);
+      expect(within(card).queryByText('Proposta')).not.toBeInTheDocument();
+      expect(
+        within(card).queryByText(/temas? proposto/),
+      ).not.toBeInTheDocument();
+      expect(
+        within(card).queryByText(/outras? propostas?/),
+      ).not.toBeInTheDocument();
+    });
+
+    it.each([
+      [4, '+ 1 outra proposta'],
+      [10, '+ 7 outras propostas'],
+    ])('com %i propostas, o fim da seção diz "%s"', async (total, text) => {
+      mockApi(
+        advisorRoutes([
+          makeAdvisor(1, {
+            full_name: 'Ana Pereira',
+            thesis_proposals: proposals(total),
+          }),
+        ]),
+      );
+      renderApp('/aluno/orientadores');
+      await screen.findByText('Ana Pereira');
+
+      const card = screen.getByRole('article', { name: 'Ana Pereira' });
+      expect(within(card).getByText(text)).toBeVisible();
+      expect(within(card).queryByRole('link', { name: text })).toBeNull();
+      expect(within(card).getAllByRole('listitem')).toHaveLength(3);
+    });
+
+    it('sem propostas, a seção "Temas propostos" não aparece', async () => {
+      mockApi(advisorRoutes([makeAdvisor(1, { full_name: 'Ana Pereira' })]));
+      renderApp('/aluno/orientadores');
+      await screen.findByText('Ana Pereira');
+
+      const card = screen.getByRole('article', { name: 'Ana Pereira' });
+      expect(
+        within(card).queryByRole('heading', { name: 'Temas propostos' }),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it('mostra um esqueleto enquanto a lista carrega', async () => {
@@ -155,7 +289,10 @@ describe('AdvisorsPage: filtro por nome', { timeout: 15000 }, () => {
     renderApp('/aluno/orientadores');
     await screen.findByText('Ana Pereira');
 
-    await user.type(screen.getByLabelText('Buscar por nome'), '  bru  ');
+    await user.type(
+      screen.getByLabelText('Buscar professor pelo nome...'),
+      '  bru  ',
+    );
 
     await waitFor(() => expect(searchedNames(fetchMock)).toContain('bru'), {
       timeout: 3000,
@@ -177,7 +314,10 @@ describe('AdvisorsPage: filtro por nome', { timeout: 15000 }, () => {
     renderApp('/aluno/orientadores');
     await screen.findByText('Ana Pereira');
 
-    await user.type(screen.getByLabelText('Buscar por nome'), 'xyz');
+    await user.type(
+      screen.getByLabelText('Buscar professor pelo nome...'),
+      'xyz',
+    );
 
     await waitFor(
       () => expect(screen.queryByText('Bruno Lima')).not.toBeInTheDocument(),
@@ -198,7 +338,10 @@ describe('AdvisorsPage: filtro por nome', { timeout: 15000 }, () => {
     renderApp('/aluno/orientadores');
     await screen.findByText('José Álvaro');
 
-    await user.type(screen.getByLabelText('Buscar por nome'), 'jose alvaro');
+    await user.type(
+      screen.getByLabelText('Buscar professor pelo nome...'),
+      'jose alvaro',
+    );
 
     await waitFor(
       () => expect(screen.queryByText('Bruno Lima')).not.toBeInTheDocument(),
@@ -212,7 +355,7 @@ describe('AdvisorsPage: filtro por nome', { timeout: 15000 }, () => {
     const user = userEvent.setup();
     renderApp('/aluno/orientadores');
     await screen.findByText('Ana Pereira');
-    const field = screen.getByLabelText('Buscar por nome');
+    const field = screen.getByLabelText('Buscar professor pelo nome...');
 
     await user.type(field, ' zzz ');
 
@@ -303,7 +446,7 @@ describe('AdvisorsPage: paginação', { timeout: 15000 }, () => {
     const user = userEvent.setup();
     renderApp('/aluno/orientadores');
     await screen.findByText('Professor 01');
-    const field = screen.getByLabelText('Buscar por nome');
+    const field = screen.getByLabelText('Buscar professor pelo nome...');
 
     await user.click(field);
     await user.paste('profess');
@@ -380,9 +523,7 @@ describe('AdvisorsPage: o botão de solicitar e as razões para ele estar desabi
       'Este professor não está disponível para novas solicitações.',
     );
     expect(
-      within(cardOf('Carla Dias')).getByText(
-        'Este professor não está disponível para novas solicitações.',
-      ),
+      within(cardOf('Carla Dias')).getByText('Indisponível'),
     ).toBeVisible();
   });
 
@@ -709,7 +850,7 @@ describe(
       const user = userEvent.setup();
       renderApp('/aluno/orientadores');
       await screen.findByText('Professor 01');
-      const field = screen.getByLabelText('Buscar por nome');
+      const field = screen.getByLabelText('Buscar professor pelo nome...');
       await user.click(field);
       await user.paste('profess');
       await waitFor(
@@ -923,7 +1064,7 @@ describe('AdvisorsPage: filtro Mostrar todos', () => {
     const user = userEvent.setup();
     renderApp('/aluno/orientadores');
     await screen.findByText('Professor 02');
-    const field = screen.getByLabelText('Buscar por nome');
+    const field = screen.getByLabelText('Buscar professor pelo nome...');
     await user.click(field);
     await user.paste('profess');
     await waitFor(
@@ -1003,7 +1144,10 @@ describe('AdvisorsPage: filtro Mostrar todos', () => {
     renderApp('/aluno/orientadores');
     await screen.findByText('Bruno Lima');
 
-    await user.type(screen.getByLabelText('Buscar por nome'), 'ana');
+    await user.type(
+      screen.getByLabelText('Buscar professor pelo nome...'),
+      'ana',
+    );
 
     expect(
       await screen.findByText(
@@ -1179,7 +1323,9 @@ describe('AdvisorsPage: busca, página e chave na URL', () => {
 
     expect(await screen.findByText('Docente 21')).toBeInTheDocument();
 
-    expect(screen.getByLabelText('Buscar por nome')).toHaveValue('Docente');
+    expect(screen.getByLabelText('Buscar professor pelo nome...')).toHaveValue(
+      'Docente',
+    );
     expect(screen.getByRole('switch', { name: 'Mostrar todos' })).toBeChecked();
     expect(
       screen.getByRole('button', { name: 'Página 2, atual' }),
@@ -1193,7 +1339,10 @@ describe('AdvisorsPage: busca, página e chave na URL', () => {
     const { user, router } = open('/aluno/orientadores?pagina=2');
     await screen.findByText('Professor 21');
 
-    await user.type(screen.getByLabelText('Buscar por nome'), ' Professor 0 ');
+    await user.type(
+      screen.getByLabelText('Buscar professor pelo nome...'),
+      ' Professor 0 ',
+    );
 
     await waitFor(() =>
       expect(location()).toHaveTextContent(
@@ -1213,7 +1362,9 @@ describe('AdvisorsPage: busca, página e chave na URL', () => {
     });
 
     expect(await screen.findByText('Docente 01')).toBeInTheDocument();
-    expect(screen.getByLabelText('Buscar por nome')).toHaveValue('Docente');
+    expect(screen.getByLabelText('Buscar professor pelo nome...')).toHaveValue(
+      'Docente',
+    );
     // Espera mais que a pausa da digitação: a URL nova não pode ser sobrescrita pelo valor antigo.
     await new Promise((resolve) => setTimeout(resolve, 600));
     expect(location()).toHaveTextContent(
@@ -1226,7 +1377,7 @@ describe('AdvisorsPage: busca, página e chave na URL', () => {
     const { user } = open('/aluno/orientadores?nome=Professor');
     await screen.findByText('Professor 01');
 
-    await user.clear(screen.getByLabelText('Buscar por nome'));
+    await user.clear(screen.getByLabelText('Buscar professor pelo nome...'));
 
     await waitFor(() =>
       expect(location()).toHaveTextContent(/^\/aluno\/orientadores$/),

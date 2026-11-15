@@ -575,7 +575,9 @@ describe('Link para o perfil na lista de orientadores', () => {
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/aluno\/orientadores\?nome=Marta$/,
     );
-    expect(screen.getByLabelText('Buscar por nome')).toHaveValue('Marta');
+    expect(screen.getByLabelText('Buscar professor pelo nome...')).toHaveValue(
+      'Marta',
+    );
     expect(screen.queryByText('Paulo Nunes')).not.toBeInTheDocument();
   });
 

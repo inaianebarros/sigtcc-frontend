@@ -7,15 +7,15 @@ import {
   Typography,
 } from '@mui/material';
 import { useId } from 'react';
+import { VisuallyHidden } from '../components/VisuallyHidden';
 import { OriginLink } from '../navigation/OriginLink';
 import { studentAdvisorPath } from '../navigation/paths';
 import type { Advisor } from '../services/advisorService';
 import { RequestAdvisingButton } from './RequestAdvisingButton';
 import type { AdvisorToAsk } from './useRequestAdvising';
 
-function commonAreasText(count: number): string {
-  if (count === 0) return 'Nenhuma área em comum';
-  return `${count} ${count === 1 ? 'área' : 'áreas'} em comum`;
+function moreProposalsText(hidden: number): string {
+  return `+ ${hidden} ${hidden === 1 ? 'outra proposta' : 'outras propostas'}`;
 }
 
 interface AdvisorCardProps {
@@ -34,33 +34,100 @@ export function AdvisorCard({
   onRequest,
 }: AdvisorCardProps) {
   const titleId = useId();
+  const areasId = useId();
+  const proposalsId = useId();
   const unavailableId = useId();
+  const { items: proposals, total } = advisor.thesisProposals;
   return (
     <Card component="article" aria-labelledby={titleId} variant="outlined">
       <CardContent>
-        <Stack spacing={1.5}>
-          <Typography id={titleId} variant="h6" component="h2">
-            <OriginLink to={studentAdvisorPath(advisor.id)}>
-              {advisor.fullName}
-            </OriginLink>
-          </Typography>
-          <Typography color="text.secondary">
-            {advisor.institute.name}
-          </Typography>
-          <Typography>{commonAreasText(advisor.commonAreas.length)}</Typography>
-          {advisor.commonAreas.length > 0 && (
-            <Stack direction="row" useFlexGap sx={{ flexWrap: 'wrap', gap: 1 }}>
-              {advisor.commonAreas.map((area) => (
-                <Chip key={area.id} label={area.name} size="small" />
-              ))}
+        <Stack spacing={2}>
+          <Stack spacing={0.5}>
+            <Stack
+              direction="row"
+              useFlexGap
+              sx={{ flexWrap: 'wrap', gap: 1, alignItems: 'center' }}
+            >
+              <Typography id={titleId} variant="h6" component="h2">
+                <OriginLink to={studentAdvisorPath(advisor.id)}>
+                  {advisor.fullName}
+                </OriginLink>
+              </Typography>
+              {advisor.isAvailable ? (
+                <Chip
+                  label="Disponível para orientar"
+                  size="small"
+                  color="success"
+                  variant="outlined"
+                />
+              ) : (
+                <Chip label="Indisponível" size="small" variant="outlined" />
+              )}
+            </Stack>
+            <Typography color="text.secondary">
+              {advisor.institute.name}
+            </Typography>
+          </Stack>
+          {advisor.areas.length > 0 && (
+            <Stack spacing={1}>
+              <Typography id={areasId} variant="subtitle2" component="h3">
+                Áreas de interesse
+              </Typography>
+              <Stack
+                component="ul"
+                aria-labelledby={areasId}
+                direction="row"
+                useFlexGap
+                sx={{ flexWrap: 'wrap', gap: 1, m: 0, p: 0, listStyle: 'none' }}
+              >
+                {advisor.areas.map((area) => (
+                  <li key={area.id}>
+                    <Chip
+                      size="small"
+                      color={area.isCommon ? 'success' : 'default'}
+                      variant={area.isCommon ? 'filled' : 'outlined'}
+                      label={
+                        <>
+                          {area.name}
+                          {area.isCommon && (
+                            <VisuallyHidden>, em comum</VisuallyHidden>
+                          )}
+                        </>
+                      }
+                    />
+                  </li>
+                ))}
+              </Stack>
             </Stack>
           )}
-          {advisor.isAvailable ? (
-            <Typography>Disponível para orientar</Typography>
-          ) : (
-            <Typography id={unavailableId}>
+          {proposals.length > 0 && (
+            <Stack spacing={1}>
+              <Typography id={proposalsId} variant="subtitle2" component="h3">
+                Temas propostos
+              </Typography>
+              <Stack
+                component="ul"
+                aria-labelledby={proposalsId}
+                spacing={0.5}
+                sx={{ m: 0, pl: 2.5 }}
+              >
+                {proposals.map((proposal) => (
+                  <Typography key={proposal.id} component="li">
+                    {proposal.title}
+                  </Typography>
+                ))}
+              </Stack>
+              {total > proposals.length && (
+                <Typography variant="body2" color="text.secondary">
+                  {moreProposalsText(total - proposals.length)}
+                </Typography>
+              )}
+            </Stack>
+          )}
+          {!advisor.isAvailable && (
+            <VisuallyHidden id={unavailableId}>
               Este professor não está disponível para novas solicitações.
-            </Typography>
+            </VisuallyHidden>
           )}
         </Stack>
       </CardContent>

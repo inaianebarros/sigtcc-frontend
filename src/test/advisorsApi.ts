@@ -6,6 +6,10 @@ export interface FakeAdvisor {
   institute: { id: number; name: string };
   compatibility: number;
   common_areas: { id: number; name: string }[];
+  /** Todas as áreas do professor, as em comum primeiro (contrato do #240). */
+  areas?: { id: number; name: string; is_common: boolean }[];
+  /** Até 3 propostas, da mais recente à mais antiga, e o total do professor. */
+  thesis_proposals?: { items: { id: number; title: string }[]; total: number };
   is_available: boolean;
 }
 
@@ -15,7 +19,7 @@ export function makeAdvisor(
   id: number,
   overrides: Partial<FakeAdvisor> = {},
 ): FakeAdvisor {
-  return {
+  const advisor = {
     id,
     full_name: `Professor ${id}`,
     institute: INSTITUTE,
@@ -23,6 +27,14 @@ export function makeAdvisor(
     common_areas: [],
     is_available: true,
     ...overrides,
+  };
+  return {
+    ...advisor,
+    // Sem `areas` explícitas, o professor só tem as áreas em comum.
+    areas:
+      advisor.areas ??
+      advisor.common_areas.map((area) => ({ ...area, is_common: true })),
+    thesis_proposals: advisor.thesis_proposals ?? { items: [], total: 0 },
   };
 }
 
