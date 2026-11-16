@@ -10,7 +10,7 @@ import { VisuallyHidden } from '../components/VisuallyHidden';
 import { OriginLink } from '../navigation/OriginLink';
 import { studentAdvisorPath } from '../navigation/paths';
 import type { Advisor } from '../services/advisorService';
-import { AdvisorAreaChips } from './AdvisorAreaChips';
+import { AreaChips } from '../profile/AreaChips';
 import { AvailabilityBadge } from './AvailabilityBadge';
 import { RequestAdvisingButton } from './RequestAdvisingButton';
 import type { AdvisorToAsk } from './useRequestAdvising';
@@ -71,7 +71,7 @@ export function AdvisorCard({
               <Typography id={areasId} variant="subtitle2" component="h3">
                 Áreas de interesse
               </Typography>
-              <AdvisorAreaChips areas={advisor.areas} labelledBy={areasId} />
+              <AreaChips areas={advisor.areas} labelledBy={areasId} />
             </Stack>
           )}
           {proposals.length > 0 && (

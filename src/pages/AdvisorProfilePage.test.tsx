@@ -161,13 +161,13 @@ describe('AdvisorProfilePage: o conteúdo', () => {
     await loaded();
 
     const link = screen.getByRole('link', {
-      name: 'Redes definidas por software (abre em uma nova aba)',
+      name: 'Redes definidas por software (abre em nova aba)',
     });
     expect(link).toHaveAttribute('href', 'https://exemplo.com/r');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     const articles = within(
-      screen.getByRole('list', { name: 'Artigos publicados' }),
+      screen.getByRole('region', { name: 'Artigos publicados' }),
     ).getAllByRole('listitem');
     expect(articles[0]).toHaveTextContent('2025');
     expect(within(articles[1]!).queryByRole('link')).not.toBeInTheDocument();
