@@ -46,8 +46,8 @@ const MIXED = [
       full_name: 'Ana Souza',
       course: { id: 10, name: 'Ciência da Computação' },
       areas: [
-        { id: 1, name: 'Banco de Dados' },
-        { id: 2, name: 'Inteligência Artificial' },
+        { id: 1, name: 'Banco de Dados', is_common: true },
+        { id: 2, name: 'Inteligência Artificial', is_common: false },
       ],
     },
   }),
@@ -898,5 +898,131 @@ describe('TeacherRequestsPage: busca por aluno e dropdown de situação', () => 
       'MuiChip-colorPrimary',
     );
     expect(cardOf('Jose Carlos')).not.toHaveClass('MuiPaper-outlined');
+  });
+});
+
+describe('TeacherRequestsPage: áreas em comum', () => {
+  beforeEach(() => {
+    tokenStore.clear();
+    vi.unstubAllGlobals();
+    setViewportWidth(DESKTOP_WIDTH);
+  });
+
+  const ONE = [
+    makeRequest(1, 'pending', {
+      student: {
+        id: 101,
+        full_name: 'Ana Souza',
+        course: { id: 10, name: 'Ciência da Computação' },
+        areas: [
+          { id: 2, name: 'Redes', is_common: true },
+          { id: 3, name: 'Banco de Dados', is_common: true },
+          { id: 1, name: 'Algoritmos', is_common: false },
+        ],
+      },
+    }),
+  ];
+
+  it('destaca as áreas em comum como no perfil: verdes, preenchidas e com sinal de certo', async () => {
+    setup(ONE);
+    const card = await findCard('Ana Souza');
+
+    const redes = within(card)
+      .getByText(/^Redes/)
+      .closest('.MuiChip-root')!;
+    const algoritmos = within(card)
+      .getByText('Algoritmos')
+      .closest('.MuiChip-root')!;
+
+    expect(redes).toHaveClass('MuiChip-colorSuccess', 'MuiChip-filled');
+    expect(redes.querySelector('svg')).not.toBeNull();
+    expect(algoritmos).toHaveClass('MuiChip-outlined');
+    expect(algoritmos).not.toHaveClass('MuiChip-colorSuccess');
+  });
+
+  it('mantém a ordem que o servidor mandou, com as em comum primeiro', async () => {
+    setup(ONE);
+    const card = await findCard('Ana Souza');
+
+    const areas = within(card).getByRole('list', {
+      name: 'Áreas de interesse de Ana Souza',
+    });
+    const names = within(areas)
+      .getAllByRole('listitem')
+      .map((item) => item.textContent);
+
+    expect(names).toEqual([
+      'Redes, em comum',
+      'Banco de Dados, em comum',
+      'Algoritmos',
+    ]);
+  });
+
+  it('o leitor de tela ouve "em comum" no nome e a contagem de áreas em comum', async () => {
+    setup(ONE);
+    const card = await findCard('Ana Souza');
+
+    const list = within(card).getByRole('list', {
+      name: 'Áreas de interesse de Ana Souza',
+    });
+    expect(list).toHaveAccessibleDescription('2 áreas em comum');
+  });
+
+  it('sem nenhuma em comum, anuncia isso e não destaca nada', async () => {
+    setup([
+      makeRequest(1, 'pending', {
+        student: {
+          id: 101,
+          full_name: 'Ana Souza',
+          course: { id: 10, name: 'Ciência da Computação' },
+          areas: [{ id: 1, name: 'Algoritmos', is_common: false }],
+        },
+      }),
+    ]);
+    const card = await findCard('Ana Souza');
+
+    expect(
+      within(card).getByRole('list', {
+        name: 'Áreas de interesse de Ana Souza',
+      }),
+    ).toHaveAccessibleDescription('Nenhuma área em comum');
+    expect(card.querySelector('.MuiChip-colorSuccess')).toBeNull();
+  });
+
+  it('o aluno sem áreas não mostra a seção de áreas', async () => {
+    setup([
+      makeRequest(1, 'pending', {
+        student: {
+          id: 101,
+          full_name: 'Ana Souza',
+          course: { id: 10, name: 'Ciência da Computação' },
+          areas: [],
+        },
+      }),
+    ]);
+    const card = await findCard('Ana Souza');
+
+    expect(
+      within(card).queryByRole('list', {
+        name: 'Áreas de interesse de Ana Souza',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('depois de aceitar, o cartão continua com as áreas em comum destacadas', async () => {
+    const { user } = setup(ONE);
+    await findCard('Ana Souza');
+    await user.click(
+      within(cardOf('Ana Souza')).getByRole('button', { name: 'Aceitar' }),
+    );
+    await user.click(
+      within(await screen.findByRole('dialog')).getByRole('button', {
+        name: 'Aceitar',
+      }),
+    );
+
+    const card = await findCard('Ana Souza');
+    expect(await within(card).findByText('Aceita')).toBeVisible();
+    expect(card.querySelector('.MuiChip-colorSuccess')).not.toBeNull();
   });
 });

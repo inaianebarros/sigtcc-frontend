@@ -1,5 +1,7 @@
 import { httpClient } from './httpClient';
 import type { AdvisingRequestStatus } from './advisorService';
+import { toProfileAreas } from './profileAreas';
+import type { ApiProfileArea, ProfileAreaView } from './profileAreas';
 
 export const REQUESTS_PAGE_SIZE = 20;
 
@@ -22,7 +24,8 @@ export interface ReceivedRequest {
     id: number;
     fullName: string;
     course: NamedItem;
-    areas: NamedItem[];
+    /** Todas as áreas do aluno, as em comum com o professor primeiro (RN23). */
+    areas: ProfileAreaView[];
   };
 }
 
@@ -41,7 +44,7 @@ interface ApiReceivedRequest {
     id: number;
     full_name: string;
     course: NamedItem;
-    areas: NamedItem[];
+    areas: ApiProfileArea[];
   };
 }
 
@@ -56,7 +59,7 @@ function toReceivedRequest(item: ApiReceivedRequest): ReceivedRequest {
       id: item.student.id,
       fullName: item.student.full_name,
       course: item.student.course,
-      areas: item.student.areas,
+      areas: toProfileAreas(item.student.areas),
     },
   };
 }

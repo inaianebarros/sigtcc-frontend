@@ -3,11 +3,12 @@ import {
   Card,
   CardActions,
   CardContent,
-  Chip,
   Stack,
   Typography,
 } from '@mui/material';
 import { useId } from 'react';
+import { VisuallyHidden } from '../components/VisuallyHidden';
+import { AreaChips } from '../profile/AreaChips';
 import type { ReactNode } from 'react';
 import { RequestStatusChip } from '../advisingRequests/requestStatus';
 import { statusChipColor } from '../advisingRequests/requestStatusDisplay';
@@ -38,6 +39,7 @@ export function RequestItem({
   onAnswer,
 }: RequestItemProps) {
   const titleId = useId();
+  const areasId = useId();
   const { student } = request;
   const pending = request.status === 'pending';
   return (
@@ -69,11 +71,16 @@ export function RequestItem({
             </Typography>
           </Stack>
           {student.areas.length > 0 && (
-            <Stack direction="row" useFlexGap sx={{ flexWrap: 'wrap', gap: 1 }}>
-              {student.areas.map((area) => (
-                <Chip key={area.id} label={area.name} size="small" />
-              ))}
-            </Stack>
+            <>
+              <VisuallyHidden id={areasId}>
+                Áreas de interesse de {student.fullName}
+              </VisuallyHidden>
+              <AreaChips
+                areas={student.areas}
+                labelledBy={areasId}
+                announceCount
+              />
+            </>
           )}
           <div>
             <RequestStatusChip
