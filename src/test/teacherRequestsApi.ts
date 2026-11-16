@@ -10,7 +10,7 @@ export interface FakeRequest {
     id: number;
     full_name: string;
     course: { id: number; name: string };
-    areas: { id: number; name: string }[];
+    areas: { id: number; name: string; is_common: boolean }[];
   };
 }
 
@@ -35,7 +35,7 @@ export function makeRequest(
       id: 100 + id,
       full_name: `Aluno ${id}`,
       course: { id: 10, name: 'Ciência da Computação' },
-      areas: [{ id: 1, name: 'Banco de Dados' }],
+      areas: [{ id: 1, name: 'Banco de Dados', is_common: false }],
     },
     ...overrides,
   };
