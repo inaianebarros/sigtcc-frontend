@@ -251,20 +251,17 @@ describe('StudentProfileViewPage: carregamento e foco', () => {
     expect(screen.queryByText('Carregando perfil')).not.toBeInTheDocument();
   });
 
-  it('repete o "Voltar" no fim da leitura, depois dos artigos, com o mesmo destino', async () => {
+  it('tem um só "Voltar", no topo, e nenhum no fim da leitura', async () => {
     open();
     await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
 
-    const links = screen.getAllByRole('link', {
-      name: 'Voltar',
-    });
+    const links = screen.getAllByRole('link', { name: 'Voltar' });
 
-    expect(links).toHaveLength(2);
+    expect(links).toHaveLength(1);
     expect(links[0]).toHaveAttribute('href', '/professor/solicitacoes');
-    expect(links[1]).toHaveAttribute('href', '/professor/solicitacoes');
-    const articles = screen.getByRole('region', { name: 'Artigos publicados' });
+    const title = screen.getByRole('heading', { level: 1, name: 'Ana Souza' });
     expect(
-      articles.compareDocumentPosition(links[1]!) &
+      links[0]!.compareDocumentPosition(title) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
@@ -282,7 +279,7 @@ describe('StudentProfileViewPage: carregamento e foco', () => {
   });
 });
 
-describe('StudentProfileViewPage: destaque das áreas e fecho da leitura', () => {
+describe('StudentProfileViewPage: destaque das áreas e foco', () => {
   it('as áreas em comum são maiores e a lista anuncia quantas são, sem texto à vista', async () => {
     open([
       makeLinkedStudent(7, {
@@ -304,15 +301,6 @@ describe('StudentProfileViewPage: destaque das áreas e fecho da leitura', () =>
     expect(chip(/Banco de Dados/)).toHaveClass('MuiChip-sizeMedium');
     expect(chip(/Inteligência Artificial/)).toHaveClass('MuiChip-sizeSmall');
     expect(list).toHaveAccessibleDescription('2 áreas em comum');
-  });
-
-  it('o fecho da leitura separa o "Voltar" do fim por uma linha fina', async () => {
-    open();
-    await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
-
-    const closing = screen.getAllByRole('link', { name: 'Voltar' })[1]!;
-
-    expect(closing.parentElement).toHaveStyle({ borderTopStyle: 'solid' });
   });
 
   it('quem já levou o foco ao "Voltar" durante o carregamento não o tem roubado pelo título', async () => {
@@ -358,7 +346,7 @@ describe('StudentProfileViewPage: aluno não encontrado e erros', () => {
             String(input).includes('/alunos/'),
           ).length,
       ).toBe(0);
-      expect(screen.getAllByRole('link', { name: 'Voltar' })[0]!).toBeVisible();
+      expect(screen.getByRole('link', { name: 'Voltar' })).toBeVisible();
     },
   );
 
@@ -372,7 +360,7 @@ describe('StudentProfileViewPage: aluno não encontrado e erros', () => {
       }),
     ).toBeInTheDocument();
     expect(main().textContent).not.toMatch(/vinculad|permiss|inativ/i);
-    expect(screen.getAllByRole('link', { name: 'Voltar' })[0]!).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
       'href',
       '/professor/solicitacoes',
     );
@@ -454,7 +442,7 @@ describe('StudentProfileViewPage: acesso e celular', () => {
     expect(
       screen.getByText('Este aluno ainda não cadastrou artigos.'),
     ).toBeVisible();
-    expect(screen.getAllByRole('link', { name: 'Voltar' })[0]!).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Voltar' })).toBeVisible();
   });
 });
 
@@ -467,7 +455,7 @@ describe('StudentProfileViewPage: o "Voltar"', () => {
     open();
     await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
 
-    expect(screen.getAllByRole('link', { name: 'Voltar' })[0]!).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
       'href',
       '/professor/solicitacoes',
     );
@@ -487,7 +475,7 @@ describe('StudentProfileViewPage: o "Voltar"', () => {
     await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
 
     expect(
-      screen.getAllByRole('link', { name: 'Voltar para as solicitações' })[0]!,
+      screen.getByRole('link', { name: 'Voltar para as solicitações' }),
     ).toHaveAttribute(
       'href',
       '/professor/solicitacoes?situacao=accepted&pagina=2',
@@ -506,7 +494,7 @@ describe('StudentProfileViewPage: o "Voltar"', () => {
     await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
 
     expect(
-      screen.getAllByRole('link', { name: 'Voltar para meus orientandos' })[0]!,
+      screen.getByRole('link', { name: 'Voltar para meus orientandos' }),
     ).toHaveAttribute('href', '/professor/orientandos?pagina=3');
   });
 
@@ -517,7 +505,7 @@ describe('StudentProfileViewPage: o "Voltar"', () => {
     open(undefined, '/professor/alunos/7', {}, { entries: FROM_ENTRY(from) });
     await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
 
-    expect(screen.getAllByRole('link', { name: label })[0]!).toHaveAttribute(
+    expect(screen.getByRole('link', { name: label })).toHaveAttribute(
       'href',
       from,
     );
@@ -536,9 +524,10 @@ describe('StudentProfileViewPage: o "Voltar"', () => {
       open(undefined, '/professor/alunos/7', {}, { entries: FROM_ENTRY(from) });
       await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
 
-      expect(
-        screen.getAllByRole('link', { name: 'Voltar' })[0]!,
-      ).toHaveAttribute('href', '/professor/solicitacoes');
+      expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
+        'href',
+        '/professor/solicitacoes',
+      );
     },
   );
 });
@@ -592,7 +581,7 @@ describe('Links para o perfil nas listas', () => {
       '/professor/alunos/220',
     );
     await user.click(
-      screen.getAllByRole('link', { name: 'Voltar para as solicitações' })[0]!,
+      screen.getByRole('link', { name: 'Voltar para as solicitações' }),
     );
 
     expect(await screen.findByText('Aluno 120')).toBeInTheDocument();
@@ -626,7 +615,7 @@ describe('Links para o perfil nas listas', () => {
     await user.click(within(card).getByRole('link', { name: 'Orientando 21' }));
     await screen.findByRole('heading', { level: 1, name: 'Orientando 21' });
     await user.click(
-      screen.getAllByRole('link', { name: 'Voltar para meus orientandos' })[0]!,
+      screen.getByRole('link', { name: 'Voltar para meus orientandos' }),
     );
 
     expect(await screen.findByText('Orientando 21')).toBeInTheDocument();

@@ -417,7 +417,7 @@ describe('AdvisorProfilePage: professor não encontrado e erros', () => {
           String(input).includes('/professores/'),
         ),
       ).toHaveLength(0);
-      expect(screen.getAllByRole('link', { name: 'Voltar' })[0]!).toBeVisible();
+      expect(screen.getByRole('link', { name: 'Voltar' })).toBeVisible();
     },
   );
 
@@ -431,7 +431,7 @@ describe('AdvisorProfilePage: professor não encontrado e erros', () => {
       }),
     ).toBeInTheDocument();
     expect(main().textContent).not.toMatch(/curso|inativ|permiss/i);
-    expect(screen.getAllByRole('link', { name: 'Voltar' })[0]!).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
       'href',
       '/aluno/orientadores',
     );
@@ -513,7 +513,7 @@ describe('AdvisorProfilePage: o "Voltar"', () => {
     open();
     await loaded();
 
-    expect(screen.getAllByRole('link', { name: 'Voltar' })[0]!).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
       'href',
       '/aluno/orientadores',
     );
@@ -532,7 +532,7 @@ describe('AdvisorProfilePage: o "Voltar"', () => {
     );
     await loaded();
 
-    expect(screen.getAllByRole('link', { name: 'Voltar' })[0]!).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
       'href',
       '/aluno/orientadores?nome=Marta&show_all=true&pagina=2',
     );
@@ -555,9 +555,10 @@ describe('AdvisorProfilePage: o "Voltar"', () => {
       );
       await loaded();
 
-      expect(
-        screen.getAllByRole('link', { name: 'Voltar' })[0]!,
-      ).toHaveAttribute('href', '/aluno/orientadores');
+      expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
+        'href',
+        '/aluno/orientadores',
+      );
     },
   );
 });
@@ -603,7 +604,7 @@ describe('Link para o perfil na lista de orientadores', () => {
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/aluno/orientadores/7',
     );
-    await user.click(screen.getAllByRole('link', { name: 'Voltar' })[0]!);
+    await user.click(screen.getByRole('link', { name: 'Voltar' }));
 
     expect(await screen.findByText('Marta Rocha')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(

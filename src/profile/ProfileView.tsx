@@ -181,20 +181,6 @@ export function ProfileView<T>({
             <Typography {...titleProps}>{title(profile.data)}</Typography>
           )}
           {children(profile.data)}
-          {profileLayout && (
-            // O fecho da leitura: separado do conteúdo por uma linha fina e com respiro embaixo.
-            <Box
-              sx={{
-                borderTop: 1,
-                borderColor: 'divider',
-                pt: 2,
-                pb: 2,
-                display: 'flex',
-              }}
-            >
-              <BackLink to={backPath} label={backLabel} plain={false} />
-            </Box>
-          )}
         </>
       )}
     </Stack>
