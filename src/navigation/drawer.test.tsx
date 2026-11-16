@@ -66,7 +66,7 @@ describe('menu lateral recolhível', () => {
     ).toEqual([
       'Dashboard',
       'Orientadores',
-      'Minha solicitação',
+      'Minhas solicitações',
       'Histórico de orientações',
       'Meu perfil',
     ]);
@@ -115,11 +115,11 @@ describe('menu lateral recolhível', () => {
     await user.click(await screen.findByRole('button', { name: 'Abrir menu' }));
 
     await user.click(
-      await screen.findByRole('link', { name: 'Minha solicitação' }),
+      await screen.findByRole('link', { name: 'Minhas solicitações' }),
     );
 
     expect(
-      await screen.findByRole('heading', { name: 'Minha solicitação' }),
+      await screen.findByRole('heading', { name: 'Minhas solicitações' }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/aluno/solicitacao',

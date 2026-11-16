@@ -5,7 +5,7 @@
  */
 const ORIGIN_LISTS = {
   professor: ['solicitacoes', 'orientandos', 'atividades', 'historico'],
-  aluno: ['orientadores', 'atividades', 'historico'],
+  aluno: ['orientadores', 'solicitacao', 'atividades', 'historico'],
 } as const;
 
 export type OriginArea = keyof typeof ORIGIN_LISTS;
@@ -41,6 +41,7 @@ const BACK_LABELS: Record<string, string> = {
   '/professor/atividades': 'Voltar para as atividades',
   '/professor/historico': 'Voltar para o histórico',
   '/aluno/orientadores': 'Voltar para os orientadores',
+  '/aluno/solicitacao': 'Voltar para minhas solicitações',
   '/aluno/atividades': 'Voltar para as atividades',
   '/aluno/historico': 'Voltar para o histórico',
 };

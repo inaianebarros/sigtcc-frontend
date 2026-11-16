@@ -43,7 +43,7 @@ export function useRequestAdvising({
       await requestAdvising(asking.id);
       setAsking(null);
       notify(
-        'Solicitação enviada. Acompanhe a resposta do professor em “Minha solicitação”.',
+        'Solicitação enviada. Acompanhe a resposta do professor em “Minhas solicitações”.',
         'success',
       );
       navigate(paths.studentRequest);

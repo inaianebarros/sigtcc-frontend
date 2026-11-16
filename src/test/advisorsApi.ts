@@ -99,5 +99,8 @@ export function advisorRoutes(
     'GET /api/orientadores/busca': (_body, url) =>
       searchResponse(advisors, url),
     'GET /api/orientacao/minha-solicitacao': { body: status },
+    'GET /api/orientacao/minhas-solicitacoes': {
+      body: { items: [], count: 0 },
+    },
   };
 }

@@ -174,3 +174,93 @@ export async function getRequestEligibility(): Promise<RequestEligibility> {
 export async function requestAdvising(teacherId: number): Promise<void> {
   await httpClient.post('/orientacao/solicitacoes', { teacher_id: teacherId });
 }
+
+/** O tamanho da página da lista de solicitações do aluno (RF16). */
+export const MY_REQUESTS_PAGE_SIZE = 10;
+
+export interface MyRequestItem {
+  id: number;
+  status: AdvisingRequestStatus;
+  requestedAt: string;
+  respondedAt: string | null;
+  /** O prazo de resposta; vem nas pendentes e nas não respondidas. */
+  expiresAt: string | null;
+  teacher: {
+    id: number;
+    fullName: string;
+    institute: { id: number; name: string } | null;
+  };
+  /** A orientação que a solicitação criou, quando foi aceita. */
+  advising: {
+    id: number;
+    status: 'active' | 'ended';
+    startedAt: string;
+    endedAt: string | null;
+  } | null;
+}
+
+export interface MyRequestsPage {
+  items: MyRequestItem[];
+  count: number;
+}
+
+interface ApiMyRequestsPage {
+  items: {
+    id: number;
+    status: AdvisingRequestStatus;
+    requested_at: string;
+    responded_at: string | null;
+    expires_at: string | null;
+    teacher: {
+      id: number;
+      full_name: string;
+      institute: { id: number; name: string } | null;
+    };
+    advising: {
+      id: number;
+      status: 'active' | 'ended';
+      started_at: string;
+      ended_at: string | null;
+    } | null;
+  }[];
+  count: number;
+}
+
+/**
+ * Todas as solicitações do aluno, da mais recente para a mais antiga, paginadas no servidor (RF16).
+ * `name` filtra pelo nome do professor, sem diferenciar maiúsculas nem acentos.
+ */
+export async function listMyRequests(
+  page: number,
+  name?: string,
+): Promise<MyRequestsPage> {
+  const params = new URLSearchParams({
+    limit: String(MY_REQUESTS_PAGE_SIZE),
+    offset: String((page - 1) * MY_REQUESTS_PAGE_SIZE),
+  });
+  if (name) params.set('name', name);
+  const response = await httpClient.get<ApiMyRequestsPage>(
+    `/orientacao/minhas-solicitacoes?${params}`,
+  );
+  return {
+    count: response.count,
+    items: response.items.map((item) => ({
+      id: item.id,
+      status: item.status,
+      requestedAt: item.requested_at,
+      respondedAt: item.responded_at,
+      expiresAt: item.expires_at,
+      teacher: {
+        id: item.teacher.id,
+        fullName: item.teacher.full_name,
+        institute: item.teacher.institute,
+      },
+      advising: item.advising && {
+        id: item.advising.id,
+        status: item.advising.status,
+        startedAt: item.advising.started_at,
+        endedAt: item.advising.ended_at,
+      },
+    })),
+  };
+}

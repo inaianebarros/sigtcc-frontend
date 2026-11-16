@@ -58,7 +58,7 @@ describe('item Reuniões do menu lateral', () => {
     ).toEqual([
       'Dashboard',
       'Orientadores',
-      'Minha solicitação',
+      'Minhas solicitações',
       'Atividades',
       'Reuniões',
       'Histórico de orientações',

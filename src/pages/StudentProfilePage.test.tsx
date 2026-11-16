@@ -723,7 +723,7 @@ describe('StudentProfilePage: alterações não salvas (RNF28)', () => {
     renderApp('/aluno/perfil');
     await user.type(await screen.findByLabelText('Nome completo'), ' Lima');
 
-    await user.click(screen.getByRole('link', { name: 'Minha solicitação' }));
+    await user.click(screen.getByRole('link', { name: 'Minhas solicitações' }));
 
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toHaveTextContent('Descartar alterações?');
@@ -745,7 +745,7 @@ describe('StudentProfilePage: alterações não salvas (RNF28)', () => {
     const user = userEvent.setup();
     renderApp('/aluno/perfil');
     await user.type(await screen.findByLabelText('Nome completo'), ' Lima');
-    await user.click(screen.getByRole('link', { name: 'Minha solicitação' }));
+    await user.click(screen.getByRole('link', { name: 'Minhas solicitações' }));
 
     await user.click(
       within(await screen.findByRole('dialog')).getByRole('button', {
@@ -754,7 +754,7 @@ describe('StudentProfilePage: alterações não salvas (RNF28)', () => {
     );
 
     expect(
-      await screen.findByRole('heading', { name: 'Minha solicitação' }),
+      await screen.findByRole('heading', { name: 'Minhas solicitações' }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/aluno/solicitacao',
@@ -771,9 +771,9 @@ describe('StudentProfilePage: alterações não salvas (RNF28)', () => {
     const user = userEvent.setup();
     renderApp('/aluno/perfil');
     await screen.findByLabelText('Nome completo');
-    await user.click(screen.getByRole('link', { name: 'Minha solicitação' }));
+    await user.click(screen.getByRole('link', { name: 'Minhas solicitações' }));
     expect(
-      await screen.findByRole('heading', { name: 'Minha solicitação' }),
+      await screen.findByRole('heading', { name: 'Minhas solicitações' }),
     ).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
@@ -858,7 +858,7 @@ describe('StudentProfilePage: celular e acessibilidade', () => {
 
     await user.click(screen.getByRole('button', { name: 'Abrir menu' }));
     await user.click(
-      await screen.findByRole('link', { name: 'Minha solicitação' }),
+      await screen.findByRole('link', { name: 'Minhas solicitações' }),
     );
 
     expect(await screen.findByRole('dialog')).toHaveTextContent(
