@@ -10,19 +10,12 @@ import {
 import { useId } from 'react';
 import type { ReactNode } from 'react';
 import { RequestStatusChip } from '../advisingRequests/requestStatus';
-import { formatDate, formatDateTime } from '../formatters/dateTime';
+import { statusChipColor } from '../advisingRequests/requestStatusDisplay';
 import type {
   AnswerAction,
   ReceivedRequest,
 } from '../services/teacherRequestService';
-
-/** Por que uma solicitação sem botões não pode mais ser respondida (RN06 e RN20). */
-function whyNoButtons(status: ReceivedRequest['status']): string {
-  if (status === 'unanswered') {
-    return 'O prazo para responder acabou, e a solicitação não pode mais ser respondida.';
-  }
-  return 'Esta solicitação já foi respondida e não pode ser alterada.';
-}
+import { receivedRequestDateLines } from './requestDateLines';
 
 interface RequestItemProps {
   request: ReceivedRequest;
@@ -33,7 +26,11 @@ interface RequestItemProps {
   onAnswer: (request: ReceivedRequest, action: AnswerAction) => void;
 }
 
-/** O cartão de uma solicitação recebida, com Aceitar e Recusar só enquanto ela é respondível. */
+/**
+ * O cartão de uma solicitação recebida (RF13), no mesmo formato do cartão do aluno: o aluno, com o
+ * curso e as áreas, a situação e as datas. Aceitar e Recusar só aparecem enquanto ela é
+ * respondível (RN06 e RN20).
+ */
 export function RequestItem({
   request,
   cardRef,
@@ -47,7 +44,6 @@ export function RequestItem({
     <Card
       component="article"
       aria-labelledby={titleId}
-      variant="outlined"
       ref={cardRef}
       tabIndex={-1}
       sx={{
@@ -59,10 +55,19 @@ export function RequestItem({
     >
       <CardContent>
         <Stack spacing={1.5}>
-          <Typography id={titleId} variant="h6" component="h2">
-            {wrapName(student.fullName, request)}
-          </Typography>
-          <Typography color="text.secondary">{student.course.name}</Typography>
+          <Stack spacing={0.25}>
+            <Typography
+              id={titleId}
+              variant="h3"
+              component="h2"
+              sx={{ overflowWrap: 'anywhere' }}
+            >
+              {wrapName(student.fullName, request)}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {student.course.name}
+            </Typography>
+          </Stack>
           {student.areas.length > 0 && (
             <Stack direction="row" useFlexGap sx={{ flexWrap: 'wrap', gap: 1 }}>
               {student.areas.map((area) => (
@@ -70,23 +75,28 @@ export function RequestItem({
               ))}
             </Stack>
           )}
-          <Typography color="text.secondary">
-            Enviada em {formatDate(request.requestedAt)}
-          </Typography>
-          {request.respondedAt && (
-            <Typography color="text.secondary">
-              Respondida em {formatDate(request.respondedAt)}
-            </Typography>
-          )}
           <div>
-            <RequestStatusChip status={request.status} />
+            <RequestStatusChip
+              status={request.status}
+              color={statusChipColor(request.status)}
+            />
           </div>
-          {pending && request.expiresAt && (
-            <Typography>
-              Prazo para responder: {formatDateTime(request.expiresAt)}.
-            </Typography>
-          )}
-          {!pending && <Typography>{whyNoButtons(request.status)}</Typography>}
+          <Stack
+            component="ul"
+            spacing={0.25}
+            sx={{ m: 0, p: 0, listStyle: 'none' }}
+          >
+            {receivedRequestDateLines(request).map((line) => (
+              <Typography
+                component="li"
+                key={line}
+                variant="body2"
+                color="text.secondary"
+              >
+                {line}
+              </Typography>
+            ))}
+          </Stack>
         </Stack>
       </CardContent>
       {pending && (

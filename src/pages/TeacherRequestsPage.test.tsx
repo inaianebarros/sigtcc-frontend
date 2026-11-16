@@ -29,6 +29,16 @@ function statusParams(fetchMock: ReturnType<typeof mockApi>) {
   });
 }
 
+type User = ReturnType<typeof userEvent.setup>;
+
+const situationBox = () => screen.getByRole('combobox', { name: 'Situação' });
+
+/** O dropdown de Situação: abre a lista e escolhe a opção. */
+async function chooseSituation(user: User, label: string) {
+  await user.click(situationBox());
+  await user.click(await screen.findByRole('option', { name: label }));
+}
+
 const MIXED = [
   makeRequest(1, 'pending', {
     student: {
@@ -68,7 +78,7 @@ describe('TeacherRequestsPage: a lista e o filtro', () => {
     ).toBeInTheDocument();
     await screen.findByText('Ana Souza');
 
-    expect(screen.getByRole('radio', { name: 'Pendentes' })).toBeChecked();
+    expect(situationBox()).toHaveTextContent('Pendentes');
     expect(statusParams(fetchMock)).toEqual([
       { status: 'pending', limit: '20', offset: '0' },
     ]);
@@ -83,14 +93,10 @@ describe('TeacherRequestsPage: a lista e o filtro', () => {
     expect(within(ana).getByText('Ciência da Computação')).toBeVisible();
     expect(within(ana).getByText('Banco de Dados')).toBeVisible();
     expect(within(ana).getByText('Inteligência Artificial')).toBeVisible();
-    expect(
-      within(ana).getByText('Enviada em 2 de novembro de 2026'),
-    ).toBeVisible();
+    expect(within(ana).getByText('Enviada em 02/11/2026')).toBeVisible();
     expect(within(ana).getByText('Pendente')).toBeVisible();
     expect(
-      within(ana).getByText(
-        'Prazo para responder: 9 de novembro de 2026, às 11:30.',
-      ),
+      within(ana).getByText('Pode ser respondida até 09/11/2026'),
     ).toBeVisible();
   });
 
@@ -119,13 +125,11 @@ describe('TeacherRequestsPage: a lista e o filtro', () => {
   it('oferece as cinco situações e manda cada uma ao servidor, "Todas" sem o parâmetro', async () => {
     const { fetchMock, user } = setup();
     await screen.findByText('Ana Souza');
+    await user.click(situationBox());
     const labels = screen
-      .getAllByRole('radio')
-      .map(
-        (radio) =>
-          radio.getAttribute('aria-label') ??
-          radio.closest('label')?.textContent,
-      );
+      .getAllByRole('option')
+      .map((option) => option.textContent);
+    await user.keyboard('{Escape}');
     expect(labels).toEqual([
       'Pendentes',
       'Todas',
@@ -134,17 +138,17 @@ describe('TeacherRequestsPage: a lista e o filtro', () => {
       'Não respondidas',
     ]);
 
-    await user.click(screen.getByRole('radio', { name: 'Todas' }));
+    await chooseSituation(user, 'Todas');
     await screen.findByText('Aluno 2');
-    await user.click(screen.getByRole('radio', { name: 'Aceitas' }));
+    await chooseSituation(user, 'Aceitas');
     await waitFor(() =>
       expect(statusParams(fetchMock).at(-1)?.status).toBe('accepted'),
     );
-    await user.click(screen.getByRole('radio', { name: 'Recusadas' }));
+    await chooseSituation(user, 'Recusadas');
     await waitFor(() =>
       expect(statusParams(fetchMock).at(-1)?.status).toBe('rejected'),
     );
-    await user.click(screen.getByRole('radio', { name: 'Não respondidas' }));
+    await chooseSituation(user, 'Não respondidas');
     await waitFor(() =>
       expect(statusParams(fetchMock).at(-1)?.status).toBe('unanswered'),
     );
@@ -169,7 +173,7 @@ describe('TeacherRequestsPage: as ações conforme a situação', () => {
   it('só a pendente mostra Aceitar e Recusar', async () => {
     const { user } = setup();
     await screen.findByText('Ana Souza');
-    await user.click(screen.getByRole('radio', { name: 'Todas' }));
+    await chooseSituation(user, 'Todas');
     await screen.findByText('Aluno 2');
 
     expect(
@@ -185,29 +189,26 @@ describe('TeacherRequestsPage: as ações conforme a situação', () => {
     }
   });
 
-  it('as respondidas e a vencida dizem, em texto visível, por que não têm botões', async () => {
+  it('as respondidas e a vencida dizem, em texto visível, as datas e que não têm botões', async () => {
     const { user } = setup();
     await screen.findByText('Ana Souza');
-    await user.click(screen.getByRole('radio', { name: 'Todas' }));
+    await chooseSituation(user, 'Todas');
     await screen.findByText('Aluno 2');
 
-    for (const name of ['Aluno 2', 'Aluno 3']) {
+    expect(
+      within(cardOf('Aluno 2')).getByText('Aceita em 03/11/2026'),
+    ).toBeVisible();
+    expect(
+      within(cardOf('Aluno 3')).getByText('Recusada em 03/11/2026'),
+    ).toBeVisible();
+    expect(
+      within(cardOf('Aluno 4')).getByText('Prazo encerrado sem resposta'),
+    ).toBeVisible();
+    for (const name of ['Aluno 2', 'Aluno 3', 'Aluno 4']) {
       expect(
-        within(cardOf(name)).getByText(
-          'Esta solicitação já foi respondida e não pode ser alterada.',
-        ),
-      ).toBeVisible();
+        within(cardOf(name)).queryByRole('button'),
+      ).not.toBeInTheDocument();
     }
-    expect(
-      within(cardOf('Aluno 3')).getByText(
-        'Respondida em 3 de novembro de 2026',
-      ),
-    ).toBeVisible();
-    expect(
-      within(cardOf('Aluno 4')).getByText(
-        'O prazo para responder acabou, e a solicitação não pode mais ser respondida.',
-      ),
-    ).toBeVisible();
   });
 });
 
@@ -289,9 +290,7 @@ describe('TeacherRequestsPage: confirmar e responder', () => {
 
     const card = await findCard('Ana Souza');
     expect(await within(card).findByText('Aceita')).toBeVisible();
-    expect(
-      within(card).getByText('Respondida em 4 de novembro de 2026'),
-    ).toBeVisible();
+    expect(within(card).getByText('Aceita em 04/11/2026')).toBeVisible();
     expect(within(card).queryByRole('button')).not.toBeInTheDocument();
     expect(
       JSON.parse(String(requestsTo(fetchMock, ANSWER_1)[0]?.[1]?.body)),
@@ -502,7 +501,7 @@ describe('TeacherRequestsPage: paginação', () => {
       offset: '20',
     });
 
-    await user.click(screen.getByRole('radio', { name: 'Aceitas' }));
+    await chooseSituation(user, 'Aceitas');
 
     await screen.findByText('Aluno 100');
     expect(statusParams(fetchMock).at(-1)).toEqual({
@@ -577,8 +576,8 @@ describe('TeacherRequestsPage: estados', () => {
       mockApi(requestRoutes([]));
       const user = userEvent.setup();
       renderApp('/professor/solicitacoes');
-      await screen.findByRole('radio', { name: 'Pendentes' });
-      await user.click(screen.getByRole('radio', { name: label }));
+      await screen.findByRole('combobox', { name: 'Situação' });
+      await chooseSituation(user, label);
 
       expect(await screen.findByText(message)).toBeVisible();
       expect(screen.queryByRole('article')).not.toBeInTheDocument();
@@ -635,7 +634,7 @@ describe('TeacherRequestsPage: filtro e página na URL', () => {
     expect(statusParams(fetchMock)).toEqual([
       { status: 'accepted', limit: '20', offset: '20' },
     ]);
-    expect(screen.getByRole('radio', { name: 'Aceitas' })).toBeChecked();
+    expect(situationBox()).toHaveTextContent('Aceitas');
     expect(
       screen.getByRole('button', { name: 'Página 2, atual' }),
     ).toHaveAttribute('aria-current', 'page');
@@ -645,7 +644,7 @@ describe('TeacherRequestsPage: filtro e página na URL', () => {
     const { user } = open('/professor/solicitacoes?pagina=2');
     await screen.findByText('Aluno 21');
 
-    await user.click(screen.getByRole('radio', { name: 'Aceitas' }));
+    await chooseSituation(user, 'Aceitas');
 
     await screen.findByText('Aluno 100');
     expect(screen.getByTestId('location')).toHaveTextContent(
@@ -657,7 +656,7 @@ describe('TeacherRequestsPage: filtro e página na URL', () => {
     const { user } = open('/professor/solicitacoes?situacao=accepted');
     await screen.findByText('Aluno 100');
 
-    await user.click(screen.getByRole('radio', { name: 'Pendentes' }));
+    await chooseSituation(user, 'Pendentes');
 
     await screen.findByText('Aluno 1');
     expect(screen.getByTestId('location')).toHaveTextContent(
@@ -669,7 +668,7 @@ describe('TeacherRequestsPage: filtro e página na URL', () => {
     const { fetchMock, user } = open('/professor/solicitacoes');
     await screen.findByText('Aluno 1');
 
-    await user.click(screen.getByRole('radio', { name: 'Todas' }));
+    await chooseSituation(user, 'Todas');
 
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent('situacao=all'),
@@ -703,7 +702,7 @@ describe('TeacherRequestsPage: filtro e página na URL', () => {
       expect(await screen.findByText('Aluno 1')).toBeInTheDocument();
 
       expect(statusParams(fetchMock)[0]?.status).toBe('pending');
-      expect(screen.getByRole('radio', { name: 'Pendentes' })).toBeChecked();
+      expect(situationBox()).toHaveTextContent('Pendentes');
     },
   );
 
@@ -737,5 +736,167 @@ describe('TeacherRequestsPage: filtro e página na URL', () => {
       limit: '20',
       offset: '20',
     });
+  });
+});
+
+function nameParams(fetchMock: ReturnType<typeof mockApi>) {
+  return requestsTo(fetchMock, LIST).map(([input]) => {
+    const params = new URL(String(input), 'http://localhost').searchParams;
+    return {
+      status: params.get('status'),
+      name: params.get('name'),
+      offset: params.get('offset'),
+    };
+  });
+}
+
+const NAMED = [
+  makeRequest(1, 'pending', {
+    student: {
+      id: 101,
+      full_name: 'José Antônio Lima',
+      course: { id: 10, name: 'Ciência da Computação' },
+      areas: [],
+    },
+  }),
+  makeRequest(2, 'pending', {
+    student: {
+      id: 102,
+      full_name: 'Marta Rocha',
+      course: { id: 10, name: 'Ciência da Computação' },
+      areas: [],
+    },
+  }),
+  makeRequest(3, 'accepted', {
+    student: {
+      id: 103,
+      full_name: 'Jose Carlos',
+      course: { id: 10, name: 'Ciência da Computação' },
+      areas: [],
+    },
+  }),
+];
+
+describe('TeacherRequestsPage: busca por aluno e dropdown de situação', () => {
+  beforeEach(() => {
+    tokenStore.clear();
+    vi.unstubAllGlobals();
+    setViewportWidth(DESKTOP_WIDTH);
+  });
+
+  it('mostra a busca e o dropdown na mesma linha, sem botões de opção', async () => {
+    setup(NAMED);
+    await screen.findByText('José Antônio Lima');
+
+    const search = screen.getByLabelText('Buscar aluno');
+    const select = situationBox();
+
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    expect(search.closest('.MuiStack-root')).toBe(
+      select.closest('.MuiStack-root'),
+    );
+    expect(
+      search.compareDocumentPosition(select) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('empilha a busca e o dropdown no celular', async () => {
+    setViewportWidth(PHONE_WIDTH);
+    setup(NAMED);
+    await screen.findByText('José Antônio Lima');
+
+    expect(screen.getByLabelText('Buscar aluno')).toBeVisible();
+    expect(situationBox()).toBeVisible();
+  });
+
+  it('o título ganha a frase de apoio', async () => {
+    setup(NAMED);
+
+    expect(
+      await screen.findByText(
+        'Responda às solicitações de orientação dos seus alunos.',
+      ),
+    ).toBeVisible();
+  });
+
+  it('a busca vai ao servidor depois da pausa, sem acento, e à URL, e volta à primeira página', async () => {
+    const { fetchMock, user } = setup(NAMED);
+    await screen.findByText('José Antônio Lima');
+
+    await user.type(screen.getByLabelText('Buscar aluno'), 'jose antonio');
+
+    await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(1));
+    expect(cardOf('José Antônio Lima')).toBeVisible();
+    expect(screen.getByTestId('location')).toHaveTextContent('busca=jose');
+    expect(screen.getByTestId('location')).not.toHaveTextContent('pagina=');
+    expect(nameParams(fetchMock).at(-1)).toEqual({
+      status: 'pending',
+      name: 'jose antonio',
+      offset: '0',
+    });
+  });
+
+  it('a busca e a situação combinam', async () => {
+    const { user } = setup(NAMED);
+    await screen.findByText('José Antônio Lima');
+
+    await chooseSituation(user, 'Todas');
+    await user.type(screen.getByLabelText('Buscar aluno'), 'jose');
+
+    await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(2));
+    await chooseSituation(user, 'Aceitas');
+
+    await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(1));
+    expect(cardOf('Jose Carlos')).toBeVisible();
+  });
+
+  it('abrir direto numa busca da URL já a aplica', async () => {
+    mockApi(requestRoutes(NAMED));
+    renderApp('/professor/solicitacoes?busca=marta');
+
+    expect(await findCard('Marta Rocha')).toBeVisible();
+    expect(screen.getAllByRole('article')).toHaveLength(1);
+    expect(screen.getByLabelText('Buscar aluno')).toHaveValue('marta');
+  });
+
+  it('uma busca sem resultado diz isso e oferece limpar', async () => {
+    const { user } = setup(NAMED);
+    await screen.findByText('José Antônio Lima');
+
+    await user.type(screen.getByLabelText('Buscar aluno'), 'zzzz');
+
+    expect(
+      await screen.findByText(/Nenhuma solicitação encontrada para essa busca/),
+    ).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'Limpar busca' }));
+    expect(await screen.findAllByRole('article')).toHaveLength(2);
+    expect(screen.getByTestId('location')).not.toHaveTextContent('busca=');
+  });
+
+  it('o total fica só para leitor de tela', async () => {
+    setup(NAMED);
+    await screen.findByText('José Antônio Lima');
+
+    const total = screen.getByText('2 solicitações encontradas');
+
+    expect(total.closest('[role="status"]')).not.toBeNull();
+  });
+
+  it('o cartão usa o padrão do aluno: nome em h3, chip colorido e datas curtas', async () => {
+    const { user } = setup(NAMED);
+    await screen.findByText('José Antônio Lima');
+    await chooseSituation(user, 'Todas');
+    await findCard('Jose Carlos');
+
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'José Antônio Lima' }),
+    ).toBeVisible();
+    expect(
+      screen.getAllByText('Pendente')[0]!.closest('.MuiChip-root'),
+    ).toHaveClass('MuiChip-colorWarning');
+    expect(screen.getByText('Aceita').closest('.MuiChip-root')).toHaveClass(
+      'MuiChip-colorPrimary',
+    );
+    expect(cardOf('Jose Carlos')).not.toHaveClass('MuiPaper-outlined');
   });
 });

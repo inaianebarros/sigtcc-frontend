@@ -627,7 +627,9 @@ describe('Links para o perfil nas listas', () => {
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/professor\/solicitacoes\?situacao=accepted&pagina=2$/,
     );
-    expect(screen.getByRole('radio', { name: 'Aceitas' })).toBeChecked();
+    expect(
+      screen.getByRole('combobox', { name: 'Situação' }),
+    ).toHaveTextContent('Aceitas');
     expect(
       screen.getByRole('button', { name: 'Página 2, atual' }),
     ).toBeInTheDocument();

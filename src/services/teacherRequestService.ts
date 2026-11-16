@@ -64,12 +64,16 @@ function toReceivedRequest(item: ApiReceivedRequest): ReceivedRequest {
 export async function listReceivedRequests({
   filter,
   page,
+  name,
 }: {
   filter: RequestFilter;
   page: number;
+  /** Parte do nome do aluno; o servidor ignora maiúsculas e acentos. */
+  name?: string;
 }): Promise<ReceivedRequestPage> {
   const params = new URLSearchParams();
   if (filter !== 'all') params.set('status', filter);
+  if (name) params.set('name', name);
   params.set('limit', String(REQUESTS_PAGE_SIZE));
   params.set('offset', String((page - 1) * REQUESTS_PAGE_SIZE));
   const response = await httpClient.get<{
