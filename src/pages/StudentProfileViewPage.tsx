@@ -64,6 +64,7 @@ export function StudentProfileViewPage() {
                   (a, b) => Number(b.isCommon) - Number(a.isCommon),
                 )}
                 labelledBy={areasId}
+                announceCount
               />
             )}
           </Stack>

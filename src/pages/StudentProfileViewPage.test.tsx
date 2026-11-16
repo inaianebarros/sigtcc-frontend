@@ -128,7 +128,12 @@ describe('StudentProfileViewPage: o conteúdo', () => {
       ]);
       await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
 
-      expect(main().textContent).not.toMatch(/áreas? em comum/i);
+      // Nenhuma frase à vista: o que existe sobre "em comum" é só texto para o leitor de tela.
+      for (const text of screen.queryAllByText(
+        /(áreas? em comum)|(, em comum)/i,
+      )) {
+        expect(text).toHaveStyle({ position: 'absolute' });
+      }
       expect(screen.queryByText('Em comum')).not.toBeInTheDocument();
     },
   );
@@ -277,6 +282,60 @@ describe('StudentProfileViewPage: carregamento e foco', () => {
   });
 });
 
+describe('StudentProfileViewPage: destaque das áreas e fecho da leitura', () => {
+  it('as áreas em comum são maiores e a lista anuncia quantas são, sem texto à vista', async () => {
+    open([
+      makeLinkedStudent(7, {
+        full_name: 'Ana Souza',
+        compatibility: 2,
+        areas: [
+          { id: 1, name: 'Banco de Dados', is_common: true },
+          { id: 2, name: 'Inteligência Artificial', is_common: false },
+          { id: 3, name: 'Engenharia de Software', is_common: true },
+        ],
+      }),
+    ]);
+    await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
+
+    const list = screen.getByRole('list', { name: 'Áreas de interesse' });
+    const chip = (name: RegExp) =>
+      within(list).getByText(name).closest('.MuiChip-root')!;
+
+    expect(chip(/Banco de Dados/)).toHaveClass('MuiChip-sizeMedium');
+    expect(chip(/Inteligência Artificial/)).toHaveClass('MuiChip-sizeSmall');
+    expect(list).toHaveAccessibleDescription('2 áreas em comum');
+  });
+
+  it('o fecho da leitura separa o "Voltar" do fim por uma linha fina', async () => {
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
+
+    const closing = screen.getAllByRole('link', { name: 'Voltar' })[1]!;
+
+    expect(closing.parentElement).toHaveStyle({ borderTopStyle: 'solid' });
+  });
+
+  it('quem já levou o foco ao "Voltar" durante o carregamento não o tem roubado pelo título', async () => {
+    let release: (value: unknown) => void = () => undefined;
+    const gate = new Promise((resolve) => {
+      release = resolve;
+    });
+    open(undefined, undefined, {
+      [PROFILE_OF_7]: async () => {
+        await gate;
+        return { body: makeLinkedStudent(7, { full_name: 'Ana Souza' }) };
+      },
+    });
+    const back = await screen.findByRole('link', { name: 'Voltar' });
+    back.focus();
+
+    release(null);
+    await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
+
+    expect(back).toHaveFocus();
+  });
+});
+
 describe('StudentProfileViewPage: aluno não encontrado e erros', () => {
   it.each(['abc', '0', '1.5', '-3'])(
     'o id "%s" não é um inteiro: mostra "Aluno não encontrado" sem chamar a API',
@@ -289,6 +348,9 @@ describe('StudentProfileViewPage: aluno não encontrado e erros', () => {
           name: 'Aluno não encontrado',
         }),
       ).toBeInTheDocument();
+      expect(
+        screen.getByText('Não foi possível abrir este perfil.'),
+      ).toBeVisible();
 
       expect(
         requestsTo(fetchMock, PROFILE_OF_7).length +

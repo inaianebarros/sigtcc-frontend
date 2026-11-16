@@ -106,9 +106,13 @@ export function ProfileView<T>({
     if (!profileLayout || !loaded) return;
     const title = container.current?.querySelector('h1');
     if (!title) return;
+    // Quem já levou o foco a outro lugar durante o carregamento (o "Voltar", por exemplo) não o
+    // tem roubado: o título só recebe o foco de quem ainda não foi a lugar nenhum.
+    const active = document.activeElement;
+    if (active && active !== document.body) return;
     title.setAttribute('tabindex', '-1');
-    title.style.outline = 'none';
     title.focus({ preventScroll: true });
+    return () => title.removeAttribute('tabindex');
   }, [profileLayout, loaded]);
 
   return (
@@ -125,14 +129,40 @@ export function ProfileView<T>({
           {loading && <VisuallyHidden>Carregando perfil</VisuallyHidden>}
         </Box>
       )}
-      {notFound && <Typography {...titleProps}>{notFoundTitle}</Typography>}
+      {notFound && (
+        <>
+          <Typography {...titleProps}>{notFoundTitle}</Typography>
+          {profileLayout && (
+            // Sem dizer o motivo (RN28 e RN32): o mesmo texto para qualquer caso.
+            <Typography color="text.secondary">
+              Não foi possível abrir este perfil.
+            </Typography>
+          )}
+        </>
+      )}
       {!notFound && profile.status !== 'ready' && (
         <Typography {...titleProps}>{genericTitle}</Typography>
       )}
       {!notFound && profile.status === 'loading' && (
         <Stack spacing={2} data-testid={skeletonTestId} aria-hidden>
-          <Skeleton variant="rounded" height={profileLayout ? 96 : 80} />
-          <Skeleton variant="rounded" height={120} />
+          {profileLayout ? (
+            // Imita a forma do perfil (nome, curso, chips e cartões) para o conteúdo não saltar.
+            <>
+              <Skeleton variant="rounded" height={96} />
+              <Stack direction="row" spacing={1}>
+                <Skeleton variant="rounded" width={96} height={32} />
+                <Skeleton variant="rounded" width={120} height={32} />
+                <Skeleton variant="rounded" width={80} height={32} />
+              </Stack>
+              <Skeleton variant="rounded" height={64} />
+              <Skeleton variant="rounded" height={64} />
+            </>
+          ) : (
+            <>
+              <Skeleton variant="rounded" height={80} />
+              <Skeleton variant="rounded" height={120} />
+            </>
+          )}
         </Stack>
       )}
       {!notFound && profile.status === 'error' && (
@@ -152,7 +182,18 @@ export function ProfileView<T>({
           )}
           {children(profile.data)}
           {profileLayout && (
-            <BackLink to={backPath} label={backLabel} plain={false} />
+            // O fecho da leitura: separado do conteúdo por uma linha fina e com respiro embaixo.
+            <Box
+              sx={{
+                borderTop: 1,
+                borderColor: 'divider',
+                pt: 2,
+                pb: 2,
+                display: 'flex',
+              }}
+            >
+              <BackLink to={backPath} label={backLabel} plain={false} />
+            </Box>
           )}
         </>
       )}

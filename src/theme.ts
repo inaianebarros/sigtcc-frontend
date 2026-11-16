@@ -69,7 +69,10 @@ export const theme = createTheme({
       styleOverrides: { root: { '&.Mui-focusVisible': FOCUS_RING } },
     },
     MuiButton: {
-      styleOverrides: { root: { minHeight: 40 } },
+      // 40 px com o mouse; 44 px no toque (DESIGN.md).
+      styleOverrides: {
+        root: { minHeight: 40, '@media (pointer: coarse)': { minHeight: 44 } },
+      },
     },
     MuiOutlinedInput: {
       // Campo de fundo branco (DESIGN.md), também quando fica direto sobre o papel de fundo.
