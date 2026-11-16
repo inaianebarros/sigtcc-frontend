@@ -222,8 +222,8 @@ describe('AdvisorsPage: a lista', () => {
     });
 
     it.each([
-      [4, '+ 1 outra proposta'],
-      [10, '+ 7 outras propostas'],
+      [4, '+ 1 outra proposta no perfil'],
+      [10, '+ 7 outras propostas no perfil'],
     ])('com %i propostas, o fim da seção diz "%s"', async (total, text) => {
       mockApi(
         advisorRoutes([
