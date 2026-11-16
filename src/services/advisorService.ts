@@ -228,17 +228,20 @@ interface ApiMyRequestsPage {
 
 /**
  * Todas as solicitações do aluno, da mais recente para a mais antiga, paginadas no servidor (RF16).
- * `name` filtra pelo nome do professor, sem diferenciar maiúsculas nem acentos.
+ * `name` filtra pelo nome do professor, sem diferenciar maiúsculas nem acentos, e `status` pela
+ * situação efetiva; sem `status`, vêm todas.
  */
 export async function listMyRequests(
   page: number,
   name?: string,
+  status?: AdvisingRequestStatus,
 ): Promise<MyRequestsPage> {
   const params = new URLSearchParams({
     limit: String(MY_REQUESTS_PAGE_SIZE),
     offset: String((page - 1) * MY_REQUESTS_PAGE_SIZE),
   });
   if (name) params.set('name', name);
+  if (status) params.set('status', status);
   const response = await httpClient.get<ApiMyRequestsPage>(
     `/orientacao/minhas-solicitacoes?${params}`,
   );

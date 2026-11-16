@@ -65,13 +65,16 @@ function listOf(items: FakeItem[]) {
       .replace(/\p{Diacritic}/gu, '')
       .toLowerCase();
     const offset = Number(url.searchParams.get('offset') ?? 0);
-    const matching = items.filter((entry) =>
-      entry.teacher.full_name
-        .normalize('NFD')
-        .replace(/\p{Diacritic}/gu, '')
-        .toLowerCase()
-        .includes(name),
-    );
+    const wanted = url.searchParams.get('status');
+    const matching = items
+      .filter((entry) => !wanted || entry.status === wanted)
+      .filter((entry) =>
+        entry.teacher.full_name
+          .normalize('NFD')
+          .replace(/\p{Diacritic}/gu, '')
+          .toLowerCase()
+          .includes(name),
+      );
     return {
       body: {
         items: matching.slice(offset, offset + 10),
@@ -141,18 +144,18 @@ describe('StudentRequestPage: a lista de solicitações (RF16)', () => {
     expect(screen.queryByRole('article')).not.toBeInTheDocument();
   });
 
-  it('mostra o título e a frase de apoio', async () => {
+  it('mostra só o título, sem frase de apoio, como na tela do professor', async () => {
     setup([item(1, 'rejected')]);
 
     expect(await heading()).toBeInTheDocument();
     expect(
-      screen.getByText(
+      screen.queryByText(
         'Acompanhe o status das suas solicitações de orientação.',
       ),
-    ).toBeVisible();
+    ).not.toBeInTheDocument();
   });
 
-  it('um cartão tem o professor com o link para o perfil, o instituto, a data de envio e a situação', async () => {
+  it('um cartão tem o professor com o link para o perfil, o instituto, as datas e a situação', async () => {
     setup([item(1, 'rejected', { responded_at: '2026-11-03T15:00:00Z' })]);
 
     const card = await screen.findByRole('article', { name: 'Carlos Lima' });
@@ -163,9 +166,13 @@ describe('StudentRequestPage: a lista de solicitações (RF16)', () => {
     expect(
       within(card).getByText('Instituto de Engenharia e Geociências'),
     ).toBeVisible();
-    expect(within(card).getByText('Enviada em 02/11/2026')).toBeVisible();
+    expect(
+      within(card).getByText('Enviada em 2 de novembro de 2026'),
+    ).toBeVisible();
+    expect(
+      within(card).getByText('Respondida em 3 de novembro de 2026'),
+    ).toBeVisible();
     expect(within(card).getByText('Recusada')).toBeVisible();
-    expect(within(card).getByText('Recusada em 03/11/2026')).toBeVisible();
   });
 
   it.each([
@@ -173,28 +180,28 @@ describe('StudentRequestPage: a lista de solicitações (RF16)', () => {
       'pending',
       'Pendente',
       { expires_at: '2026-11-09T15:00:00Z' },
-      'Pode ser respondida até 09/11/2026',
+      /Prazo para o professor responder: 9 de novembro de 2026/,
     ],
     [
       'accepted',
       'Aceita',
       { responded_at: '2026-11-04T15:00:00Z' },
-      'Aceita em 04/11/2026',
+      'Esta solicitação já foi respondida e não pode ser alterada.',
     ],
     [
       'rejected',
       'Recusada',
       { responded_at: '2026-11-03T15:00:00Z' },
-      'Recusada em 03/11/2026',
+      'Esta solicitação já foi respondida e não pode ser alterada.',
     ],
     [
       'unanswered',
       'Não respondida',
       { expires_at: '2026-11-09T15:00:00Z' },
-      'Sem resposta do professor',
+      'O prazo para o professor responder acabou, e a solicitação não pode mais ser respondida.',
     ],
   ])(
-    'a situação %s aparece em texto, com ícone, e com a linha de datas certa',
+    'a situação %s aparece em texto, com ícone, e com a explicação certa',
     async (status, label, extra, line) => {
       setup([item(1, status, extra)]);
 
@@ -203,11 +210,10 @@ describe('StudentRequestPage: a lista de solicitações (RF16)', () => {
       const chip = within(card).getByText(label).closest('.MuiChip-root')!;
       expect(chip.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
       expect(within(card).getByText(line)).toBeVisible();
-      expect(within(card).getByText('Enviada em 02/11/2026')).toBeVisible();
     },
   );
 
-  it('a pendente usa o alerta, a aceita o teal e as demais o neutro, sem o verde de sucesso', async () => {
+  it('todas as situações usam o chip neutro, sem cor', async () => {
     setup([
       item(1, 'pending', { expires_at: '2026-11-09T15:00:00Z' }),
       item(2, 'accepted', {
@@ -219,13 +225,11 @@ describe('StudentRequestPage: a lista de solicitações (RF16)', () => {
     ]);
     await screen.findByRole('article', { name: 'Carlos Lima' });
 
-    const chip = (label: string) =>
-      screen.getByText(label).closest('.MuiChip-root')!;
-
-    expect(chip('Pendente')).toHaveClass('MuiChip-colorWarning');
-    expect(chip('Aceita')).toHaveClass('MuiChip-colorPrimary');
-    expect(chip('Recusada')).toHaveClass('MuiChip-colorDefault');
-    expect(chip('Aceita')).not.toHaveClass('MuiChip-colorSuccess');
+    for (const label of ['Pendente', 'Aceita', 'Recusada']) {
+      expect(screen.getByText(label).closest('.MuiChip-root')).toHaveClass(
+        'MuiChip-colorDefault',
+      );
+    }
   });
 
   it('a aceita traz a orientação ativa, e a ativa faz o menu ser relido uma só vez', async () => {
@@ -282,7 +286,9 @@ describe('StudentRequestPage: a lista de solicitações (RF16)', () => {
 
     expect(within(card).getByText('Orientação encerrada')).toBeVisible();
     expect(
-      within(card).getByText('Orientação de 02/03/2026 a 30/10/2026'),
+      within(card).getByText(
+        'Orientação de 2 de março de 2026 a 30 de outubro de 2026.',
+      ),
     ).toBeVisible();
     expect(
       within(card).queryByText('Orientação ativa'),
@@ -503,6 +509,121 @@ describe('StudentRequestPage: busca e paginação (RNF26, RNF30)', () => {
         name: 'Voltar para minhas solicitações',
       }),
     ).toHaveAttribute('href', '/aluno/solicitacao?pagina=1');
+  });
+});
+
+describe('StudentRequestPage: filtro por situação', () => {
+  const MIXED = [
+    item(1, 'pending', {
+      expires_at: '2026-11-09T15:00:00Z',
+      teacher: { id: 1, full_name: 'Ana Pendente', institute: INSTITUTE },
+    }),
+    item(2, 'accepted', {
+      teacher: { id: 2, full_name: 'Bruno Aceito', institute: INSTITUTE },
+    }),
+    item(3, 'rejected', {
+      teacher: { id: 3, full_name: 'Carla Recusada', institute: INSTITUTE },
+    }),
+  ];
+
+  it('mostra os botões de Situação, com Todas marcada, e o título sem frase de apoio', async () => {
+    setup(MIXED);
+    await screen.findAllByRole('article');
+
+    const group = screen.getByRole('group', { name: 'Situação' });
+
+    expect(within(group).getAllByRole('radio')).toHaveLength(5);
+    expect(within(group).getByRole('radio', { name: 'Todas' })).toBeChecked();
+    expect(screen.getAllByRole('article')).toHaveLength(3);
+  });
+
+  it('escolher uma situação filtra no servidor, vai para a URL e volta à primeira página', async () => {
+    const { fetchMock, user } = setup(
+      [...many(12), ...MIXED],
+      NEVER,
+      '/aluno/solicitacao?pagina=2',
+    );
+    await screen.findAllByRole('article');
+
+    await user.click(screen.getByRole('radio', { name: 'Aceitas' }));
+
+    expect(
+      await screen.findByRole('article', { name: 'Bruno Aceito' }),
+    ).toBeVisible();
+    await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(1));
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      'situacao=accepted',
+    );
+    expect(screen.getByTestId('location')).not.toHaveTextContent('pagina=');
+    expect(
+      requestsTo(fetchMock, LIST)
+        .map(([input]) => new URL(String(input), 'http://localhost'))
+        .at(-1)
+        ?.searchParams.get('status'),
+    ).toBe('accepted');
+  });
+
+  it('voltar para Todas tira o parâmetro da URL', async () => {
+    const { user } = setup(
+      MIXED,
+      NEVER,
+      '/aluno/solicitacao?situacao=rejected',
+    );
+    await screen.findByRole('article', { name: 'Carla Recusada' });
+
+    await user.click(screen.getByRole('radio', { name: 'Todas' }));
+
+    await waitFor(() => expect(screen.getAllByRole('article')).toHaveLength(3));
+    expect(screen.getByTestId('location')).not.toHaveTextContent('situacao=');
+  });
+
+  it('abrir direto numa situação da URL já a aplica; um valor inválido vira Todas', async () => {
+    setup(MIXED, NEVER, '/aluno/solicitacao?situacao=pending');
+    expect(
+      await screen.findByRole('article', { name: 'Ana Pendente' }),
+    ).toBeVisible();
+    expect(screen.getAllByRole('article')).toHaveLength(1);
+    expect(screen.getByRole('radio', { name: 'Pendentes' })).toBeChecked();
+  });
+
+  it('um valor de situação inválido na URL vira Todas', async () => {
+    setup(MIXED, NEVER, '/aluno/solicitacao?situacao=xyz');
+
+    expect(await screen.findAllByRole('article')).toHaveLength(3);
+    expect(screen.getByRole('radio', { name: 'Todas' })).toBeChecked();
+  });
+
+  it('a situação e a busca por nome combinam', async () => {
+    const { user } = setup(
+      MIXED,
+      NEVER,
+      '/aluno/solicitacao?situacao=accepted',
+    );
+    await screen.findByRole('article', { name: 'Bruno Aceito' });
+
+    await user.type(screen.getByLabelText('Buscar professor'), 'ana');
+
+    expect(
+      await screen.findByText(/Nenhuma solicitação encontrada para essa busca/),
+    ).toBeVisible();
+  });
+
+  it.each([
+    ['pending', 'Nenhuma solicitação pendente.'],
+    ['accepted', 'Nenhuma solicitação aceita.'],
+    ['rejected', 'Nenhuma solicitação recusada.'],
+    ['unanswered', 'Nenhuma solicitação não respondida.'],
+  ])('sem solicitações %s, diz isso', async (situation, message) => {
+    setup(
+      [item(1, 'other')],
+      NEVER,
+      `/aluno/solicitacao?situacao=${situation}`,
+    );
+
+    expect(await screen.findByText(message)).toBeVisible();
+    expect(
+      screen.queryByText(/ainda não enviou nenhuma/),
+    ).not.toBeInTheDocument();
   });
 });
 

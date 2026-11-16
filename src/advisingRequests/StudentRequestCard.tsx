@@ -1,59 +1,73 @@
 import SchoolIcon from '@mui/icons-material/School';
 import { Card, CardContent, Chip, Stack, Typography } from '@mui/material';
 import { useId } from 'react';
+import { formatDate, formatDateTime } from '../formatters/dateTime';
 import { OriginLink } from '../navigation/OriginLink';
 import { studentAdvisorPath } from '../navigation/paths';
 import type { MyRequestItem } from '../services/advisorService';
 import { RequestStatusChip } from './requestStatus';
-import { requestDateLines } from './requestDateLines';
 
-// O status vem do servidor como texto: um valor novo cai no neutro e não derruba a tela.
-const STATUS_COLOR: Record<string, 'default' | 'primary' | 'warning'> = {
-  pending: 'warning',
-  accepted: 'primary',
-  rejected: 'default',
-  unanswered: 'default',
-};
+/** Por que uma solicitação não pendente não muda mais (RN06 e RN20). */
+function whyClosed(status: MyRequestItem['status']): string {
+  if (status === 'unanswered') {
+    return 'O prazo para o professor responder acabou, e a solicitação não pode mais ser respondida.';
+  }
+  return 'Esta solicitação já foi respondida e não pode ser alterada.';
+}
 
 /**
- * Uma solicitação do aluno (RF16): o professor, com o link para o perfil dele e o instituto, as
- * datas, a situação e, quando aceita, a orientação que ela criou. Sem avatar e sem ações: o aluno
- * não cancela nem altera a solicitação (RN05, RN06).
+ * Uma solicitação do aluno (RF16), no mesmo formato do cartão do professor: o professor, com o
+ * link para o perfil e o instituto, as datas, a situação e, quando aceita, a orientação que ela
+ * criou. Sem ações: o aluno não cancela nem altera a solicitação (RN05, RN06).
  */
 export function StudentRequestCard({ request }: { request: MyRequestItem }) {
   const titleId = useId();
   const { advising } = request;
+  const pending = request.status === 'pending';
   return (
-    <Card component="article" aria-labelledby={titleId}>
+    <Card
+      component="article"
+      aria-labelledby={titleId}
+      variant="outlined"
+      tabIndex={-1}
+      sx={{
+        '&:focus-visible': {
+          outline: '2px solid',
+          outlineColor: 'primary.main',
+        },
+      }}
+    >
       <CardContent>
         <Stack spacing={1.5}>
-          <Stack spacing={0.25}>
-            <Typography
-              id={titleId}
-              variant="h3"
-              component="h2"
-              sx={{ overflowWrap: 'anywhere' }}
-            >
-              <OriginLink to={studentAdvisorPath(request.teacher.id)}>
-                {request.teacher.fullName}
-              </OriginLink>
+          <Typography
+            id={titleId}
+            variant="h6"
+            component="h2"
+            sx={{ overflowWrap: 'anywhere' }}
+          >
+            <OriginLink to={studentAdvisorPath(request.teacher.id)}>
+              {request.teacher.fullName}
+            </OriginLink>
+          </Typography>
+          {request.teacher.institute && (
+            <Typography color="text.secondary">
+              {request.teacher.institute.name}
             </Typography>
-            {request.teacher.institute && (
-              <Typography variant="body2" color="text.secondary">
-                {request.teacher.institute.name}
-              </Typography>
-            )}
-          </Stack>
+          )}
+          <Typography color="text.secondary">
+            Enviada em {formatDate(request.requestedAt)}
+          </Typography>
+          {request.respondedAt && (
+            <Typography color="text.secondary">
+              Respondida em {formatDate(request.respondedAt)}
+            </Typography>
+          )}
           <Stack direction="row" useFlexGap sx={{ flexWrap: 'wrap', gap: 1 }}>
-            <RequestStatusChip
-              status={request.status}
-              color={STATUS_COLOR[request.status] ?? 'default'}
-            />
+            <RequestStatusChip status={request.status} />
             {request.status === 'accepted' && advising && (
               <Chip
                 variant="outlined"
                 icon={advising.status === 'active' ? <SchoolIcon /> : undefined}
-                color={advising.status === 'active' ? 'primary' : 'default'}
                 label={
                   advising.status === 'active'
                     ? 'Orientação ativa'
@@ -66,22 +80,19 @@ export function StudentRequestCard({ request }: { request: MyRequestItem }) {
               />
             )}
           </Stack>
-          <Stack
-            component="ul"
-            spacing={0.25}
-            sx={{ m: 0, p: 0, listStyle: 'none' }}
-          >
-            {requestDateLines(request).map((line) => (
-              <Typography
-                component="li"
-                key={line}
-                variant="body2"
-                color="text.secondary"
-              >
-                {line}
-              </Typography>
-            ))}
-          </Stack>
+          {pending && request.expiresAt && (
+            <Typography>
+              Prazo para o professor responder:{' '}
+              {formatDateTime(request.expiresAt)}.
+            </Typography>
+          )}
+          {advising?.status === 'ended' && advising.endedAt && (
+            <Typography color="text.secondary">
+              Orientação de {formatDate(advising.startedAt)} a{' '}
+              {formatDate(advising.endedAt)}.
+            </Typography>
+          )}
+          {!pending && <Typography>{whyClosed(request.status)}</Typography>}
         </Stack>
       </CardContent>
     </Card>

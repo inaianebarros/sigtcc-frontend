@@ -1,7 +1,12 @@
 import {
   Alert,
   Button,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
   Link,
+  Radio,
+  RadioGroup,
   Skeleton,
   Stack,
   Typography,
@@ -28,9 +33,44 @@ import {
   getRequestStatus,
   listMyRequests,
 } from '../services/advisorService';
-import type { RequestStatus } from '../services/advisorService';
+import type {
+  AdvisingRequestStatus,
+  RequestStatus,
+} from '../services/advisorService';
 
 const SEARCH_PARAM = 'busca';
+const FILTER_PARAM = 'situacao';
+
+type RequestFilter = 'all' | AdvisingRequestStatus;
+
+const FILTERS: readonly {
+  value: RequestFilter;
+  label: string;
+  empty: string;
+}[] = [
+  { value: 'all', label: 'Todas', empty: '' },
+  {
+    value: 'pending',
+    label: 'Pendentes',
+    empty: 'Nenhuma solicitação pendente.',
+  },
+  { value: 'accepted', label: 'Aceitas', empty: 'Nenhuma solicitação aceita.' },
+  {
+    value: 'rejected',
+    label: 'Recusadas',
+    empty: 'Nenhuma solicitação recusada.',
+  },
+  {
+    value: 'unanswered',
+    label: 'Não respondidas',
+    empty: 'Nenhuma solicitação não respondida.',
+  },
+];
+
+/** Só uma das cinco situações vale; qualquer outra coisa na URL é "Todas", o padrão. */
+function filterFrom(value: string | null): RequestFilter {
+  return FILTERS.find((item) => item.value === value)?.value ?? 'all';
+}
 
 function countText(count: number, searching: boolean): string {
   const noun = count === 1 ? 'solicitação' : 'solicitações';
@@ -59,13 +99,14 @@ export function StudentRequestPage() {
   const { refreshUser } = useSession();
   const [searchParams, setSearchParams] = useSearchParams();
   const search = (searchParams.get(SEARCH_PARAM) ?? '').trim();
+  const filter = filterFrom(searchParams.get(FILTER_PARAM));
   const [page, setPage] = useUrlPage();
   const [reload, setReload] = useState(0);
   const listTop = useRef<HTMLDivElement>(null);
   const status = useLoad(getRequestStatus, `status-${reload}`);
   const list = useLoad(
-    () => listMyRequests(page, search),
-    `${page}|${search}|${reload}`,
+    () => listMyRequests(page, search, filter === 'all' ? undefined : filter),
+    `${page}|${search}|${filter}|${reload}`,
   );
   // O que já foi lido fica na tela enquanto a releitura acontece: sem esqueleto piscando.
   const shown = useLastReady(list);
@@ -116,21 +157,49 @@ export function StudentRequestPage() {
       else params.set(SEARCH_PARAM, next);
       return params;
     });
+  const chooseFilter = (next: RequestFilter) =>
+    setSearchParams((current) => {
+      const params = new URLSearchParams(current);
+      params.delete(PAGE_PARAM);
+      if (next === 'all') params.delete(FILTER_PARAM);
+      else params.set(FILTER_PARAM, next);
+      return params;
+    });
   const retry = () => setReload((current) => current + 1);
   const searching = search !== '';
   // Sem nenhuma solicitação o próprio aviso já traz o link para a busca: não se repete acima.
-  const emptyList = shown !== null && shown.count === 0 && !searching;
+  const emptyList =
+    shown !== null && shown.count === 0 && !searching && filter === 'all';
 
   return (
     <Stack spacing={3}>
       <div>
-        <Typography variant="h4" component="h1" gutterBottom>
+        <Typography variant="h4" component="h1">
           Minhas solicitações
         </Typography>
-        <Typography color="text.secondary">
-          Acompanhe o status das suas solicitações de orientação.
-        </Typography>
       </div>
+      <FormControl component="fieldset">
+        <FormLabel component="legend">Situação</FormLabel>
+        <RadioGroup
+          row
+          value={filter}
+          onChange={(event) => {
+            const chosen = FILTERS.find(
+              (item) => item.value === event.target.value,
+            );
+            if (chosen) chooseFilter(chosen.value);
+          }}
+        >
+          {FILTERS.map((item) => (
+            <FormControlLabel
+              key={item.value}
+              value={item.value}
+              control={<Radio />}
+              label={item.label}
+            />
+          ))}
+        </RadioGroup>
+      </FormControl>
       <UrlSearchField
         label="Buscar professor"
         placeholder="Digite o nome do professor..."
@@ -182,11 +251,19 @@ export function StudentRequestPage() {
             pode estar desatualizado.
           </Alert>
         )}
-        {shown !== null && shown.count === 0 && !searching && (
+        {emptyList && (
           <Alert severity="info" action={<SearchLink />}>
             Você ainda não enviou nenhuma solicitação de orientação.
           </Alert>
         )}
+        {shown !== null &&
+          shown.count === 0 &&
+          !searching &&
+          filter !== 'all' && (
+            <Alert severity="info">
+              {FILTERS.find((item) => item.value === filter)?.empty}
+            </Alert>
+          )}
         {shown !== null && shown.count === 0 && searching && (
           <Stack spacing={2}>
             <Alert severity="info">
