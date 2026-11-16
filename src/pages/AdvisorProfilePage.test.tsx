@@ -240,7 +240,7 @@ describe('AdvisorProfilePage: solicitar orientação', () => {
     expect(requestButton()).toHaveFocus();
   });
 
-  it('ao confirmar, envia o pedido uma vez, avisa e leva a "Minha solicitação"', async () => {
+  it('ao confirmar, envia o pedido uma vez, avisa e leva a "Minhas solicitações"', async () => {
     let release: (() => void) | undefined;
     const gate = new Promise<void>((resolve) => {
       release = resolve;
@@ -266,7 +266,7 @@ describe('AdvisorProfilePage: solicitar orientação', () => {
     expect(requestsTo(fetchMock, REQUEST)).toHaveLength(1);
     release?.();
     expect(
-      await screen.findByRole('heading', { name: 'Minha solicitação' }),
+      await screen.findByRole('heading', { name: 'Minhas solicitações' }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/aluno/solicitacao',

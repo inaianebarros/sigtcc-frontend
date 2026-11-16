@@ -52,7 +52,7 @@ describe('menu lateral do aluno sem o item Tema do TCC', () => {
     ).toEqual([
       'Dashboard',
       'Orientadores',
-      'Minha solicitação',
+      'Minhas solicitações',
       'Atividades',
       'Reuniões',
       'Histórico de orientações',

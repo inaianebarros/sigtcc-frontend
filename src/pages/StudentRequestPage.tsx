@@ -1,96 +1,40 @@
 import {
   Alert,
   Button,
-  Card,
-  CardContent,
   Link,
   Skeleton,
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useId, useRef, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
+import { StudentRequestCard } from '../advisingRequests/StudentRequestCard';
 import { blockedMessage } from '../advisors/blockedMessages';
-import { RequestStatusChip } from '../advisingRequests/requestStatus';
-import { formatDate, formatDateTime } from '../formatters/dateTime';
+import { VisuallyHidden } from '../components/VisuallyHidden';
+import { PagePagination } from '../components/PagePagination';
+import { UrlSearchField } from '../components/UrlSearchField';
+import { useLastReady } from '../hooks/useLastReady';
 import { useLoad } from '../hooks/useLoad';
-import { paths } from '../navigation/paths';
+import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
-import { getRequestStatus } from '../services/advisorService';
-import type { MyRequest, RequestStatus } from '../services/advisorService';
+import {
+  PAGE_PARAM,
+  useReturnToLastPage,
+  useUrlPage,
+} from '../hooks/useUrlPage';
+import { paths } from '../navigation/paths';
+import {
+  MY_REQUESTS_PAGE_SIZE,
+  getRequestStatus,
+  listMyRequests,
+} from '../services/advisorService';
+import type { RequestStatus } from '../services/advisorService';
 
-function statusMessage(status: string, hasAdvising: boolean): string {
-  switch (status) {
-    case 'pending':
-      return 'O professor ainda não respondeu.';
-    case 'accepted':
-      return hasAdvising
-        ? 'O professor aceitou a sua solicitação.'
-        : 'O professor aceitou a sua solicitação. A orientação já foi encerrada.';
-    case 'rejected':
-      return 'O professor recusou a solicitação. Você pode solicitar de novo, inclusive ao mesmo professor.';
-    case 'unanswered':
-      return 'O professor não respondeu dentro do prazo. Você pode solicitar de novo.';
-    default:
-      return 'Não foi possível identificar a situação desta solicitação.';
-  }
-}
+const SEARCH_PARAM = 'busca';
 
-function RequestCard({
-  request,
-  hasAdvising,
-}: {
-  request: MyRequest;
-  hasAdvising: boolean;
-}) {
-  const titleId = useId();
-  return (
-    <Card component="article" aria-labelledby={titleId} variant="outlined">
-      <CardContent>
-        <Stack spacing={1.5}>
-          <Typography id={titleId} variant="h6" component="h2">
-            {request.teacher.fullName}
-          </Typography>
-          <Typography color="text.secondary">
-            Enviada em {formatDate(request.requestedAt)}
-          </Typography>
-          <div role="status" aria-live="polite">
-            <RequestStatusChip status={request.status} />
-          </div>
-          <Typography>{statusMessage(request.status, hasAdvising)}</Typography>
-          {request.status === 'pending' && request.expiresAt && (
-            <Typography>
-              O professor tem até {formatDateTime(request.expiresAt)}, para
-              responder.
-            </Typography>
-          )}
-        </Stack>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ActiveAdvising({
-  advising,
-}: {
-  advising: NonNullable<RequestStatus['advising']>;
-}) {
-  const titleId = useId();
-  return (
-    <Card component="section" aria-labelledby={titleId} variant="outlined">
-      <CardContent>
-        <Stack spacing={1}>
-          <Typography id={titleId} variant="h6" component="h2">
-            Orientação ativa
-          </Typography>
-          <Typography>{advising.teacher.fullName}</Typography>
-          <Typography color="text.secondary">
-            Desde {formatDate(advising.startedAt)}
-          </Typography>
-        </Stack>
-      </CardContent>
-    </Card>
-  );
+function countText(count: number, searching: boolean): string {
+  const noun = count === 1 ? 'solicitação' : 'solicitações';
+  return `${count} ${noun}${searching ? (count === 1 ? ' encontrada' : ' encontradas') : ''}`;
 }
 
 function SearchLink() {
@@ -101,37 +45,37 @@ function SearchLink() {
   );
 }
 
-function Content({ status }: { status: RequestStatus }) {
-  const { request, advising, canRequest, blockedReason } = status;
-  if (!request && !advising) {
-    return (
-      <Alert severity="info" action={<SearchLink />}>
-        Você ainda não enviou nenhuma solicitação de orientação.
-      </Alert>
-    );
-  }
-  return (
-    <Stack spacing={2}>
-      {request && (
-        <RequestCard request={request} hasAdvising={advising !== null} />
-      )}
-      {advising && <ActiveAdvising advising={advising} />}
-      {canRequest ? (
-        <SearchLink />
-      ) : (
-        <Alert severity="info">{blockedMessage(blockedReason)}</Alert>
-      )}
-    </Stack>
+/** Se o aluno pode solicitar de novo e, quando não pode, o motivo (RN04, RN05). */
+function Eligibility({ status }: { status: RequestStatus }) {
+  return status.canRequest ? (
+    <SearchLink />
+  ) : (
+    <Alert severity="info">{blockedMessage(status.blockedReason)}</Alert>
   );
 }
 
+/** As solicitações de orientação do aluno, com busca pelo professor e paginação (RF16). */
 export function StudentRequestPage() {
   const { refreshUser } = useSession();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const search = (searchParams.get(SEARCH_PARAM) ?? '').trim();
+  const [page, setPage] = useUrlPage();
   const [reload, setReload] = useState(0);
-  const state = useLoad(getRequestStatus, `status-${reload}`);
+  const listTop = useRef<HTMLDivElement>(null);
+  const status = useLoad(getRequestStatus, `status-${reload}`);
+  const list = useLoad(
+    () => listMyRequests(page, search),
+    `${page}|${search}|${reload}`,
+  );
   // O que já foi lido fica na tela enquanto a releitura acontece: sem esqueleto piscando.
-  const [shown, setShown] = useState<RequestStatus | null>(null);
-  if (state.status === 'ready' && state.data !== shown) setShown(state.data);
+  const shown = useLastReady(list);
+  const shownStatus = useLastReady(status);
+  const { knownCount, lastPage, fallbackPage } = usePageBounds(
+    list,
+    MY_REQUESTS_PAGE_SIZE,
+    page,
+  );
+  useReturnToLastPage(fallbackPage, page, setPage);
   const refreshed = useRef(false);
   const lastReload = useRef(0);
 
@@ -157,50 +101,125 @@ export function StudentRequestPage() {
 
   // O que importa para o menu é a orientação ativa: uma solicitação aceita cuja orientação já
   // foi encerrada não habilita nada. Um pedido de relê que falhou é tentado de novo na visita.
-  const hasAdvising = shown !== null && shown.advising !== null;
+  const hasAdvising = shownStatus !== null && shownStatus.advising !== null;
   useEffect(() => {
     if (!hasAdvising || refreshed.current) return;
     refreshed.current = true;
     void refreshUser();
   }, [hasAdvising, refreshUser]);
 
+  const changeSearch = (next: string) =>
+    setSearchParams((current) => {
+      const params = new URLSearchParams(current);
+      params.delete(PAGE_PARAM);
+      if (next === '') params.delete(SEARCH_PARAM);
+      else params.set(SEARCH_PARAM, next);
+      return params;
+    });
+  const retry = () => setReload((current) => current + 1);
+  const searching = search !== '';
+  // Sem nenhuma solicitação o próprio aviso já traz o link para a busca: não se repete acima.
+  const emptyList = shown !== null && shown.count === 0 && !searching;
+
   return (
     <Stack spacing={3}>
-      <Typography variant="h4" component="h1">
-        Minha solicitação
-      </Typography>
-      {shown === null && state.status === 'loading' && (
-        <Skeleton
-          variant="rounded"
-          height={160}
-          data-testid="request-skeleton"
-        />
+      <div>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Minhas solicitações
+        </Typography>
+        <Typography color="text.secondary">
+          Acompanhe o status das suas solicitações de orientação.
+        </Typography>
+      </div>
+      <UrlSearchField
+        label="Buscar professor"
+        placeholder="Digite o nome do professor..."
+        value={search}
+        onSearch={changeSearch}
+      />
+      {shownStatus !== null && !(emptyList && shownStatus.canRequest) && (
+        <Eligibility status={shownStatus} />
       )}
-      {shown === null && state.status === 'error' && (
-        <Stack spacing={2}>
-          <Alert severity="error">{state.message}</Alert>
-          <Button
-            onClick={() => setReload((current) => current + 1)}
-            sx={{ alignSelf: 'flex-start' }}
-          >
-            Tentar novamente
-          </Button>
-        </Stack>
-      )}
-      {shown !== null && state.status === 'error' && (
+      {shownStatus === null && status.status === 'error' && (
         <Alert
           severity="warning"
-          action={
-            <Button onClick={() => setReload((current) => current + 1)}>
-              Atualizar
-            </Button>
-          }
+          action={<Button onClick={retry}>Atualizar</Button>}
         >
-          Não foi possível atualizar a situação. O que aparece abaixo pode estar
-          desatualizado.
+          Não foi possível verificar se você pode solicitar orientação agora.
         </Alert>
       )}
-      {shown !== null && <Content status={shown} />}
+      {/* Só para leitor de tela: uma frase curta numa região própria, pois reler os cartões a cada busca seria ruído. */}
+      <VisuallyHidden role="status" aria-live="polite">
+        {shown !== null && shown.count > 0
+          ? countText(shown.count, searching)
+          : shown !== null && searching
+            ? 'Nenhuma solicitação encontrada'
+            : ''}
+      </VisuallyHidden>
+      <div ref={listTop}>
+        {shown === null && list.status === 'loading' && (
+          <Stack spacing={2} data-testid="request-skeleton" aria-hidden>
+            {[0, 1, 2].map((item) => (
+              <Skeleton key={item} variant="rounded" height={150} />
+            ))}
+          </Stack>
+        )}
+        {shown === null && list.status === 'error' && (
+          <Stack spacing={2}>
+            <Alert severity="error">{list.message}</Alert>
+            <Button onClick={retry} sx={{ alignSelf: 'flex-start' }}>
+              Tentar novamente
+            </Button>
+          </Stack>
+        )}
+        {shown !== null && list.status === 'error' && (
+          <Alert
+            severity="warning"
+            action={<Button onClick={retry}>Atualizar</Button>}
+            sx={{ mb: 2 }}
+          >
+            Não foi possível atualizar as solicitações. O que aparece abaixo
+            pode estar desatualizado.
+          </Alert>
+        )}
+        {shown !== null && shown.count === 0 && !searching && (
+          <Alert severity="info" action={<SearchLink />}>
+            Você ainda não enviou nenhuma solicitação de orientação.
+          </Alert>
+        )}
+        {shown !== null && shown.count === 0 && searching && (
+          <Stack spacing={2}>
+            <Alert severity="info">
+              Nenhuma solicitação encontrada para essa busca. Confira o nome do
+              professor e tente de novo.
+            </Alert>
+            <Button
+              onClick={() => changeSearch('')}
+              sx={{ alignSelf: 'flex-start' }}
+            >
+              Limpar busca
+            </Button>
+          </Stack>
+        )}
+        {shown !== null && shown.items.length > 0 && (
+          <Stack spacing={2}>
+            {shown.items.map((request) => (
+              <StudentRequestCard key={request.id} request={request} />
+            ))}
+          </Stack>
+        )}
+      </div>
+      <PagePagination
+        ariaLabel="Paginação das solicitações"
+        knownCount={knownCount}
+        pageSize={MY_REQUESTS_PAGE_SIZE}
+        lastPage={lastPage}
+        page={page}
+        onChange={(next) => {
+          setPage(next);
+          listTop.current?.scrollIntoView?.({ block: 'start' });
+        }}
+      />
     </Stack>
   );
 }

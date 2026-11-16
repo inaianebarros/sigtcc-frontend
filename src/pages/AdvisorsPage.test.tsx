@@ -696,7 +696,7 @@ describe('AdvisorsPage: confirmar e enviar a solicitação', () => {
     expect(button).toHaveFocus();
   });
 
-  it('ao confirmar, envia o pedido, dá o aviso de sucesso e leva para "Minha solicitação"', async () => {
+  it('ao confirmar, envia o pedido, dá o aviso de sucesso e leva para "Minhas solicitações"', async () => {
     const fetchMock = mockApi({
       ...advisorRoutes(THREE),
       [REQUEST]: { status: 201, body: { id: 5 } },
@@ -708,7 +708,7 @@ describe('AdvisorsPage: confirmar e enviar a solicitação', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Solicitar' }));
 
     expect(
-      await screen.findByRole('heading', { name: 'Minha solicitação' }),
+      await screen.findByRole('heading', { name: 'Minhas solicitações' }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/aluno/solicitacao',
@@ -747,7 +747,7 @@ describe('AdvisorsPage: confirmar e enviar a solicitação', () => {
     fireEvent.click(sending);
     expect(requestsTo(fetchMock, REQUEST)).toHaveLength(1);
     release?.();
-    await screen.findByRole('heading', { name: 'Minha solicitação' });
+    await screen.findByRole('heading', { name: 'Minhas solicitações' });
   });
 
   it('no 409, mostra a mensagem da API, fecha o diálogo e recarrega a elegibilidade e a lista', async () => {
@@ -826,7 +826,7 @@ describe('AdvisorsPage: celular e leitor de tela', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Solicitar' }));
 
     expect(
-      await screen.findByRole('heading', { name: 'Minha solicitação' }),
+      await screen.findByRole('heading', { name: 'Minhas solicitações' }),
     ).toBeInTheDocument();
   });
 });
@@ -1135,8 +1135,8 @@ describe('AdvisorsPage: filtro Mostrar todos', () => {
     await user.click(screen.getByRole('switch', SWITCH));
     await screen.findByText('Carla Dias');
 
-    await user.click(screen.getByRole('link', { name: 'Minha solicitação' }));
-    await screen.findByRole('heading', { name: 'Minha solicitação' });
+    await user.click(screen.getByRole('link', { name: 'Minhas solicitações' }));
+    await screen.findByRole('heading', { name: 'Minhas solicitações' });
     await user.click(screen.getByRole('link', { name: 'Orientadores' }));
 
     await screen.findByText('Ana Pereira');

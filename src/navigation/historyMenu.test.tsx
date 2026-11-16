@@ -17,7 +17,7 @@ beforeEach(() => {
 
 describe('item Histórico de orientações do menu lateral', () => {
   it.each([
-    ['student', '/aluno/historico', 'Minha solicitação'],
+    ['student', '/aluno/historico', 'Minhas solicitações'],
     ['teacher', '/professor/historico', 'Solicitações'],
   ] as const)(
     'o %s tem o item habilitado, sem orientação ativa, logo antes de Meu perfil',

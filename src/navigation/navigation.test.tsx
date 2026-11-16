@@ -26,7 +26,7 @@ describe('menu lateral por perfil', () => {
     setViewportWidth(DESKTOP_WIDTH);
   });
 
-  it('mostra ao aluno os itens Dashboard, Orientadores, Minha solicitação, Histórico de orientações e Meu perfil e abre no Dashboard', async () => {
+  it('mostra ao aluno os itens Dashboard, Orientadores, Minhas solicitações, Histórico de orientações e Meu perfil e abre no Dashboard', async () => {
     mockApi(sessionOf('student', { has_active_advising: false }));
 
     renderApp('/login');
@@ -40,7 +40,7 @@ describe('menu lateral por perfil', () => {
     ).toEqual([
       'Dashboard',
       'Orientadores',
-      'Minha solicitação',
+      'Minhas solicitações',
       'Histórico de orientações',
       'Meu perfil',
     ]);
