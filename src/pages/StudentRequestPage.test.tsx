@@ -338,6 +338,24 @@ describe('StudentRequestPage: elegibilidade no topo', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('o aviso fica abaixo do campo de busca, como na tela de orientadores', async () => {
+    setup([item(1, 'pending', { expires_at: '2026-11-09T15:00:00Z' })], {
+      request: null,
+      advising: null,
+      can_request: false,
+      blocked_reason: 'pending_request',
+    });
+
+    const notice = await screen.findByText(
+      /Você já tem uma solicitação aguardando resposta/,
+    );
+    const search = screen.getByLabelText('Buscar professor');
+
+    expect(
+      search.compareDocumentPosition(notice) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('avisa, com nova tentativa, quando não consegue saber se pode solicitar', async () => {
     mockApi({
       ...routes([item(1, 'rejected')]),

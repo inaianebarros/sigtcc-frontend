@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { StudentRequestCard } from '../advisingRequests/StudentRequestCard';
 import { blockedMessage } from '../advisors/blockedMessages';
+import { VisuallyHidden } from '../components/VisuallyHidden';
 import { PagePagination } from '../components/PagePagination';
 import { UrlSearchField } from '../components/UrlSearchField';
 import { useLastReady } from '../hooks/useLastReady';
@@ -130,6 +131,12 @@ export function StudentRequestPage() {
           Acompanhe o status das suas solicitações de orientação.
         </Typography>
       </div>
+      <UrlSearchField
+        label="Buscar professor"
+        placeholder="Digite o nome do professor..."
+        value={search}
+        onSearch={changeSearch}
+      />
       {shownStatus !== null && !(emptyList && shownStatus.canRequest) && (
         <Eligibility status={shownStatus} />
       )}
@@ -141,20 +148,14 @@ export function StudentRequestPage() {
           Não foi possível verificar se você pode solicitar orientação agora.
         </Alert>
       )}
-      <UrlSearchField
-        label="Buscar professor"
-        placeholder="Digite o nome do professor..."
-        value={search}
-        onSearch={changeSearch}
-      />
-      {/* Uma frase curta numa região própria: reler a lista inteira a cada página seria ruído. */}
-      <Typography role="status" aria-live="polite" color="text.secondary">
+      {/* Só para leitor de tela: uma frase curta numa região própria, pois reler os cartões a cada busca seria ruído. */}
+      <VisuallyHidden role="status" aria-live="polite">
         {shown !== null && shown.count > 0
           ? countText(shown.count, searching)
           : shown !== null && searching
             ? 'Nenhuma solicitação encontrada'
             : ''}
-      </Typography>
+      </VisuallyHidden>
       <div ref={listTop}>
         {shown === null && list.status === 'loading' && (
           <Stack spacing={2} data-testid="request-skeleton" aria-hidden>
