@@ -3,11 +3,11 @@ import {
   Button,
   IconButton,
   LinearProgress,
-  Paper,
   Stack,
   Tooltip,
   Typography,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/DeleteOutlined';
 import EditIcon from '@mui/icons-material/EditOutlined';
 import { useState } from 'react';
@@ -18,6 +18,7 @@ import { useLastReady } from '../hooks/useLastReady';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
+import { ProfileSection } from '../profile/ProfileSection';
 import { ApiError, messageForStatus } from '../services/apiError';
 import {
   deleteProposal,
@@ -29,9 +30,9 @@ import { ThesisProposalDialog } from './ThesisProposalDialog';
 import { ThesisProposalsView } from './ThesisProposalsView';
 
 /**
- * A seção "Propostas de tema" do perfil do professor (RF55, RF56, RN41): lista até 5, tabela
- * paginada de 5 em 5 a partir de 6, com a página na URL (RNF30). Adicionar, editar e remover são
- * salvos na hora, fora do formulário do perfil. Remover pede confirmação explícita (RNF21).
+ * A seção "Propostas de tema" da edição do perfil do professor (RF55, RF56, RN41): uma lista
+ * paginada de 5 em 5, com a página na URL (RNF30). Adicionar, editar e remover são salvos na hora,
+ * fora da barra de salvar do perfil. Remover pede confirmação explícita (RNF21).
  */
 export function ThesisProposalsSection() {
   const { notify } = useFeedback();
@@ -75,83 +76,89 @@ export function ThesisProposalsSection() {
   // Uma página além da última volta para a última válida: até lá não se desenha uma tabela vazia.
   const correctingPage = fallbackPage !== null;
   return (
-    <Paper
-      component="section"
-      aria-labelledby="thesis-proposals-title"
-      sx={{ maxWidth: 720, mx: 'auto', mt: 3, p: { xs: 2, sm: 4 } }}
-    >
-      <Stack spacing={2}>
-        <Stack
-          direction="row"
-          sx={{ alignItems: 'center', justifyContent: 'space-between', gap: 2 }}
-        >
-          <Typography id="thesis-proposals-title" variant="h5" component="h2">
-            Propostas de tema
+    <ProfileSection
+      id="propostas-de-tema"
+      title="Propostas de tema"
+      description="Os trabalhos que você deseja orientar, para os alunos do seu curso os verem."
+      aside={
+        shown !== null && shown.count > 0 ? (
+          <Typography variant="body2" color="text.secondary">
+            {shown.count === 1
+              ? '1 proposta cadastrada'
+              : `${shown.count} propostas cadastradas`}
           </Typography>
-          <Button variant="outlined" onClick={() => formDialog.show()}>
-            Adicionar proposta
+        ) : undefined
+      }
+    >
+      <Button
+        variant="outlined"
+        startIcon={<AddIcon />}
+        onClick={() => formDialog.show()}
+        fullWidth
+      >
+        Adicionar proposta
+      </Button>
+      {(list.status === 'loading' || correctingPage) && (
+        <LinearProgress aria-label="Carregando as propostas de tema" />
+      )}
+      {list.status === 'error' && (
+        <Stack spacing={2}>
+          <Alert severity="error">{list.message}</Alert>
+          <Button onClick={refresh} sx={{ alignSelf: 'flex-start' }}>
+            Tentar novamente
           </Button>
         </Stack>
-        {(list.status === 'loading' || correctingPage) && (
-          <LinearProgress aria-label="Carregando as propostas de tema" />
-        )}
-        {list.status === 'error' && (
-          <Stack spacing={2}>
-            <Alert severity="error">{list.message}</Alert>
-            <Button onClick={refresh} sx={{ alignSelf: 'flex-start' }}>
-              Tentar novamente
+      )}
+      {list.status === 'ready' && list.data.count === 0 && (
+        <Alert
+          severity="info"
+          action={
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => formDialog.show()}
+            >
+              Cadastrar a primeira
             </Button>
-          </Stack>
+          }
+        >
+          Você ainda não cadastrou propostas de tema. Cadastre os trabalhos que
+          deseja orientar, para os alunos do seu curso as verem.
+        </Alert>
+      )}
+      {shown !== null &&
+        list.status !== 'error' &&
+        shown.count > 0 &&
+        !correctingPage && (
+          <ThesisProposalsView
+            items={shown.items}
+            count={shown.count}
+            page={page}
+            onPage={setPage}
+            renderActions={(proposal) => (
+              <Stack direction="row" sx={{ flexShrink: 0 }}>
+                <Tooltip title="Editar proposta">
+                  <IconButton
+                    aria-label={`Editar a proposta "${proposal.title}"`}
+                    onClick={() => formDialog.show(proposal)}
+                    sx={{ minWidth: 44, minHeight: 44 }}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Remover proposta">
+                  <IconButton
+                    aria-label={`Remover a proposta "${proposal.title}"`}
+                    onClick={() => removeDialog.show(proposal)}
+                    sx={{ minWidth: 44, minHeight: 44 }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            )}
+          />
         )}
-        {list.status === 'ready' && list.data.count === 0 && (
-          <Alert
-            severity="info"
-            action={
-              <Button
-                color="inherit"
-                size="small"
-                onClick={() => formDialog.show()}
-              >
-                Cadastrar a primeira
-              </Button>
-            }
-          >
-            Você ainda não cadastrou propostas de tema. Cadastre os trabalhos
-            que deseja orientar, para os alunos do seu curso as verem.
-          </Alert>
-        )}
-        {shown !== null &&
-          list.status !== 'error' &&
-          shown.count > 0 &&
-          !correctingPage && (
-            <ThesisProposalsView
-              items={shown.items}
-              count={shown.count}
-              page={page}
-              onPage={setPage}
-              renderActions={(proposal) => (
-                <Stack direction="row" sx={{ flexShrink: 0 }}>
-                  <Tooltip title="Editar proposta">
-                    <IconButton
-                      aria-label={`Editar a proposta "${proposal.title}"`}
-                      onClick={() => formDialog.show(proposal)}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Remover proposta">
-                    <IconButton
-                      aria-label={`Remover a proposta "${proposal.title}"`}
-                      onClick={() => removeDialog.show(proposal)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-              )}
-            />
-          )}
-      </Stack>
       {formSlot && (
         <ThesisProposalDialog
           key={`form-${formSlot.openCount}`}
@@ -186,6 +193,6 @@ export function ThesisProposalsSection() {
           onExited={removeDialog.unmount}
         />
       )}
-    </Paper>
+    </ProfileSection>
   );
 }

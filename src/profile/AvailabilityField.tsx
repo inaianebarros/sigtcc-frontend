@@ -1,8 +1,9 @@
 import {
+  FormControl,
   FormControlLabel,
   FormHelperText,
-  Stack,
-  Switch,
+  Radio,
+  RadioGroup,
   Typography,
 } from '@mui/material';
 import { Controller, useFormContext } from 'react-hook-form';
@@ -15,32 +16,42 @@ export function AvailabilityField() {
     formState: { errors },
   } = useFormContext<Pick<TeacherFormValues, 'isAvailable'>>();
   return (
-    <Stack spacing={0.5}>
+    <FormControl error={Boolean(errors.isAvailable)}>
       <Controller
         name="isAvailable"
         control={control}
         render={({ field }) => (
-          <FormControlLabel
-            label="Disponível para orientar"
-            control={
-              <Switch
-                checked={field.value}
-                onChange={(event) => field.onChange(event.target.checked)}
-                onBlur={field.onBlur}
-                slotProps={{ input: { ref: field.ref } }}
-              />
+          <RadioGroup
+            row
+            name={field.name}
+            aria-label="Disponibilidade para orientação"
+            value={field.value ? 'available' : 'unavailable'}
+            onChange={(event) =>
+              field.onChange(event.target.value === 'available')
             }
-          />
+            onBlur={field.onBlur}
+          >
+            <FormControlLabel
+              value="available"
+              label="Disponível"
+              control={<Radio slotProps={{ input: { ref: field.ref } }} />}
+            />
+            <FormControlLabel
+              value="unavailable"
+              label="Indisponível"
+              control={<Radio />}
+            />
+          </RadioGroup>
         )}
       />
       {errors.isAvailable && (
-        <FormHelperText error>{errors.isAvailable.message}</FormHelperText>
+        <FormHelperText>{errors.isAvailable.message}</FormHelperText>
       )}
       <Typography variant="body2" color="text.secondary">
-        Desligar a disponibilidade ou retirar um curso não afeta as orientações
-        ativas nem as solicitações pendentes: só impede que novos alunos
-        solicitem orientação.
+        Ficar indisponível ou retirar um curso não afeta as orientações ativas
+        nem as solicitações pendentes: só impede que novos alunos solicitem
+        orientação.
       </Typography>
-    </Stack>
+    </FormControl>
   );
 }

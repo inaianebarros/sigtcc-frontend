@@ -104,7 +104,9 @@ export function ThesisProposalDialog({
           component="form"
           noValidate
           onSubmit={(event) => {
+            // O diálogo está dentro do formulário do perfil na árvore do React: o envio não pode subir.
             event.preventDefault();
+            event.stopPropagation();
             setTouched(true);
             void submit();
           }}
