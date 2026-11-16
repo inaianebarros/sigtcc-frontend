@@ -70,9 +70,19 @@ export function requestRoutes(
       const status = url.searchParams.get('status');
       const limit = Number(url.searchParams.get('limit') ?? 20);
       const offset = Number(url.searchParams.get('offset') ?? 0);
-      const matching = state.filter(
-        (item) => !status || item.status === status,
-      );
+      const name = (url.searchParams.get('name') ?? '')
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .toLowerCase();
+      const matching = state
+        .filter((item) => !status || item.status === status)
+        .filter((item) =>
+          item.student.full_name
+            .normalize('NFD')
+            .replace(/\p{Diacritic}/gu, '')
+            .toLowerCase()
+            .includes(name),
+        );
       return {
         body: {
           items: matching.slice(offset, offset + limit),

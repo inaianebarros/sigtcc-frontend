@@ -12,6 +12,8 @@ interface UrlSearchFieldProps {
   /** A busca que está na URL. */
   value: string;
   onSearch: (search: string) => void;
+  /** Ocupa o espaço que sobra na linha, quando há outro campo ao lado. */
+  grow?: boolean;
 }
 
 /**
@@ -23,6 +25,7 @@ export function UrlSearchField({
   placeholder,
   value,
   onSearch,
+  grow = false,
 }: UrlSearchFieldProps) {
   const [text, setText] = useState(value);
   const [seenValue, setSeenValue] = useState(value);
@@ -46,7 +49,7 @@ export function UrlSearchField({
       value={text}
       onChange={(event) => setText(event.target.value)}
       slotProps={{ htmlInput: { maxLength: MAX_SEARCH_LENGTH } }}
-      sx={{ minWidth: { sm: 280 } }}
+      sx={{ minWidth: { sm: 280 }, flexGrow: grow ? 1 : 0 }}
     />
   );
 }

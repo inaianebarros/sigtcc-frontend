@@ -5,15 +5,8 @@ import { OriginLink } from '../navigation/OriginLink';
 import { studentAdvisorPath } from '../navigation/paths';
 import type { MyRequestItem } from '../services/advisorService';
 import { RequestStatusChip } from './requestStatus';
+import { statusChipColor } from './requestStatusDisplay';
 import { requestDateLines } from './requestDateLines';
-
-// O status vem do servidor como texto: um valor novo cai no neutro e não derruba a tela.
-const STATUS_COLOR: Record<string, 'default' | 'primary' | 'warning'> = {
-  pending: 'warning',
-  accepted: 'primary',
-  rejected: 'default',
-  unanswered: 'default',
-};
 
 /**
  * Uma solicitação do aluno (RF16): o professor, com o link para o perfil dele e o instituto, as
@@ -47,7 +40,7 @@ export function StudentRequestCard({ request }: { request: MyRequestItem }) {
           <Stack direction="row" useFlexGap sx={{ flexWrap: 'wrap', gap: 1 }}>
             <RequestStatusChip
               status={request.status}
-              color={STATUS_COLOR[request.status] ?? 'default'}
+              color={statusChipColor(request.status)}
             />
             {request.status === 'accepted' && advising && (
               <Chip

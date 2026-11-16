@@ -1,19 +1,18 @@
 import {
   Alert,
   Button,
-  FormControl,
-  FormControlLabel,
-  FormLabel,
-  Radio,
-  RadioGroup,
+  MenuItem,
   Skeleton,
   Stack,
+  TextField,
   Typography,
 } from '@mui/material';
 import { useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { PagePagination } from '../components/PagePagination';
+import { UrlSearchField } from '../components/UrlSearchField';
+import { VisuallyHidden } from '../components/VisuallyHidden';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
@@ -71,6 +70,7 @@ const FILTERS: readonly {
 ];
 
 const FILTER_PARAM = 'situacao';
+const SEARCH_PARAM = 'busca';
 
 /** Só uma das cinco situações vale; qualquer outra coisa na URL é "Pendentes", o padrão. */
 function filterFrom(value: string | null): RequestFilter {
@@ -111,7 +111,16 @@ export function TeacherRequestsPage() {
   // os restaura. "Pendentes", o padrão, e a primeira página ficam sem parâmetro.
   const [searchParams, setSearchParams] = useSearchParams();
   const filter = filterFrom(searchParams.get(FILTER_PARAM));
+  const search = (searchParams.get(SEARCH_PARAM) ?? '').trim();
   const [page, setPage] = useUrlPage();
+  const changeSearch = (next: string) =>
+    setSearchParams((current) => {
+      const params = new URLSearchParams(current);
+      params.delete(PAGE_PARAM);
+      if (next === '') params.delete(SEARCH_PARAM);
+      else params.set(SEARCH_PARAM, next);
+      return params;
+    });
   const chooseFilter = (next: RequestFilter) =>
     setSearchParams((current) => {
       const params = new URLSearchParams(current);
@@ -121,8 +130,11 @@ export function TeacherRequestsPage() {
       return params;
     });
   const listTop = useRef<HTMLDivElement>(null);
-  const listKey = `${filter}|${page}|${listReload}`;
-  const list = useLoad(() => listReceivedRequests({ filter, page }), listKey);
+  const listKey = `${filter}|${page}|${search}|${listReload}`;
+  const list = useLoad(
+    () => listReceivedRequests({ filter, page, name: search }),
+    listKey,
+  );
   const { notify } = useFeedback();
   const { refreshUser } = useSession();
   const [answering, setAnswering] = useState<{
@@ -186,13 +198,29 @@ export function TeacherRequestsPage() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h4" component="h1">
-        Solicitações
-      </Typography>
-      <FormControl component="fieldset">
-        <FormLabel component="legend">Situação</FormLabel>
-        <RadioGroup
-          row
+      <div>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Solicitações
+        </Typography>
+        <Typography color="text.secondary">
+          Responda às solicitações de orientação dos seus alunos.
+        </Typography>
+      </div>
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={2}
+        sx={{ alignItems: { sm: 'flex-start' } }}
+      >
+        <UrlSearchField
+          grow
+          label="Buscar aluno"
+          placeholder="Digite o nome do aluno..."
+          value={search}
+          onSearch={changeSearch}
+        />
+        <TextField
+          select
+          label="Situação"
           value={filter}
           onChange={(event) => {
             const chosen = FILTERS.find(
@@ -200,23 +228,21 @@ export function TeacherRequestsPage() {
             );
             if (chosen) chooseFilter(chosen.value);
           }}
+          sx={{ minWidth: { sm: 200 } }}
         >
           {FILTERS.map((item) => (
-            <FormControlLabel
-              key={item.value}
-              value={item.value}
-              control={<Radio />}
-              label={item.label}
-            />
+            <MenuItem key={item.value} value={item.value}>
+              {item.label}
+            </MenuItem>
           ))}
-        </RadioGroup>
-      </FormControl>
-      {/* Uma frase curta numa região própria: reler a lista inteira a cada filtro seria ruído. */}
-      <Typography role="status" aria-live="polite" color="text.secondary">
+        </TextField>
+      </Stack>
+      {/* Só para leitor de tela: uma frase curta numa região própria, pois reler os cartões a cada filtro seria ruído. */}
+      <VisuallyHidden role="status" aria-live="polite">
         {list.status === 'ready' && list.data.count > 0
           ? foundText(list.data.count)
           : ''}
-      </Typography>
+      </VisuallyHidden>
       <div ref={listTop}>
         {list.status === 'loading' && (
           <Stack spacing={2} data-testid="requests-skeleton" aria-hidden>
@@ -236,8 +262,22 @@ export function TeacherRequestsPage() {
             </Button>
           </Stack>
         )}
-        {list.status === 'ready' && list.data.count === 0 && (
+        {list.status === 'ready' && list.data.count === 0 && search === '' && (
           <Alert severity="info">{emptyMessage}</Alert>
+        )}
+        {list.status === 'ready' && list.data.count === 0 && search !== '' && (
+          <Stack spacing={2}>
+            <Alert severity="info">
+              Nenhuma solicitação encontrada para essa busca. Confira o nome do
+              aluno e tente de novo.
+            </Alert>
+            <Button
+              onClick={() => changeSearch('')}
+              sx={{ alignSelf: 'flex-start' }}
+            >
+              Limpar busca
+            </Button>
+          </Stack>
         )}
         {list.status === 'ready' && list.data.items.length > 0 && (
           <Stack spacing={2}>

@@ -48,3 +48,15 @@ export function statusDisplay(status: string): StatusDisplay {
     UNKNOWN_STATUS
   );
 }
+
+type ChipColor = 'default' | 'primary' | 'warning';
+
+/**
+ * A cor do chip de situação nas listas: pendente em âmbar, aceita em teal, as demais neutras. O
+ * status vem do servidor como texto: um valor novo cai no neutro e não derruba a tela.
+ */
+export function statusChipColor(status: string): ChipColor {
+  if (status === 'pending') return 'warning';
+  if (status === 'accepted') return 'primary';
+  return 'default';
+}
