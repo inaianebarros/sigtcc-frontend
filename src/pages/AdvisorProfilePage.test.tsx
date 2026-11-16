@@ -141,7 +141,11 @@ describe('AdvisorProfilePage: o conteúdo', () => {
       'Redes de Computadores',
       'Engenharia de Software, em comum',
     ]);
-    expect(main().textContent).not.toMatch(/áreas? em comum/);
+    // Nenhuma frase à vista: a contagem existe só para o leitor de tela.
+    expect(list).toHaveAccessibleDescription('2 áreas em comum');
+    for (const text of screen.queryAllByText(/áreas? em comum/i)) {
+      expect(text).toHaveStyle({ position: 'absolute' });
+    }
   });
 
   it('mostra os artigos, com o link externo em nova aba e o aviso acessível quando há endereço', async () => {
@@ -504,6 +508,47 @@ describe('AdvisorProfilePage: acesso e celular', () => {
   });
 });
 
+describe('AdvisorProfilePage: contagens e divisores', () => {
+  it('mostra a contagem de artigos no título da seção e não a mostra quando é zero', async () => {
+    open([
+      makeAdvisorProfile(7, {
+        full_name: 'Marta Rocha',
+        articles: [
+          { title: 'Redes definidas por software', year: 2025, url: '' },
+          { title: 'Notas de aula', year: 2023, url: '' },
+        ],
+      }),
+    ]);
+    await loaded();
+
+    const articles = screen.getByRole('region', { name: 'Artigos publicados' });
+    expect(within(articles).getByText('2 artigos')).toBeVisible();
+  });
+
+  it('sem artigos não mostra "0 artigos"', async () => {
+    open([makeAdvisorProfile(7, { full_name: 'Marta Rocha', articles: [] })]);
+    await loaded();
+
+    expect(screen.queryByText(/\d+ artigos?/)).not.toBeInTheDocument();
+  });
+
+  it('separa o cabeçalho e cada seção por uma linha fina', async () => {
+    open();
+    await loaded();
+
+    for (const name of [
+      'Cursos vinculados',
+      'Áreas de interesse',
+      'Artigos publicados',
+      'Solicitar orientação',
+    ]) {
+      expect(screen.getByRole('region', { name })).toHaveStyle({
+        borderTopStyle: 'solid',
+      });
+    }
+  });
+});
+
 describe('AdvisorProfilePage: o "Voltar"', () => {
   const FROM_ENTRY = (from: unknown) => [
     { pathname: '/aluno/orientadores/7', state: { from } },
@@ -532,9 +577,24 @@ describe('AdvisorProfilePage: o "Voltar"', () => {
     );
     await loaded();
 
-    expect(screen.getByRole('link', { name: 'Voltar' })).toHaveAttribute(
+    expect(
+      screen.getByRole('link', { name: 'Voltar para os orientadores' }),
+    ).toHaveAttribute(
       'href',
       '/aluno/orientadores?nome=Marta&show_all=true&pagina=2',
+    );
+  });
+
+  it.each([
+    ['/aluno/atividades', 'Voltar para as atividades'],
+    ['/aluno/historico', 'Voltar para o histórico'],
+  ])('a origem %s diz "%s"', async (from, label) => {
+    open(undefined, '/aluno/orientadores/7', {}, { entries: FROM_ENTRY(from) });
+    await loaded();
+
+    expect(screen.getByRole('link', { name: label })).toHaveAttribute(
+      'href',
+      from,
     );
   });
 
@@ -604,7 +664,9 @@ describe('Link para o perfil na lista de orientadores', () => {
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/aluno/orientadores/7',
     );
-    await user.click(screen.getByRole('link', { name: 'Voltar' }));
+    await user.click(
+      screen.getByRole('link', { name: 'Voltar para os orientadores' }),
+    );
 
     expect(await screen.findByText('Marta Rocha')).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(

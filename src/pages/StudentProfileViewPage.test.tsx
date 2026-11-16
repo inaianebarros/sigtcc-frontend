@@ -324,6 +324,45 @@ describe('StudentProfileViewPage: destaque das áreas e foco', () => {
   });
 });
 
+describe('StudentProfileViewPage: contagem e divisores', () => {
+  it('mostra a contagem de artigos no título da seção, e não "0 artigos"', async () => {
+    open([
+      makeLinkedStudent(7, {
+        full_name: 'Ana Souza',
+        articles: [
+          { title: 'Primeiro', year: 2025, url: '' },
+          { title: 'Segundo', year: 2024, url: '' },
+        ],
+      }),
+    ]);
+    await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
+
+    expect(
+      within(
+        screen.getByRole('region', { name: 'Artigos publicados' }),
+      ).getByText('2 artigos'),
+    ).toBeVisible();
+  });
+
+  it('sem artigos não mostra a contagem', async () => {
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
+
+    expect(screen.queryByText(/\d+ artigos?/)).not.toBeInTheDocument();
+  });
+
+  it('separa o cabeçalho e cada seção por uma linha fina', async () => {
+    open();
+    await screen.findByRole('heading', { level: 1, name: 'Ana Souza' });
+
+    for (const name of ['Áreas de interesse', 'Artigos publicados']) {
+      expect(screen.getByRole('region', { name })).toHaveStyle({
+        borderTopStyle: 'solid',
+      });
+    }
+  });
+});
+
 describe('StudentProfileViewPage: aluno não encontrado e erros', () => {
   it.each(['abc', '0', '1.5', '-3'])(
     'o id "%s" não é um inteiro: mostra "Aluno não encontrado" sem chamar a API',

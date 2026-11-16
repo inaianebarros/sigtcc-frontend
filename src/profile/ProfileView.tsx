@@ -120,7 +120,13 @@ export function ProfileView<T>({
       ref={container}
       spacing={3}
       aria-busy={profileLayout ? loading : undefined}
-      sx={{ maxWidth: 720, mx: 'auto' }}
+      sx={[
+        { maxWidth: 720, mx: 'auto' },
+        // Uma linha fina entre o cabeçalho e as seções e entre as seções, como na edição do perfil.
+        profileLayout && {
+          '& > section': { borderTop: 1, borderColor: 'divider', pt: 3 },
+        },
+      ]}
     >
       <BackLink to={backPath} label={backLabel} plain={!profileLayout} />
       {profileLayout && (

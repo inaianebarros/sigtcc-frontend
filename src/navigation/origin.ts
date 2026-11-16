@@ -40,10 +40,13 @@ const BACK_LABELS: Record<string, string> = {
   '/professor/solicitacoes': 'Voltar para as solicitações',
   '/professor/atividades': 'Voltar para as atividades',
   '/professor/historico': 'Voltar para o histórico',
+  '/aluno/orientadores': 'Voltar para os orientadores',
+  '/aluno/atividades': 'Voltar para as atividades',
+  '/aluno/historico': 'Voltar para o histórico',
 };
 
-/** O texto do "Voltar" do professor: diz para qual lista leva, e só "Voltar" quando não se sabe. */
-export function teacherBackLabel(origin: string | null): string {
+/** O texto do "Voltar" de um perfil: diz para qual lista leva, e só "Voltar" quando não se sabe. */
+export function backLabelFor(origin: string | null): string {
   const pathname = origin?.split('?')[0];
   return (pathname && BACK_LABELS[pathname]) || 'Voltar';
 }

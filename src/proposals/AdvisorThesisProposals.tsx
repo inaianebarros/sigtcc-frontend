@@ -1,16 +1,12 @@
-import {
-  Alert,
-  Button,
-  LinearProgress,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Alert, Button, LinearProgress, Stack } from '@mui/material';
 import { useState } from 'react';
 import { VisuallyHidden } from '../components/VisuallyHidden';
 import { useLastReady } from '../hooks/useLastReady';
 import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
+import { ProfileSection } from '../profile/ProfileSection';
+import { SectionCount } from '../profile/SectionCount';
 import {
   listAdvisorProposals,
   THESIS_PROPOSALS_PAGE_SIZE,
@@ -60,14 +56,17 @@ export function AdvisorThesisProposals({ teacherId }: { teacherId: number }) {
     Math.ceil(shown.count / THESIS_PROPOSALS_PAGE_SIZE),
   );
   return (
-    <Stack
-      component="section"
-      aria-labelledby="advisor-proposals-title"
-      spacing={1}
+    <ProfileSection
+      id="advisor-proposals"
+      title="Propostas de tema"
+      aside={
+        <SectionCount
+          count={shown.count}
+          singular="proposta"
+          plural="propostas"
+        />
+      }
     >
-      <Typography id="advisor-proposals-title" variant="h3" component="h2">
-        Propostas de tema
-      </Typography>
       {fallbackPage === null && (
         <ProposalCards
           items={shown.items}
@@ -83,6 +82,6 @@ export function AdvisorThesisProposals({ teacherId }: { teacherId: number }) {
             : ''}
         </span>
       </VisuallyHidden>
-    </Stack>
+    </ProfileSection>
   );
 }

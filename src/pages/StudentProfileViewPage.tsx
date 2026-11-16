@@ -1,13 +1,15 @@
-import { Stack, Typography } from '@mui/material';
+import { Typography } from '@mui/material';
 import { useId, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { useLoad } from '../hooks/useLoad';
-import { originPath, teacherBackLabel } from '../navigation/origin';
+import { backLabelFor, originPath } from '../navigation/origin';
 import { positiveIntFrom } from '../navigation/positiveInt';
 import { paths } from '../navigation/paths';
 import { AreaChips } from '../profile/AreaChips';
 import { ArticleList } from '../profile/ArticleList';
+import { ProfileSection } from '../profile/ProfileSection';
 import { ProfileView } from '../profile/ProfileView';
+import { SectionCount } from '../profile/SectionCount';
 import { StudentProfileHeader } from '../profile/StudentProfileHeader';
 import { getLinkedStudentProfile } from '../services/linkedStudentService';
 
@@ -30,7 +32,7 @@ export function StudentProfileViewPage() {
   return (
     <ProfileView
       backPath={backPath}
-      backLabel={teacherBackLabel(origin)}
+      backLabel={backLabelFor(origin)}
       notFoundTitle="Aluno não encontrado"
       genericTitle="Perfil do aluno"
       skeletonTestId="student-profile-skeleton"
@@ -49,10 +51,7 @@ export function StudentProfileViewPage() {
     >
       {(student) => (
         <>
-          <Stack spacing={1.5} component="section" aria-labelledby={areasId}>
-            <Typography id={areasId} variant="h3" component="h2">
-              Áreas de interesse
-            </Typography>
+          <ProfileSection id={areasId} title="Áreas de interesse">
             {student.areas.length === 0 ? (
               <Typography color="text.secondary">
                 Este aluno ainda não cadastrou áreas de interesse.
@@ -63,20 +62,27 @@ export function StudentProfileViewPage() {
                 areas={[...student.areas].sort(
                   (a, b) => Number(b.isCommon) - Number(a.isCommon),
                 )}
-                labelledBy={areasId}
+                labelledBy={`${areasId}-title`}
                 announceCount
               />
             )}
-          </Stack>
-          <Stack spacing={1.5} component="section" aria-labelledby={articlesId}>
-            <Typography id={articlesId} variant="h3" component="h2">
-              Artigos publicados
-            </Typography>
+          </ProfileSection>
+          <ProfileSection
+            id={articlesId}
+            title="Artigos publicados"
+            aside={
+              <SectionCount
+                count={student.articles.length}
+                singular="artigo"
+                plural="artigos"
+              />
+            }
+          >
             <ArticleList
               articles={student.articles}
               emptyText="Este aluno ainda não cadastrou artigos."
             />
-          </Stack>
+          </ProfileSection>
         </>
       )}
     </ProfileView>
