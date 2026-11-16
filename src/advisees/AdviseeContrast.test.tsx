@@ -3,7 +3,9 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { contrast, opaque } from '../test/contrast';
+import type { Advisee } from '../services/adviseeService';
 import { AdviseeActionsMenu } from './AdviseeActionsMenu';
+import { AdviseeCard } from './AdviseeCard';
 import { theme } from '../theme';
 
 type Rgb = [number, number, number];
@@ -21,7 +23,6 @@ function colorsOf(element: HTMLElement, surface: Rgb) {
 
 describe('Orientandos: contraste mínimo de 4,5:1 (WCAG 2.1 AA)', () => {
   it.each([
-    ['Ativa', 'success'],
     ['Pendentes: 1', 'default'],
     ['Em andamento: 2', 'primary'],
     ['Em revisão: 3', 'secondary'],
@@ -69,5 +70,55 @@ describe('Orientandos: contraste mínimo de 4,5:1 (WCAG 2.1 AA)', () => {
     );
 
     expect(contrast(text, background)).toBeGreaterThanOrEqual(MINIMUM);
+  });
+
+  describe('destaque da contagem "Em revisão" (RN21)', () => {
+    const advisee = (inReview: number): Advisee => ({
+      advisingId: 1,
+      student: {
+        id: 101,
+        fullName: 'Ana Souza',
+        course: { id: 10, name: 'Ciência da Computação' },
+      },
+      startedAt: '2026-11-02T14:30:00Z',
+      thesisTopic: null,
+      activities: { pending: 0, inProgress: 2, inReview, completed: 0 },
+    });
+    const chipOf = (label: string) => screen.getByText(label).parentElement!;
+    const renderCard = (inReview: number) =>
+      render(
+        <ThemeProvider theme={theme}>
+          <AdviseeCard advisee={advisee(inReview)} />
+        </ThemeProvider>,
+      );
+
+    it('com contagem acima de zero, só a "Em revisão" ganha o fundo suave e lê-se a 4,5:1', () => {
+      renderCard(3);
+
+      const filled = colorsOf(chipOf('Em revisão: 3'), WHITE);
+
+      expect(
+        getComputedStyle(chipOf('Em revisão: 3')).backgroundColor,
+      ).not.toBe('rgba(0, 0, 0, 0)');
+      expect(getComputedStyle(chipOf('Em andamento: 2')).backgroundColor).toBe(
+        'rgba(0, 0, 0, 0)',
+      );
+      expect(contrast(filled.text, filled.background)).toBeGreaterThanOrEqual(
+        MINIMUM,
+      );
+    });
+
+    it('as contagens zeradas ficam neutras e ainda se leem a 4,5:1', () => {
+      renderCard(0);
+
+      const zero = colorsOf(chipOf('Pendentes: 0'), WHITE);
+
+      expect(getComputedStyle(chipOf('Em revisão: 0')).backgroundColor).toBe(
+        'rgba(0, 0, 0, 0)',
+      );
+      expect(contrast(zero.text, zero.background)).toBeGreaterThanOrEqual(
+        MINIMUM,
+      );
+    });
   });
 });

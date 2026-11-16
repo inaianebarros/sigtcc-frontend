@@ -90,7 +90,8 @@ export async function listAdvisees(
 /**
  * Os orientandos da tela "Meus orientandos" (RF33), de {@link ADVISEES_SCREEN_PAGE_SIZE} em
  * {@link ADVISEES_SCREEN_PAGE_SIZE}. `text` filtra pelo nome do aluno ou pelo tema do TCC, no
- * servidor, sem diferenciar acentos nem maiúsculas (parâmetro `q`).
+ * servidor, sem diferenciar acentos nem maiúsculas (parâmetro `q`). Quem tem atividade em revisão
+ * vem primeiro (RN21, parâmetro `review_first`), do início mais recente ao mais antigo em cada grupo.
  */
 export async function listAdviseesByText(
   page: number,
@@ -99,6 +100,7 @@ export async function listAdviseesByText(
   const params = new URLSearchParams({
     limit: String(ADVISEES_SCREEN_PAGE_SIZE),
     offset: String((page - 1) * ADVISEES_SCREEN_PAGE_SIZE),
+    review_first: 'true',
   });
   if (text) params.set('q', text);
   return fetchAdvisees(params);

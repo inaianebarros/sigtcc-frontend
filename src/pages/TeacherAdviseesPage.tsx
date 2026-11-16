@@ -17,6 +17,7 @@ import {
 } from '../advisees/EndAdvisingDialog';
 import { PagePagination } from '../components/PagePagination';
 import { UrlSearchField } from '../components/UrlSearchField';
+import { VisuallyHidden } from '../components/VisuallyHidden';
 import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
@@ -157,7 +158,7 @@ export function TeacherAdviseesPage() {
       <div>
         <Stack
           direction="row"
-          sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 2 }}
+          sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 1 }}
         >
           <Typography variant="h4" component="h1" ref={heading} tabIndex={-1}>
             Meus orientandos
@@ -176,17 +177,17 @@ export function TeacherAdviseesPage() {
           onSearch={changeSearch}
         />
       )}
-      {/* Uma frase curta numa região própria: reler a lista inteira a cada página seria ruído. */}
-      <Typography role="status" aria-live="polite" color="text.secondary">
+      {/* Só para leitor de tela: uma frase curta numa região própria, pois reler a lista a cada página seria ruído. */}
+      <VisuallyHidden role="status" aria-live="polite">
         {list.status === 'ready' && list.data.count > 0
           ? foundText(list.data.count)
           : ''}
-      </Typography>
+      </VisuallyHidden>
       <div ref={listTop}>
         {list.status === 'loading' && (
           <Stack spacing={2} data-testid="advisees-skeleton" aria-hidden>
             {[0, 1, 2].map((item) => (
-              <Skeleton key={item} variant="rounded" height={170} />
+              <Skeleton key={item} variant="rounded" height={240} />
             ))}
           </Stack>
         )}

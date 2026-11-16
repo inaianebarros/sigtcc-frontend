@@ -17,7 +17,11 @@ function cardOf(name: string) {
 function listParams(fetchMock: ReturnType<typeof mockApi>) {
   return requestsTo(fetchMock, LIST).map(([input]) => {
     const params = new URL(String(input), 'http://localhost').searchParams;
-    return { limit: params.get('limit'), offset: params.get('offset') };
+    return {
+      limit: params.get('limit'),
+      offset: params.get('offset'),
+      review_first: params.get('review_first'),
+    };
   });
 }
 
@@ -49,7 +53,7 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
     expect(
       screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent),
     ).toEqual(['Orientando 7', 'Orientando 3', 'Orientando 5']);
-    expect(screen.getByText('3 orientandos encontrados')).toBeVisible();
+    expect(screen.getByText('3 orientandos encontrados')).toBeInTheDocument();
   });
 
   it('mostra o subtítulo e o chip com o total geral de orientandos ativos', async () => {
@@ -84,7 +88,7 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
     const card = cardOf('Ana Souza');
 
     expect(within(card).getByText('Sistemas de Informação')).toBeVisible();
-    expect(within(card).getByText('Ativa')).toBeVisible();
+    expect(within(card).queryByText('Ativa')).not.toBeInTheDocument();
     expect(
       within(card).getByText('Início da orientação: 02/11/2026'),
     ).toBeVisible();
@@ -175,7 +179,9 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
   it('uma só orientação diz "1 orientando encontrado"', async () => {
     setup([makeAdvisee(1)]);
 
-    expect(await screen.findByText('1 orientando encontrado')).toBeVisible();
+    expect(
+      await screen.findByText('1 orientando encontrado'),
+    ).toBeInTheDocument();
   });
 });
 
@@ -194,7 +200,9 @@ describe('TeacherAdviseesPage: paginação com a página na URL', () => {
     expect(
       within(pages).getAllByRole('button', { name: /^Ir para a página \d+$/ }),
     ).toHaveLength(4);
-    expect(listParams(fetchMock)).toEqual([{ limit: '10', offset: '0' }]);
+    expect(listParams(fetchMock)).toEqual([
+      { limit: '10', offset: '0', review_first: 'true' },
+    ]);
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/professor\/orientandos$/,
     );
@@ -215,7 +223,11 @@ describe('TeacherAdviseesPage: paginação com a página na URL', () => {
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/professor/orientandos?pagina=5',
     );
-    expect(listParams(fetchMock).at(-1)).toEqual({ limit: '10', offset: '40' });
+    expect(listParams(fetchMock).at(-1)).toEqual({
+      limit: '10',
+      offset: '40',
+      review_first: 'true',
+    });
     expect(scrollIntoView).toHaveBeenCalled();
   });
 
@@ -224,7 +236,9 @@ describe('TeacherAdviseesPage: paginação com a página na URL', () => {
 
     expect(await screen.findByText('Orientando 11')).toBeInTheDocument();
 
-    expect(listParams(fetchMock)).toEqual([{ limit: '10', offset: '10' }]);
+    expect(listParams(fetchMock)).toEqual([
+      { limit: '10', offset: '10', review_first: 'true' },
+    ]);
     expect(
       screen.getByRole('button', { name: 'Página 2, atual' }),
     ).toHaveAttribute('aria-current', 'page');
@@ -255,7 +269,9 @@ describe('TeacherAdviseesPage: paginação com a página na URL', () => {
 
       expect(await screen.findByText('Orientando 1')).toBeInTheDocument();
 
-      expect(listParams(fetchMock)).toEqual([{ limit: '10', offset: '0' }]);
+      expect(listParams(fetchMock)).toEqual([
+        { limit: '10', offset: '0', review_first: 'true' },
+      ]);
     },
   );
 
@@ -272,7 +288,11 @@ describe('TeacherAdviseesPage: paginação com a página na URL', () => {
         '/professor/orientandos?pagina=5',
       ),
     );
-    expect(listParams(fetchMock).at(-1)).toEqual({ limit: '10', offset: '40' });
+    expect(listParams(fetchMock).at(-1)).toEqual({
+      limit: '10',
+      offset: '40',
+      review_first: 'true',
+    });
   });
 
   it('não mostra a paginação quando tudo cabe em uma página', async () => {
@@ -486,13 +506,17 @@ describe('TeacherAdviseesPage: a busca por nome ou tema', () => {
     );
   });
 
-  it('o "N orientandos encontrados" acompanha a busca e o chip do total continua o geral', async () => {
+  it('o "N orientandos encontrados" (só para leitor de tela) acompanha a busca e o chip do total continua o geral', async () => {
     const { user } = setup(people);
-    expect(await screen.findByText('2 orientandos encontrados')).toBeVisible();
+    expect(
+      await screen.findByText('2 orientandos encontrados'),
+    ).toBeInTheDocument();
 
     await user.type(screen.getByLabelText('Buscar orientando'), 'maria');
 
-    expect(await screen.findByText('1 orientando encontrado')).toBeVisible();
+    expect(
+      await screen.findByText('1 orientando encontrado'),
+    ).toBeInTheDocument();
     expect(screen.getByText('2 orientandos')).toBeVisible();
   });
 

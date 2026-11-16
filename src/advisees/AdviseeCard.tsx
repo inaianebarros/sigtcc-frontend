@@ -35,7 +35,7 @@ interface AdviseeCardProps {
 }
 
 /**
- * O cartão de um orientando ativo: o nome, a situação, o curso, o início, o tema e as atividades
+ * O cartão de um orientando ativo (a lista só tem orientações ativas): o nome, o curso, o início, o tema e as atividades
  * por situação em chips, inclusive com zero.
  */
 export function AdviseeCard({
@@ -46,8 +46,19 @@ export function AdviseeCard({
 }: AdviseeCardProps) {
   const titleId = useId();
   const { student } = advisee;
+  // Quem espera a revisão do professor (RN21) vem no topo da lista e leva uma faixa teal fina.
+  const waitsForReview = advisee.activities.inReview > 0;
   return (
-    <Card component="article" aria-labelledby={titleId} variant="outlined">
+    <Card
+      component="article"
+      aria-labelledby={titleId}
+      variant="outlined"
+      sx={
+        waitsForReview
+          ? { borderLeftWidth: 3, borderLeftColor: 'primary.main' }
+          : undefined
+      }
+    >
       <CardContent>
         <Stack spacing={1.5}>
           <Stack
@@ -68,15 +79,7 @@ export function AdviseeCard({
                 ? wrapName(student.fullName, advisee)
                 : student.fullName}
             </Typography>
-            <Stack direction="row" sx={{ alignItems: 'center', gap: 1 }}>
-              <Chip
-                label="Ativa"
-                color="success"
-                size="small"
-                variant="outlined"
-              />
-              {menu}
-            </Stack>
+            {menu}
           </Stack>
           <Typography color="text.secondary">{student.course.name}</Typography>
           <Typography color="text.secondary">
@@ -94,20 +97,50 @@ export function AdviseeCard({
             useFlexGap
             sx={{ flexWrap: 'wrap', gap: 1, m: 0, p: 0, listStyle: 'none' }}
           >
-            {COUNT_LABELS.map(({ key, label, color }) => (
-              <li key={key}>
-                <Chip
-                  label={`${label}: ${advisee.activities[key]}`}
-                  color={color}
-                  size="small"
-                  variant="outlined"
-                />
-              </li>
-            ))}
+            {COUNT_LABELS.map(({ key, label, color }) => {
+              const count = advisee.activities[key];
+              // A contagem que espera o professor (RN21) ganha um fundo teal suave, sem peso extra
+              // de cor; as zeradas ficam neutras, sem opacidade, para continuarem legíveis (4,5:1).
+              const waitsForTeacher = key === 'inReview' && count > 0;
+              return (
+                <li key={key}>
+                  <Chip
+                    label={`${label}: ${count}`}
+                    color={count === 0 ? 'default' : color}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      fontWeight: waitsForTeacher ? 600 : undefined,
+                      bgcolor: waitsForTeacher ? 'primary.light' : undefined,
+                      borderColor: waitsForTeacher ? 'primary.main' : undefined,
+                      color: waitsForTeacher
+                        ? 'primary.dark'
+                        : count === 0
+                          ? 'text.secondary'
+                          : undefined,
+                    }}
+                  />
+                </li>
+              );
+            })}
           </Stack>
         </Stack>
       </CardContent>
-      {actions && <CardActions sx={{ px: 2, pb: 2 }}>{actions}</CardActions>}
+      {actions && (
+        <CardActions
+          sx={{
+            px: 2,
+            pb: 2,
+            gap: 1,
+            // No celular os botões ocupam a largura toda, um por linha, e não quebram de forma solta.
+            flexDirection: { xs: 'column', sm: 'row' },
+            alignItems: { xs: 'stretch', sm: 'center' },
+            '& > :not(style) ~ :not(style)': { ml: 0 },
+          }}
+        >
+          {actions}
+        </CardActions>
+      )}
     </Card>
   );
 }

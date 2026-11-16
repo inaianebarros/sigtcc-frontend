@@ -58,3 +58,26 @@ describe('AdviseeCard: pontos de encaixe', () => {
     ).toBeInTheDocument();
   });
 });
+
+describe('AdviseeCard: faixa de quem espera revisão (RN21)', () => {
+  const stripeOf = (inReview: number) => {
+    render(
+      <AdviseeCard
+        advisee={{
+          ...ADVISEE,
+          activities: { ...ADVISEE.activities, inReview },
+        }}
+      />,
+    );
+    return getComputedStyle(screen.getByRole('article', { name: 'Ana Souza' }))
+      .borderLeftWidth;
+  };
+
+  it('com atividade em revisão, o cartão leva a faixa lateral de 3 px', () => {
+    expect(stripeOf(2)).toBe('3px');
+  });
+
+  it('sem atividade em revisão, o cartão fica com o contorno de 1 px', () => {
+    expect(stripeOf(0)).toBe('1px');
+  });
+});
