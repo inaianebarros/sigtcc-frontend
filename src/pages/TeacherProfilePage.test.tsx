@@ -14,7 +14,7 @@ import { DESKTOP_WIDTH, PHONE_WIDTH, setViewportWidth } from '../test/viewport';
 const PROFILE_URL = 'GET /api/professores/me/perfil';
 const PATCH_URL = 'PATCH /api/professores/me/perfil';
 const NOTICE =
-  'Você tem alterações não salvas. Clique em Salvar para gravá-las.';
+  'Você tem alterações não salvas. Clique em Salvar alterações para gravá-las.';
 
 function savedProfile(changes: Record<string, unknown>) {
   return { ...TEACHER_PROFILE, ...changes };
@@ -64,12 +64,77 @@ describe('TeacherProfilePage: carregamento', () => {
     expect(
       within(field('Áreas de interesse')).getByText('Inteligência Artificial'),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('Título do artigo')).toHaveValue(
-      'Orientação por áreas',
-    );
     expect(
-      screen.getByRole('switch', { name: 'Disponível para orientar' }),
+      within(
+        screen.getByRole('region', { name: 'Artigos publicados' }),
+      ).getByRole('heading', { name: 'Orientação por áreas' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Disponível' })).toBeChecked();
+  });
+
+  it('tem as seções na ordem do perfil do aluno, com as próprias do professor', async () => {
+    mockApi(teacherProfileRoutes());
+    renderApp('/professor/perfil');
+    await formReady();
+
+    const sections = screen
+      .getAllByRole('heading', { level: 2 })
+      .map((heading) => heading.textContent);
+
+    expect(sections).toEqual([
+      'Informações pessoais',
+      'Cursos vinculados',
+      'Disponibilidade para orientação',
+      'Áreas de interesse',
+      'Artigos publicados',
+      'Propostas de tema',
+      'Segurança',
+    ]);
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Meu perfil' }),
+    ).toBeInTheDocument();
+  });
+
+  it('a disponibilidade é um grupo de dois botões, Disponível e Indisponível, e explica o efeito', async () => {
+    mockApi(teacherProfileRoutes());
+    renderApp('/professor/perfil');
+    await formReady();
+
+    const group = screen.getByRole('radiogroup', {
+      name: 'Disponibilidade para orientação',
+    });
+
+    expect(within(group).getAllByRole('radio')).toHaveLength(2);
+    expect(
+      within(group).getByRole('radio', { name: 'Disponível' }),
     ).toBeChecked();
+    expect(
+      screen.getByText(/só impede que novos alunos solicitem orientação/),
+    ).toBeVisible();
+  });
+
+  it('só mostra a barra de salvar quando há alteração e leva o foco ao título depois de salvar', async () => {
+    mockApi({
+      ...teacherProfileRoutes(),
+      [PATCH_URL]: () => ({ body: savedProfile({ is_available: false }) }),
+    });
+    const user = userEvent.setup();
+    renderApp('/professor/perfil');
+    await formReady();
+    expect(
+      screen.queryByRole('button', { name: 'Salvar alterações' }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('radio', { name: 'Indisponível' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
+
+    await screen.findByText('Perfil atualizado com sucesso.');
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Meu perfil' }),
+    ).toHaveFocus();
+    expect(
+      screen.queryByRole('button', { name: 'Salvar alterações' }),
+    ).not.toBeInTheDocument();
   });
 
   it('mostra e-mail, matrícula e instituto como texto, sem campos editáveis', async () => {
@@ -172,7 +237,7 @@ describe('TeacherProfilePage: cursos, disponibilidade e gravação', () => {
     await user.click(
       await screen.findByRole('option', { name: 'Engenharia da Computação' }),
     );
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     await screen.findByText('Perfil atualizado com sucesso.');
     expect(patchBody(fetchMock)).toEqual({ course_ids: [10, 11] });
@@ -188,7 +253,7 @@ describe('TeacherProfilePage: cursos, disponibilidade e gravação', () => {
       .getByText('Ciência da Computação')
       .closest('.MuiChip-root') as HTMLElement;
     await user.click(within(chip).getByTestId('CancelIcon'));
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     expect(
       await screen.findByText('Escolha ao menos um curso.'),
@@ -208,7 +273,7 @@ describe('TeacherProfilePage: cursos, disponibilidade e gravação', () => {
         .closest('.MuiChip-root') as HTMLElement;
       await user.click(within(chip).getByTestId('CancelIcon'));
     }
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     expect(
       await screen.findByText('Escolha ao menos uma área de interesse.'),
@@ -239,19 +304,15 @@ describe('TeacherProfilePage: cursos, disponibilidade e gravação', () => {
     await formReady();
     expect(screen.queryByText(NOTICE)).not.toBeInTheDocument();
 
-    await user.click(
-      screen.getByRole('switch', { name: 'Disponível para orientar' }),
-    );
+    await user.click(screen.getByRole('radio', { name: 'Indisponível' }));
 
     expect(screen.getByText(NOTICE).closest('[role="status"]')).not.toBeNull();
     expect(requestsTo(fetchMock, PATCH_URL)).toHaveLength(0);
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     await screen.findByText('Perfil atualizado com sucesso.');
     expect(patchBody(fetchMock)).toEqual({ is_available: false });
-    expect(
-      screen.getByRole('switch', { name: 'Disponível para orientar' }),
-    ).not.toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Indisponível' })).toBeChecked();
     expect(screen.queryByText(NOTICE)).not.toBeInTheDocument();
   });
 
@@ -281,10 +342,8 @@ describe('TeacherProfilePage: cursos, disponibilidade e gravação', () => {
 
     await user.clear(name);
     await user.type(name, 'Carlos Lima Filho');
-    await user.click(
-      screen.getByRole('switch', { name: 'Disponível para orientar' }),
-    );
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('radio', { name: 'Indisponível' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     await screen.findByText('Perfil atualizado com sucesso.');
     expect(patchBody(fetchMock)).toEqual({
@@ -327,11 +386,9 @@ describe('TeacherProfilePage: cursos, disponibilidade e gravação', () => {
     const user = userEvent.setup();
     renderApp('/professor/perfil');
     await formReady();
-    await user.click(
-      screen.getByRole('switch', { name: 'Disponível para orientar' }),
-    );
+    await user.click(screen.getByRole('radio', { name: 'Indisponível' }));
 
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     expect(
       await screen.findByText('Escolha cursos do seu instituto.'),
@@ -342,7 +399,9 @@ describe('TeacherProfilePage: cursos, disponibilidade e gravação', () => {
     expect(
       screen.getByText('Há dois artigos com o mesmo título e ano.'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Salvar' })).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'Salvar alterações' }),
+    ).toBeEnabled();
   });
 });
 
@@ -358,11 +417,7 @@ describe('TeacherProfilePage: alterações não salvas e celular', () => {
     const user = userEvent.setup();
     renderApp('/professor/perfil');
     await formReady();
-    const toggle = screen.getByRole('switch', {
-      name: 'Disponível para orientar',
-    });
-
-    await user.click(toggle);
+    await user.click(screen.getByRole('radio', { name: 'Indisponível' }));
     await user.click(screen.getByRole('link', { name: 'Solicitações' }));
     expect(await screen.findByRole('dialog')).toHaveTextContent(
       'Descartar alterações?',
@@ -374,9 +429,7 @@ describe('TeacherProfilePage: alterações não salvas e celular', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
 
-    await user.click(
-      screen.getByRole('switch', { name: 'Disponível para orientar' }),
-    );
+    await user.click(screen.getByRole('radio', { name: 'Disponível' }));
     await user.click(screen.getByRole('link', { name: 'Solicitações' }));
 
     expect(
@@ -413,9 +466,7 @@ describe('TeacherProfilePage: alterações não salvas e celular', () => {
     window.dispatchEvent(clean);
     expect(clean.defaultPrevented).toBe(false);
 
-    await user.click(
-      screen.getByRole('switch', { name: 'Disponível para orientar' }),
-    );
+    await user.click(screen.getByRole('radio', { name: 'Indisponível' }));
     const dirty = new Event('beforeunload', { cancelable: true });
     await act(async () => {
       window.dispatchEvent(dirty);
@@ -445,7 +496,7 @@ describe('TeacherProfilePage: cursos fora da lista e falhas do catálogo', () =>
     await user.click(
       await screen.findByRole('option', { name: 'Engenharia da Computação' }),
     );
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     await screen.findByText('Perfil atualizado com sucesso.');
     expect([...patchBody(fetchMock).course_ids].sort()).toEqual([10, 11, 99]);
@@ -470,11 +521,9 @@ describe('TeacherProfilePage: cursos fora da lista e falhas do catálogo', () =>
     const user = userEvent.setup();
     renderApp('/professor/perfil');
     await formReady();
-    await user.click(
-      screen.getByRole('switch', { name: 'Disponível para orientar' }),
-    );
+    await user.click(screen.getByRole('radio', { name: 'Indisponível' }));
 
-    await user.click(screen.getByRole('button', { name: 'Salvar' }));
+    await user.click(screen.getByRole('button', { name: 'Salvar alterações' }));
 
     expect(
       await screen.findByText('Não é possível ficar disponível sem cursos.'),

@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   Divider,
-  Paper,
   Stack,
   TextField,
   Typography,
@@ -25,8 +24,6 @@ import { useUnsavedChangesGuard } from '../hooks/useUnsavedChangesGuard';
 import { AreasField } from '../registration/CatalogFields';
 import type { AreaOfInterest } from '../services/catalogService';
 import { ArticleCards } from './ArticleCards';
-import { ArticlesField } from './ArticlesField';
-import { PendingChangesNotice } from './PendingChangesNotice';
 import { ProfileSection } from './ProfileSection';
 import { SaveBar } from './SaveBar';
 import type {
@@ -57,15 +54,8 @@ interface ProfileEditorProps<
   extraFields?: ReactNode;
   /** Campos editáveis próprios do perfil, depois dos artigos. */
   trailingFields?: ReactNode;
-  /** Seções salvas na hora, fora do formulário, mostradas depois dele (como as propostas de tema). */
-  afterForm?: ReactNode;
   /** Para onde o botão "Alterar senha" leva. */
   changePasswordPath: string;
-  /**
-   * `sections` é o perfil do aluno: seções com título, artigos em cartões e a barra de salvar fixa.
-   * O padrão, `classic`, é o formulário corrido do professor.
-   */
-  layout?: 'classic' | 'sections';
   /** Uma alteração pendente fora deste formulário (como o tema do aluno), para o aviso de sair da tela. */
   externalPending?: boolean;
   /** O que a barra de salvar diz quando há alteração pendente fora do formulário. */
@@ -91,9 +81,7 @@ export function ProfileEditor<
   facts,
   extraFields,
   trailingFields,
-  afterForm,
   changePasswordPath,
-  layout = 'classic',
   externalPending = false,
   externalPendingNote,
 }: ProfileEditorProps<TProfile, TValues, TChanges>) {
@@ -150,128 +138,84 @@ export function ProfileEditor<
     />
   );
 
-  if (layout === 'sections') {
-    // As seções ficam direto sobre o papel de fundo, sem caixa em volta: os cartões dos artigos são
-    // as únicas caixas, e só a barra de salvar tem fundo próprio.
-    return (
-      <FormProvider {...form}>
-        <Box
-          component="form"
-          onSubmit={onSubmit}
-          noValidate
-          sx={{ maxWidth: 720, mx: 'auto' }}
-        >
-          <Stack spacing={4} divider={<Divider />}>
-            <Box>
-              <Typography
-                variant="h1"
-                component="h1"
-                tabIndex={-1}
-                id={titleId}
-                sx={{ outline: 'none' }}
-              >
-                Meu perfil
-              </Typography>
-              <Typography color="text.secondary">
-                Gerencie suas informações pessoais e acadêmicas.
-              </Typography>
-            </Box>
-            <ProfileSection title="Informações pessoais">
-              {nameField}
-              <Stack spacing={1}>
-                <Typography variant="body2" color="text.secondary">
-                  Dados do seu cadastro, que não são editados aqui:
-                </Typography>
-                {facts}
-              </Stack>
-            </ProfileSection>
-            {extraFields}
-            <ProfileSection
-              title="Áreas de interesse"
-              description="Áreas relacionadas aos seus interesses acadêmicos."
-            >
-              <AreasField areas={{ status: 'ready', data: areas }} />
-            </ProfileSection>
-            <ArticleCards />
-            {trailingFields}
-            <ProfileSection title="Segurança">
-              <Stack
-                direction="row"
-                spacing={2}
-                useFlexGap
-                sx={{
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  justifyContent: 'space-between',
-                }}
-              >
-                <Box>
-                  <Typography variant="subtitle1" component="h3">
-                    Senha
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Altere sua senha de acesso ao sistema.
-                  </Typography>
-                </Box>
-                <Button
-                  component={RouterLink}
-                  to={changePasswordPath}
-                  variant="outlined"
-                >
-                  Alterar senha
-                </Button>
-              </Stack>
-            </ProfileSection>
-          </Stack>
-          <SaveBar
-            visible={isDirty}
-            saving={isSubmitting}
-            note={externalPending ? externalPendingNote : undefined}
-          />
-        </Box>
-        {afterForm}
-        <UnsavedChangesDialog blocker={blocker} />
-      </FormProvider>
-    );
-  }
-
+  // As seções ficam direto sobre o papel de fundo, sem caixa em volta: os cartões dos artigos são
+  // as únicas caixas, e só a barra de salvar tem fundo próprio.
   return (
     <FormProvider {...form}>
-      <Paper
+      <Box
         component="form"
         onSubmit={onSubmit}
         noValidate
-        sx={{ maxWidth: 720, mx: 'auto', p: { xs: 2, sm: 4 } }}
+        sx={{ maxWidth: 720, mx: 'auto' }}
       >
-        <Stack spacing={3}>
-          <PendingChangesNotice visible={isDirty} />
-          <Typography variant="h4" component="h1">
-            Meu perfil
-          </Typography>
-          {facts}
-          {nameField}
+        <Stack spacing={4} divider={<Divider />}>
+          <Box>
+            <Typography
+              variant="h1"
+              component="h1"
+              tabIndex={-1}
+              id={titleId}
+              sx={{ outline: 'none' }}
+            >
+              Meu perfil
+            </Typography>
+            <Typography color="text.secondary">
+              Gerencie suas informações pessoais e acadêmicas.
+            </Typography>
+          </Box>
+          <ProfileSection title="Informações pessoais">
+            {nameField}
+            <Stack spacing={1}>
+              <Typography variant="body2" color="text.secondary">
+                Dados do seu cadastro, que não são editados aqui:
+              </Typography>
+              {facts}
+            </Stack>
+          </ProfileSection>
           {extraFields}
-          <AreasField areas={{ status: 'ready', data: areas }} />
-          <ArticlesField />
+          <ProfileSection
+            title="Áreas de interesse"
+            description="Áreas relacionadas aos seus interesses acadêmicos."
+          >
+            <AreasField areas={{ status: 'ready', data: areas }} />
+          </ProfileSection>
+          <ArticleCards />
           {trailingFields}
-          <Button
-            type="submit"
-            variant="contained"
-            size="large"
-            disabled={!isDirty || isSubmitting}
-          >
-            {isSubmitting ? 'Salvando…' : 'Salvar'}
-          </Button>
-          <Button
-            component={RouterLink}
-            to={changePasswordPath}
-            variant="outlined"
-          >
-            Alterar senha
-          </Button>
+          <ProfileSection title="Segurança">
+            <Stack
+              direction="row"
+              spacing={2}
+              useFlexGap
+              sx={{
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Box>
+                <Typography variant="subtitle1" component="h3">
+                  Senha
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Altere sua senha de acesso ao sistema.
+                </Typography>
+              </Box>
+              <Button
+                component={RouterLink}
+                to={changePasswordPath}
+                variant="outlined"
+              >
+                Alterar senha
+              </Button>
+            </Stack>
+          </ProfileSection>
         </Stack>
-      </Paper>
-      {afterForm}
+        <SaveBar
+          visible={isDirty}
+          saving={isSubmitting}
+          note={externalPending ? externalPendingNote : undefined}
+        />
+      </Box>
       <UnsavedChangesDialog blocker={blocker} />
     </FormProvider>
   );

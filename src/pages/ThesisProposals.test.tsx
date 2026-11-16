@@ -71,33 +71,35 @@ describe('Propostas de tema: a seção do perfil do professor', () => {
     ).toBeVisible();
   });
 
-  it('com 1 a 5 propostas mostra uma lista na ordem do servidor, sem navegação de páginas', async () => {
+  it('com 1 a 5 propostas mostra os cartões na ordem do servidor, sem navegação de páginas', async () => {
     setup(proposals(5));
     const area = await section();
 
-    const list = await within(area).findByRole('list', {
-      name: 'Propostas de tema',
-    });
+    await within(area).findByText(/número 05/);
 
-    const titles = within(list)
-      .getAllByRole('listitem')
+    const titles = within(area)
+      .getAllByText(/Proposta de tema número \d+/)
       .map((item) => item.textContent);
     expect(titles[0]).toContain('número 05');
     expect(titles[4]).toContain('número 01');
+    expect(within(area).getByText('5 propostas cadastradas')).toBeVisible();
+    expect(within(area).queryByText(/Exibindo/)).not.toBeInTheDocument();
     expect(within(area).queryByRole('table')).not.toBeInTheDocument();
     expect(
       within(area).queryByRole('navigation', { name: /Paginação/ }),
     ).not.toBeInTheDocument();
   });
 
-  it('com 6 ou mais mostra uma tabela paginada de 5 em 5, e a página fica na URL', async () => {
+  it('com 6 ou mais mostra a lista paginada de 5 em 5, com o total, e a página fica na URL', async () => {
     const { fetchMock, events } = setup(proposals(12));
     const area = await section();
-    const table = await within(area).findByRole('table', {
-      name: 'Propostas de tema',
-    });
-    expect(within(table).getAllByRole('row')).toHaveLength(6);
-    expect(within(table).getByText(/número 12/)).toBeVisible();
+    await within(area).findByText(/número 12/);
+    expect(
+      within(area).getAllByText(/Proposta de tema número \d+/),
+    ).toHaveLength(5);
+    expect(within(area).getByText('12 propostas cadastradas')).toBeVisible();
+    expect(within(area).getByText('Exibindo 1–5 de 12')).toBeVisible();
+    expect(within(area).queryByRole('table')).not.toBeInTheDocument();
     expect(pagesRequested(fetchMock)).toEqual([{ limit: '5', offset: '0' }]);
 
     await events.click(
@@ -105,6 +107,7 @@ describe('Propostas de tema: a seção do perfil do professor', () => {
     );
 
     expect(await within(area).findByText(/número 07/)).toBeVisible();
+    expect(within(area).getByText('Exibindo 6–10 de 12')).toBeVisible();
     expect(screen.getByTestId('location')).toHaveTextContent('pagina=2');
     expect(pagesRequested(fetchMock).at(-1)).toEqual({
       limit: '5',
@@ -133,13 +136,15 @@ describe('Propostas de tema: a seção do perfil do professor', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('o formulário principal do perfil não inclui as propostas e o PATCH não as envia', async () => {
+  it('as propostas não fazem parte dos dados do perfil: o PATCH não as envia', async () => {
     const { fetchMock, events } = setup(proposals(2));
     const name = await screen.findByLabelText('Nome completo');
     await section();
     await events.clear(name);
     await events.type(name, 'Carlos Lima Filho');
-    await events.click(screen.getByRole('button', { name: 'Salvar' }));
+    await events.click(
+      screen.getByRole('button', { name: 'Salvar alterações' }),
+    );
 
     await waitFor(() =>
       expect(requestsTo(fetchMock, PATCH_PROFILE)).toHaveLength(1),
@@ -148,9 +153,6 @@ describe('Propostas de tema: a seção do perfil do professor', () => {
       String(requestsTo(fetchMock, PATCH_PROFILE)[0]![1]?.body),
     );
     expect(body).toEqual({ full_name: 'Carlos Lima Filho' });
-    expect(
-      screen.getByRole('region', { name: 'Propostas de tema' }).closest('form'),
-    ).toBeNull();
   });
 
   it('mostra o erro com nova tentativa quando a leitura falha', async () => {
@@ -174,7 +176,7 @@ describe('Propostas de tema: com o formulário do perfil alterado', () => {
     const { events } = setup(proposals(12));
     const name = await screen.findByLabelText('Nome completo');
     const area = await section();
-    await within(area).findByRole('table', { name: 'Propostas de tema' });
+    await within(area).findByText(/número 12/);
     await events.clear(name);
     await events.type(name, 'Carlos Lima Filho');
 
@@ -232,7 +234,7 @@ describe('Propostas de tema: com o formulário do perfil alterado', () => {
 });
 
 describe('Propostas de tema: falha ao trocar de página', () => {
-  it('depois de uma falha na leitura, a tabela antiga e as suas ações saem da tela', async () => {
+  it('depois de uma falha na leitura, a lista antiga e as suas ações saem da tela', async () => {
     const server = proposalsServer(proposals(12));
     const original = server.routes[LIST]!;
     let reads = 0;
@@ -250,7 +252,7 @@ describe('Propostas de tema: falha ao trocar de página', () => {
     const events = userEvent.setup();
     renderApp('/professor/perfil');
     const area = await section();
-    await within(area).findByRole('table', { name: 'Propostas de tema' });
+    await within(area).findByText(/número 12/);
 
     await events.click(
       within(area).getByRole('button', { name: 'Ir para a página 2' }),
@@ -259,7 +261,7 @@ describe('Propostas de tema: falha ao trocar de página', () => {
     expect(await within(area).findByRole('alert')).toHaveTextContent(
       'Ocorreu um erro no servidor',
     );
-    expect(within(area).queryByRole('table')).not.toBeInTheDocument();
+    expect(within(area).queryByText(/Proposta de tema número/)).toBeNull();
     expect(
       within(area).queryByRole('button', { name: /^Remover a proposta/ }),
     ).not.toBeInTheDocument();
@@ -439,6 +441,22 @@ describe('Propostas de tema: adicionar e editar', () => {
     });
   });
 
+  it('enviar o diálogo da proposta não envia o formulário do perfil', async () => {
+    const { fetchMock, events } = setup([]);
+    const dialog = await openAdd(events);
+
+    await events.type(
+      within(dialog).getByLabelText(/Título da proposta/),
+      'Proposta que não mexe no perfil{Enter}',
+    );
+
+    expect(await screen.findByText('Proposta cadastrada.')).toBeVisible();
+    expect(requestsTo(fetchMock, PATCH_PROFILE)).toHaveLength(0);
+    expect(
+      screen.queryByText('Nenhuma alteração para salvar.'),
+    ).not.toBeInTheDocument();
+  });
+
   it('o botão fica ocupado durante o envio e a proposta sai uma vez só', async () => {
     let release: () => void = () => undefined;
     const gate = new Promise<void>((resolve) => {
@@ -480,10 +498,11 @@ describe('Propostas de tema: adicionar e editar', () => {
     ).toHaveLength(1);
   });
 
-  it('ao cruzar o limite de 5 a exibição passa de lista para tabela', async () => {
+  it('ao cruzar o limite de 5 aparece o rodapé de paginação', async () => {
     const { events } = setup(proposals(5));
     const area = await section();
-    await within(area).findByRole('list', { name: 'Propostas de tema' });
+    await within(area).findByText(/número 05/);
+    expect(within(area).queryByText(/Exibindo/)).not.toBeInTheDocument();
     const dialog = await openAdd(events);
     await events.type(
       within(dialog).getByLabelText(/Título da proposta/),
@@ -494,12 +513,8 @@ describe('Propostas de tema: adicionar e editar', () => {
       within(dialog).getByRole('button', { name: 'Adicionar' }),
     );
 
-    expect(
-      await within(area).findByRole('table', { name: 'Propostas de tema' }),
-    ).toBeVisible();
-    expect(
-      within(area).queryByRole('list', { name: 'Propostas de tema' }),
-    ).not.toBeInTheDocument();
+    expect(await within(area).findByText('Exibindo 1–5 de 6')).toBeVisible();
+    expect(within(area).getByText('6 propostas cadastradas')).toBeVisible();
   });
 });
 
@@ -577,11 +592,9 @@ describe('Propostas de tema: remover', () => {
     );
 
     await screen.findByText('Proposta removida.');
-    // Sobram 5: a exibição vira lista, e a tela não mostra uma página vazia.
-    expect(
-      await within(area).findByRole('list', { name: 'Propostas de tema' }),
-    ).toBeVisible();
-    expect(within(area).getByText(/número 06/)).toBeVisible();
+    // Sobram 5: o rodapé de paginação some, e a tela não mostra uma página vazia.
+    expect(await within(area).findByText(/número 06/)).toBeVisible();
+    expect(within(area).queryByText(/Exibindo/)).not.toBeInTheDocument();
     expect(
       within(area).queryByText(/ainda não cadastrou/),
     ).not.toBeInTheDocument();
@@ -650,9 +663,7 @@ describe('Propostas de tema: tela pequena', () => {
     const { events } = setup(proposals(3));
     const area = await section();
 
-    expect(
-      await within(area).findByRole('list', { name: 'Propostas de tema' }),
-    ).toBeVisible();
+    expect(await within(area).findByText(/número 03/)).toBeVisible();
     await events.click(
       within(area).getByRole('button', { name: 'Adicionar proposta' }),
     );
