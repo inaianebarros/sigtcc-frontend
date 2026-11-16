@@ -296,16 +296,22 @@ describe('Encerrar orientação: confirmar', () => {
     );
   });
 
-  it('o total do topo diminui depois de encerrar uma orientação', async () => {
+  it('a quantidade anunciada diminui depois de encerrar uma orientação', async () => {
     const { user } = setup();
-    expect(await screen.findByText('2 orientandos')).toBeVisible();
+    expect(
+      await screen.findByText('2 orientandos encontrados'),
+    ).toBeInTheDocument();
     const { dialog } = await openDialog(user);
     await typeReason(user, dialog);
 
     await user.click(confirmButton(dialog));
 
-    expect(await screen.findByText('1 orientando')).toBeVisible();
-    expect(screen.queryByText('2 orientandos')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('1 orientando encontrado'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('2 orientandos encontrados'),
+    ).not.toBeInTheDocument();
   });
 
   it('relê o usuário, e o item Orientandos volta a ficar desabilitado quando não sobra orientando', async () => {

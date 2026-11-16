@@ -56,19 +56,13 @@ describe('TeacherAdviseesPage: a lista e o cartão', () => {
     expect(screen.getByText('3 orientandos encontrados')).toBeInTheDocument();
   });
 
-  it('mostra o subtítulo e o chip com o total geral de orientandos ativos', async () => {
+  it('mostra o subtítulo e não exibe o total de orientandos na tela', async () => {
     setup([makeAdvisee(1), makeAdvisee(2), makeAdvisee(3)]);
 
     expect(
       await screen.findByText('Acompanhe suas orientações ativas.'),
     ).toBeVisible();
-    expect(await screen.findByText('3 orientandos')).toBeVisible();
-  });
-
-  it('o chip do total diz "1 orientando" no singular', async () => {
-    setup([makeAdvisee(1)]);
-
-    expect(await screen.findByText('1 orientando')).toBeVisible();
+    expect(screen.queryByText('3 orientandos')).not.toBeInTheDocument();
   });
 
   it('mostra no cartão o nome, o curso, o início, o tema e as quatro contagens em texto rotulado', async () => {
@@ -506,7 +500,7 @@ describe('TeacherAdviseesPage: a busca por nome ou tema', () => {
     );
   });
 
-  it('o "N orientandos encontrados" (só para leitor de tela) acompanha a busca e o chip do total continua o geral', async () => {
+  it('o "N orientandos encontrados" (só para leitor de tela) acompanha a busca e nenhum total aparece na tela', async () => {
     const { user } = setup(people);
     expect(
       await screen.findByText('2 orientandos encontrados'),
@@ -517,7 +511,7 @@ describe('TeacherAdviseesPage: a busca por nome ou tema', () => {
     expect(
       await screen.findByText('1 orientando encontrado'),
     ).toBeInTheDocument();
-    expect(screen.getByText('2 orientandos')).toBeVisible();
+    expect(screen.queryByText('2 orientandos')).not.toBeInTheDocument();
   });
 
   it('anuncia a quantidade encontrada numa região de status, que acompanha a busca', async () => {

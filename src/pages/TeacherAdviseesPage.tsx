@@ -1,7 +1,6 @@
 import {
   Alert,
   Button,
-  Chip,
   Link,
   Skeleton,
   Stack,
@@ -51,10 +50,6 @@ const SEARCH_PARAM = 'busca';
 
 function foundText(count: number): string {
   return `${count} ${count === 1 ? 'orientando encontrado' : 'orientandos encontrados'}`;
-}
-
-function totalText(count: number): string {
-  return `${count} ${count === 1 ? 'orientando' : 'orientandos'}`;
 }
 
 export function TeacherAdviseesPage() {
@@ -156,15 +151,15 @@ export function TeacherAdviseesPage() {
   return (
     <Stack spacing={3}>
       <div>
-        <Stack
-          direction="row"
-          sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 1 }}
+        <Typography
+          variant="h4"
+          component="h1"
+          gutterBottom
+          ref={heading}
+          tabIndex={-1}
         >
-          <Typography variant="h4" component="h1" ref={heading} tabIndex={-1}>
-            Meus orientandos
-          </Typography>
-          {activeCount !== undefined && <Chip label={totalText(activeCount)} />}
-        </Stack>
+          Meus orientandos
+        </Typography>
         <Typography color="text.secondary">
           Acompanhe suas orientações ativas.
         </Typography>
