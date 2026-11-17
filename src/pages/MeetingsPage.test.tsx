@@ -81,6 +81,19 @@ describe('MeetingsPage: o calendário do Mês', () => {
     }
   });
 
+  it('a frase só para leitor de tela do resultado tem 1 px e não alarga a página', async () => {
+    setup([makeMeeting(1)], 'student');
+    await screen.findByRole('button', { name: /Carlos Lima/ });
+
+    const region = await screen.findByText(/reuni(ão|ões) no período\./);
+
+    // `width: 1` no `sx` do MUI seria 100%, e uma caixa absoluta de 100% estourava o documento.
+    expect(region.closest('[role="status"]')).toHaveStyle({
+      width: '1px',
+      height: '1px',
+    });
+  });
+
   it('tem a semana começando no domingo e os textos em português', async () => {
     setup([], 'student');
     await screen.findByRole('heading', { level: 2, name: 'Novembro de 2026' });
