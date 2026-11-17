@@ -1,7 +1,6 @@
 import { useCalendarController } from '@fullcalendar/react';
 import {
   Alert,
-  Box,
   Button,
   LinearProgress,
   Stack,
@@ -12,6 +11,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
+import { VisuallyHidden } from '../components/VisuallyHidden';
 import { useSession } from '../hooks/useSession';
 import { CalendarFiltersPanel } from '../meetings/calendar/CalendarFiltersPanel';
 import { useEntryStudent } from '../meetings/calendar/useEntryStudent';
@@ -51,16 +51,6 @@ const NO_MEETINGS: MeetingItem[] = [];
 const ALL_SITUATIONS: ReadonlySet<MeetingSituation> = new Set(
   MEETING_SITUATIONS,
 );
-
-// O texto só para o leitor de tela: a região de estado que anuncia o resultado do filtro.
-const SCREEN_READER_ONLY = {
-  position: 'absolute',
-  width: 1,
-  height: 1,
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-} as const;
 
 const NO_ADVISING_REASON =
   'Você precisa ter uma orientação ativa para solicitar reuniões.';
@@ -314,13 +304,14 @@ export function MeetingsPage() {
               </Button>
             </Stack>
           )}
-          <Box role="status" aria-live="polite" sx={SCREEN_READER_ONLY}>
+          {/* Só para leitor de tela: a região de estado que anuncia o resultado do filtro. */}
+          <VisuallyHidden role="status" aria-live="polite">
             {list.status === 'ready'
               ? `${list.data.length} ${list.data.length === 1 ? 'reunião' : 'reuniões'} no período.`
               : noSituation
                 ? 'Nenhuma situação marcada.'
                 : ''}
-          </Box>
+          </VisuallyHidden>
           {noMeetingsInPeriod && (
             <Alert
               severity="info"

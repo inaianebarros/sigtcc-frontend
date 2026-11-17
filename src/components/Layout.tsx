@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Container,
-  GlobalStyles,
   Toolbar,
   Typography,
   useMediaQuery,
@@ -18,9 +17,6 @@ import { useSession } from '../hooks/useSession';
 import { hasActiveAdvisingOf } from '../navigation/advisingState';
 import { areas } from '../navigation/areas';
 import { paths } from '../navigation/paths';
-
-// A altura da barra superior do MUI: 56 no celular e 64 a partir de 600px de largura.
-const APP_BAR_HEIGHT = { xs: 56, sm: 64 } as const;
 
 export function Layout() {
   const { status, user, signOut } = useSession();
@@ -43,30 +39,19 @@ export function Layout() {
 
   return (
     <NotificationsProvider>
-      {/* O foco que o teclado leva a um campo não pode parar escondido atrás da barra fixa. */}
-      <GlobalStyles
-        styles={{
-          html: {
-            scrollPaddingTop: APP_BAR_HEIGHT.xs,
-            '@media (min-width:600px)': {
-              scrollPaddingTop: APP_BAR_HEIGHT.sm,
-            },
-          },
-        }}
-      />
+      {/* A casca tem a altura da janela e quem rola é só a área principal: a barra superior ocupa
+          toda a largura e a barra de rolagem começa abaixo dela, em vez de correr ao lado do cabeçalho.
+          A barra e o menu ficam sempre à vista porque estão fora da área que rola. */}
       <Box
-        sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
+        sx={{
+          height: '100vh',
+          '@supports (height: 100dvh)': { height: '100dvh' },
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
       >
-        {/* A barra acompanha a rolagem. No desktop o menu fixo começa abaixo dela, então ela fica por
-            cima do menu; no celular o menu é uma gaveta e continua por cima da barra. */}
-        <AppBar
-          position="sticky"
-          sx={
-            isDesktop
-              ? { zIndex: (theme) => theme.zIndex.drawer + 1 }
-              : undefined
-          }
-        >
+        <AppBar position="static">
           <Toolbar sx={{ gap: 2 }}>
             {menuItems.length > 0 && !isDesktop && (
               <Button
@@ -92,7 +77,7 @@ export function Layout() {
             )}
           </Toolbar>
         </AppBar>
-        <Box sx={{ display: 'flex', flexGrow: 1 }}>
+        <Box sx={{ display: 'flex', flexGrow: 1, minHeight: 0 }}>
           {menuItems.length > 0 && (
             <SideMenu
               items={menuItems}
@@ -102,18 +87,26 @@ export function Layout() {
               onClose={() => setMenuOpen(false)}
             />
           )}
-          <Container
+          <Box
             component="main"
-            maxWidth="lg"
             sx={{
               flexGrow: 1,
               minWidth: 0,
-              py: { xs: 2, md: 4 },
-              px: { xs: 2, sm: 3 },
+              overflowY: 'auto',
+              // O foco que o teclado leva a um campo não pode parar escondido atrás da barra de salvar.
+              scrollPaddingBottom: 'var(--save-bar-clearance, 0px)',
             }}
           >
-            <Outlet />
-          </Container>
+            <Container
+              maxWidth="lg"
+              sx={{
+                py: { xs: 2, md: 4 },
+                px: { xs: 2, sm: 3 },
+              }}
+            >
+              <Outlet />
+            </Container>
+          </Box>
         </Box>
       </Box>
     </NotificationsProvider>
