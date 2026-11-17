@@ -36,13 +36,14 @@ export function SaveBar({
         },
       ]}
     >
-      {/* O foco que o teclado leva a um campo não pode parar escondido atrás da barra fixa. */}
+      {/* O foco que o teclado leva a um campo não pode parar escondido atrás da barra fixa: a folga vale
+          para a área principal, que é quem rola. */}
       {visible && (
         <GlobalStyles
           styles={{
-            html: {
-              scrollPaddingBottom: 144,
-              '@media (min-width:600px)': { scrollPaddingBottom: 96 },
+            main: { '--save-bar-clearance': '144px' },
+            '@media (min-width:600px)': {
+              main: { '--save-bar-clearance': '96px' },
             },
           }}
         />

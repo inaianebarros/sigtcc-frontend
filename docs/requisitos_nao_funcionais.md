@@ -58,7 +58,7 @@ RNF22 - **Estados Vazios:** O sistema deve apresentar mensagens informativas qua
 
 RNF23 - **Contraste de Interface:** Os elementos visuais da interface devem seguir uma razão mínima de contraste de 4.5:1 entre texto e fundo, conforme diretrizes WCAG 2.1 nível AA.
 
-RNF24 - **Responsividade:** A interface do sistema deve ser responsiva, adaptando seu layout para diferentes tamanhos de tela com base nos breakpoints do Material UI.
+RNF24 - **Responsividade:** A interface do sistema deve ser responsiva, adaptando seu layout para diferentes tamanhos de tela com base nos breakpoints do Material UI. A barra superior ocupa toda a largura da janela e só a área de conteúdo, abaixo dela, tem barra de rolagem; a barra superior e o menu lateral ficam sempre à vista, fora da área que rola.
 
 RNF27 - **Navegação Lateral:** A navegação principal deve ser um menu lateral à esquerda, com os itens do perfil do usuário, recolhível em telas pequenas. Os itens indisponíveis por regra de negócio (RN29) permanecem visíveis, desabilitados e com o motivo explicado.
 
