@@ -27,9 +27,20 @@ function contrastRatio(first: string, second: string): number {
 }
 
 describe('o selo Atrasada', () => {
-  it('tem o contraste mínimo de 4,5:1 do WCAG 2.1 AA entre o texto e o fundo do tema', () => {
-    const { main, contrastText } = theme.palette.error;
+  it('tem o contraste mínimo de 4,5:1 do WCAG 2.1 AA entre o texto e o fundo suave do tema', () => {
+    const { main, light } = theme.palette.error;
 
-    expect(contrastRatio(main, contrastText)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(main, light)).toBeGreaterThanOrEqual(4.5);
   });
+});
+
+describe('a cor de cada situação', () => {
+  it.each(['primary', 'secondary', 'success'] as const)(
+    'o texto %s lê-se sobre o cartão branco a 4,5:1',
+    (color) => {
+      expect(
+        contrastRatio(theme.palette[color].main, '#ffffff'),
+      ).toBeGreaterThanOrEqual(4.5);
+    },
+  );
 });

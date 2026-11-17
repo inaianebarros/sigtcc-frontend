@@ -55,7 +55,11 @@ export function ActivityList({
               <Typography variant="body2" color="text.secondary">
                 Prazo: {formatDeadline(item.deadline)}
               </Typography>
-              <StatusWithBadge status={item.status} overdue={item.overdue} />
+              <StatusWithBadge
+                pill
+                status={item.status}
+                overdue={item.overdue}
+              />
             </Stack>
           </Paper>
         ))}
