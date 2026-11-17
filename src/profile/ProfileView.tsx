@@ -1,13 +1,5 @@
 import ArrowBack from '@mui/icons-material/ArrowBack';
-import {
-  Alert,
-  Box,
-  Button,
-  Link,
-  Skeleton,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, Button, Skeleton, Stack, Typography } from '@mui/material';
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
@@ -15,23 +7,8 @@ import { VisuallyHidden } from '../components/VisuallyHidden';
 import type { LoadState } from '../hooks/useLoad';
 import { READ_TITLE_SX } from './readTitle';
 
-function BackLink({
-  to,
-  label,
-  plain,
-}: {
-  to: string;
-  label: string;
-  /** O link simples e sublinhado das outras telas; sem ele, o botão de texto com a seta. */
-  plain: boolean;
-}) {
-  if (plain) {
-    return (
-      <Link component={RouterLink} to={to} sx={{ alignSelf: 'flex-start' }}>
-        {label}
-      </Link>
-    );
-  }
+/** O "Voltar" de todas as telas de detalhe: botão de texto com a seta, como no perfil. */
+function BackLink({ to, label }: { to: string; label: string }) {
   return (
     <Button
       component={RouterLink}
@@ -47,7 +24,7 @@ function BackLink({
 interface ProfileViewProps<T> {
   /** Para onde o "Voltar" leva. */
   backPath: string;
-  /** O texto do link de voltar, quando ele diz para onde leva; o padrão é "Voltar". */
+  /** O texto do botão de voltar, que diz para onde leva ("Voltar para as atividades"); o padrão é "Voltar". */
   backLabel?: string;
   /** O título do aluno ou do professor que não existe: um id inválido ou um 404. */
   notFoundTitle: string;
@@ -64,9 +41,9 @@ interface ProfileViewProps<T> {
   /** Troca o `<h1>` simples do título por um cabeçalho próprio, que deve conter o `<h1>`. */
   heading?: (data: T) => ReactNode;
   /**
-   * O layout dos perfis de pessoas (o do aluno e o do professor): título h1 igual nos dois, botão
-   * de voltar com seta, repetido no fim da leitura, carregamento anunciado e foco no título quando
-   * o perfil chega. Sem ele a moldura se comporta como antes, como na tela de atividade.
+   * O layout dos perfis de pessoas (o do aluno e o do professor): título h1 igual nos dois,
+   * carregamento anunciado e foco no título quando o perfil chega. Sem ele a moldura mantém o
+   * título simples, como na tela de atividade. O "Voltar" é o mesmo nos dois.
    */
   profileLayout?: boolean;
   children: (data: T) => ReactNode;
@@ -127,7 +104,7 @@ export function ProfileView<T>({
         },
       ]}
     >
-      <BackLink to={backPath} label={backLabel} plain={!profileLayout} />
+      <BackLink to={backPath} label={backLabel} />
       {profileLayout && (
         // A região fica sempre montada: o leitor de tela só anuncia o texto que entra numa região já existente.
         <Box role="status" aria-live="polite">

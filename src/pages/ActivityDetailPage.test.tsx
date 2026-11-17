@@ -242,17 +242,32 @@ describe('ActivityDetailPage: navegação e erros', () => {
       },
     ]);
 
-    await events.click(await screen.findByRole('link', { name: 'Voltar' }));
+    await events.click(
+      await screen.findByRole('link', { name: 'Voltar para as atividades' }),
+    );
 
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/professor/atividades?situacao=pending&pagina=2',
     );
   });
 
+  it('o Voltar é o botão com seta e o texto "Voltar para as atividades", o mesmo dos perfis', async () => {
+    setup([FULL], 'student', '/aluno/atividades/5');
+
+    const back = await screen.findByRole('link', {
+      name: 'Voltar para as atividades',
+    });
+
+    expect(back).toHaveClass('MuiButton-root');
+    expect(back.querySelector('.MuiButton-startIcon svg')).not.toBeNull();
+  });
+
   it('sem origem, o Voltar leva à lista do perfil', async () => {
     const { events } = setup([FULL], 'student', '/aluno/atividades/5');
 
-    await events.click(await screen.findByRole('link', { name: 'Voltar' }));
+    await events.click(
+      await screen.findByRole('link', { name: 'Voltar para as atividades' }),
+    );
 
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/aluno\/atividades$/,
@@ -267,7 +282,9 @@ describe('ActivityDetailPage: navegação e erros', () => {
       },
     ]);
 
-    await events.click(await screen.findByRole('link', { name: 'Voltar' }));
+    await events.click(
+      await screen.findByRole('link', { name: 'Voltar para as atividades' }),
+    );
 
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/aluno\/atividades$/,
@@ -282,7 +299,9 @@ describe('ActivityDetailPage: navegação e erros', () => {
       },
     ]);
 
-    await events.click(await screen.findByRole('link', { name: 'Voltar' }));
+    await events.click(
+      await screen.findByRole('link', { name: 'Voltar para as atividades' }),
+    );
 
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/aluno\/atividades$/,
@@ -295,7 +314,9 @@ describe('ActivityDetailPage: navegação e erros', () => {
     expect(
       await screen.findByRole('heading', { name: 'Atividade não encontrada' }),
     ).toBeVisible();
-    await events.click(screen.getByRole('link', { name: 'Voltar' }));
+    await events.click(
+      screen.getByRole('link', { name: 'Voltar para as atividades' }),
+    );
 
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/aluno\/atividades$/,
