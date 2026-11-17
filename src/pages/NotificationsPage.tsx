@@ -52,7 +52,7 @@ export function NotificationsPage() {
     });
 
   return (
-    <Stack spacing={2} sx={{ maxWidth: 800, mx: 'auto' }}>
+    <Stack spacing={2}>
       <Typography variant="h4" component="h1">
         Notificações
       </Typography>

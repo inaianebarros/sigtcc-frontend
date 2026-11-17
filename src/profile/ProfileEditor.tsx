@@ -142,12 +142,7 @@ export function ProfileEditor<
   // as únicas caixas, e só a barra de salvar tem fundo próprio.
   return (
     <FormProvider {...form}>
-      <Box
-        component="form"
-        onSubmit={onSubmit}
-        noValidate
-        sx={{ maxWidth: 720, mx: 'auto' }}
-      >
+      <Box component="form" onSubmit={onSubmit} noValidate>
         <Stack spacing={4} divider={<Divider />}>
           <Box>
             <Typography

@@ -34,7 +34,7 @@ export function AdvisingReportPage() {
   }
 
   return (
-    <Stack spacing={3} sx={{ maxWidth: 960, mx: 'auto' }}>
+    <Stack spacing={3}>
       <ReportNavigation
         historyPath={historyPath}
         name={
