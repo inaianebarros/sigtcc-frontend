@@ -22,7 +22,7 @@ export function DashboardScreen<T>({
   const { user } = useSession();
   const { state, retry } = useRefreshedLoad(load);
   return (
-    <Stack spacing={3} sx={{ maxWidth: 960, mx: 'auto' }}>
+    <Stack spacing={3}>
       <DashboardHeader name={user?.fullName ?? null} />
       {state.status === 'loading' && <DashboardSkeleton />}
       {state.status === 'error' && (

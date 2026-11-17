@@ -203,7 +203,9 @@ describe('Comentários: alterações não enviadas (RNF28)', () => {
     expect(
       screen.queryByText(/Você tem alterações não salvas/),
     ).not.toBeInTheDocument();
-    await events.click(screen.getByRole('link', { name: 'Voltar' }));
+    await events.click(
+      screen.getByRole('link', { name: 'Voltar para as atividades' }),
+    );
 
     await screen.findByRole('heading', { level: 1, name: 'Atividades' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -216,7 +218,9 @@ describe('Comentários: alterações não enviadas (RNF28)', () => {
     expect(
       await screen.findByText(/Você tem alterações não salvas/),
     ).toBeVisible();
-    await events.click(screen.getByRole('link', { name: 'Voltar' }));
+    await events.click(
+      screen.getByRole('link', { name: 'Voltar para as atividades' }),
+    );
 
     const dialog = await screen.findByRole('dialog', {
       name: 'Descartar alterações?',
@@ -229,7 +233,9 @@ describe('Comentários: alterações não enviadas (RNF28)', () => {
     );
     expect((await field()) as HTMLTextAreaElement).toHaveValue('Rascunho');
 
-    await events.click(screen.getByRole('link', { name: 'Voltar' }));
+    await events.click(
+      screen.getByRole('link', { name: 'Voltar para as atividades' }),
+    );
     await events.click(
       within(
         await screen.findByRole('dialog', { name: 'Descartar alterações?' }),

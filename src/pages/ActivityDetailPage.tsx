@@ -197,6 +197,7 @@ export function ActivityDetailPage() {
     <>
       <ProfileView
         backPath={backPath}
+        backLabel="Voltar para as atividades"
         notFoundTitle="Atividade não encontrada"
         genericTitle="Atividade"
         skeletonTestId="activity-skeleton"

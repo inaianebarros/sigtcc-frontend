@@ -33,7 +33,7 @@ export function ProfileScreen<TProfile>({
           : null;
   if (failed) {
     return (
-      <Stack spacing={2} sx={{ maxWidth: 720, mx: 'auto' }}>
+      <Stack spacing={2}>
         <Alert severity="error">{failed}</Alert>
         <Button onClick={() => setAttempt((current) => current + 1)}>
           Tentar novamente
