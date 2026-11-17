@@ -70,6 +70,17 @@ describe('Rolagem só na área de conteúdo, abaixo da barra superior', () => {
     );
   });
 
+  it('a casca e a área que rola são o bloco de referência do que é absoluto, para o texto de leitor de tela não esticar o documento', async () => {
+    setViewportWidth(DESKTOP_WIDTH);
+    mockApi(teacherProfileRoutes());
+
+    renderApp('/professor/perfil');
+    await screen.findByRole('navigation', { name: 'Menu principal' });
+
+    expect(topBar().parentElement).toHaveStyle({ position: 'relative' });
+    expect(scroller()).toHaveStyle({ position: 'relative' });
+  });
+
   it('o documento não guarda mais a folga do topo: quem rola é a área principal, abaixo da barra', async () => {
     setViewportWidth(DESKTOP_WIDTH);
     mockApi(teacherProfileRoutes());

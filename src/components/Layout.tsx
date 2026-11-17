@@ -49,6 +49,9 @@ export function Layout() {
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          // Bloco de referência de tudo o que é absoluto na casca: o texto só para leitor de tela
+          // (`VisuallyHidden`) não pode escapar do recorte e esticar o documento.
+          position: 'relative',
         }}
       >
         <AppBar position="static">
@@ -93,6 +96,9 @@ export function Layout() {
               flexGrow: 1,
               minWidth: 0,
               overflowY: 'auto',
+              // Bloco de referência do conteúdo que rola: um texto absoluto lá embaixo na lista fica
+              // dentro da rolagem da `main`, e não na posição dele no documento (que passaria a rolar).
+              position: 'relative',
               // O foco que o teclado leva a um campo não pode parar escondido atrás da barra de salvar.
               scrollPaddingBottom: 'var(--save-bar-clearance, 0px)',
             }}
