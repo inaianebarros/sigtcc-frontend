@@ -71,7 +71,7 @@ describe('Dashboard do professor: próximas reuniões', () => {
     const region = await block();
 
     expect(
-      within(region).getByText('Você não possui reuniões agendadas.'),
+      within(region).getByText('Você não tem reuniões agendadas para hoje.'),
     ).toBeVisible();
     expect(
       within(region).getByRole('link', { name: 'Ir para as reuniões' }),

@@ -75,37 +75,44 @@ function ActiveAdvisingView({
 }) {
   const { activities, nextActivities } = dashboard;
   const hasActivities = activities !== null && activities.total > 0;
+  // Os mesmos intervalos da Dashboard do professor: o resumo (indicadores e progresso) se lê junto,
+  // a 16 px, e os blocos se separam a 32 px.
   return (
-    <>
+    <Stack spacing={4}>
       <AdvisingCard advising={advising} />
       {!hasActivities && (
         <DashboardEmptyState>{NO_ACTIVITIES_MESSAGE}</DashboardEmptyState>
       )}
       {hasActivities && (
         <>
-          <Section title="Indicadores das atividades">
-            <IndicatorGrid>
-              <IndicatorCard
-                label="Total de atividades"
-                value={activities.total}
-              />
-              <IndicatorCard label="Pendentes" value={activities.pending} />
-              <IndicatorCard
-                label="Em andamento"
-                value={activities.inProgress}
-              />
-              <IndicatorCard label="Em revisão" value={activities.inReview} />
-              <IndicatorCard label="Concluídas" value={activities.completed} />
-              <IndicatorCard
-                label="Atrasadas"
-                value={activities.overdue}
-                alert
-              />
-            </IndicatorGrid>
-          </Section>
-          {activities.progressPercent !== null && (
-            <ProgressCard percent={activities.progressPercent} />
-          )}
+          <Stack spacing={2}>
+            <Section title="Indicadores das atividades">
+              <IndicatorGrid>
+                <IndicatorCard
+                  label="Total de atividades"
+                  value={activities.total}
+                />
+                <IndicatorCard label="Pendentes" value={activities.pending} />
+                <IndicatorCard
+                  label="Em andamento"
+                  value={activities.inProgress}
+                />
+                <IndicatorCard label="Em revisão" value={activities.inReview} />
+                <IndicatorCard
+                  label="Concluídas"
+                  value={activities.completed}
+                />
+                <IndicatorCard
+                  label="Atrasadas"
+                  value={activities.overdue}
+                  alert
+                />
+              </IndicatorGrid>
+            </Section>
+            {activities.progressPercent !== null && (
+              <ProgressCard percent={activities.progressPercent} />
+            )}
+          </Stack>
           <Section title="Próximas atividades">
             <ActivityList
               items={nextActivities?.items ?? []}
@@ -127,7 +134,7 @@ function ActiveAdvisingView({
           />
         </Section>
       )}
-    </>
+    </Stack>
   );
 }
 

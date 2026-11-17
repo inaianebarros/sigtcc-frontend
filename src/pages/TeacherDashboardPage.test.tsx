@@ -268,22 +268,16 @@ describe('Dashboard do professor: com orientações ativas', () => {
     ).toBeVisible();
   });
 
-  it('dá acesso às solicitações recebidas, aos orientandos e às atividades', async () => {
+  it('não tem a seção de acessos rápidos: o menu lateral já leva às telas', async () => {
     setup();
-
-    const region = await screen.findByRole('region', {
-      name: 'Acessos rápidos',
-    });
+    await attention();
 
     expect(
-      within(region).getByRole('link', { name: 'Solicitações recebidas' }),
-    ).toHaveAttribute('href', '/professor/solicitacoes');
+      screen.queryByRole('region', { name: 'Acessos rápidos' }),
+    ).not.toBeInTheDocument();
     expect(
-      within(region).getByRole('link', { name: 'Orientandos' }),
-    ).toHaveAttribute('href', '/professor/orientandos');
-    expect(
-      within(region).getByRole('link', { name: 'Atividades' }),
-    ).toHaveAttribute('href', '/professor/atividades');
+      screen.queryByRole('link', { name: 'Solicitações recebidas' }),
+    ).not.toBeInTheDocument();
   });
 
   it('os links do perfil e das atividades de um orientando levam às telas existentes', async () => {
@@ -295,8 +289,11 @@ describe('Dashboard do professor: com orientações ativas', () => {
       within(maria!).getByRole('link', { name: 'Ver atividades' }),
     );
 
-    expect(await screen.findByTestId('location')).toHaveTextContent(
-      '/professor/atividades?aluno=101',
+    // O elemento aparece antes de o texto da rota atualizar: espera o texto, não só o elemento.
+    await waitFor(() =>
+      expect(screen.getByTestId('location')).toHaveTextContent(
+        '/professor/atividades?aluno=101',
+      ),
     );
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Atividades' }),
@@ -335,7 +332,7 @@ describe('Dashboard do professor: com orientações ativas', () => {
 });
 
 describe('Dashboard do professor: casos sem dados', () => {
-  it('sem orientações ativas mostra um estado vazio, sem indicadores, e ainda dá acesso às solicitações', async () => {
+  it('sem orientações ativas mostra um estado vazio, sem indicadores nem acessos rápidos', async () => {
     setup(makeEmptyTeacherDashboard());
 
     expect(
@@ -353,10 +350,9 @@ describe('Dashboard do professor: casos sem dados', () => {
     expect(
       screen.queryByRole('region', { name: 'Próximos prazos' }),
     ).not.toBeInTheDocument();
-    const quick = screen.getByRole('region', { name: 'Acessos rápidos' });
     expect(
-      within(quick).getByRole('link', { name: 'Solicitações recebidas' }),
-    ).toBeVisible();
+      screen.queryByRole('region', { name: 'Acessos rápidos' }),
+    ).not.toBeInTheDocument();
   });
 
   it('com orientandos mas sem atividades mostra só o número de orientandos e o estado vazio', async () => {

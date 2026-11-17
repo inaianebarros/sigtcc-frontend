@@ -28,7 +28,7 @@ export function MeetingList({
     <Stack spacing={1}>
       {items.length === 0 ? (
         <DashboardEmptyState>
-          Você não possui reuniões agendadas.
+          Você não tem reuniões agendadas para hoje.
         </DashboardEmptyState>
       ) : (
         <Stack component="ul" spacing={1} sx={{ m: 0, p: 0 }}>

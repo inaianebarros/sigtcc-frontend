@@ -1,5 +1,4 @@
-import { Link, Stack } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Stack } from '@mui/material';
 import { Section } from '../activities/Section';
 import { activityPath, paths } from '../navigation/paths';
 import type { TeacherDashboard } from '../services/dashboardService';
@@ -16,67 +15,55 @@ const NO_ADVISEES_MESSAGE =
 const NO_ACTIVITIES_MESSAGE =
   'Os seus orientandos ainda não possuem atividades cadastradas.';
 
-/** O acesso às telas que a Dashboard resume: as solicitações, os orientandos e as atividades. */
-function QuickAccess() {
-  return (
-    <Section title="Acessos rápidos">
-      <Stack direction="row" useFlexGap sx={{ gap: 2, flexWrap: 'wrap' }}>
-        <Link component={RouterLink} to={paths.teacherRequests}>
-          Solicitações recebidas
-        </Link>
-        <Link component={RouterLink} to={paths.teacherAdvisees}>
-          Orientandos
-        </Link>
-        <Link component={RouterLink} to={paths.teacherActivities}>
-          Atividades
-        </Link>
-      </Stack>
-    </Section>
-  );
-}
-
 function ActiveAdviseesView({ dashboard }: { dashboard: TeacherDashboard }) {
   const { activities, attentionAdvisees, nextDeadlines } = dashboard;
   const hasActivities = activities !== null && activities.total > 0;
+  // O resumo (indicadores e progresso) se lê junto, a 16 px; os blocos de lista, que são pesados,
+  // se separam a 32 px.
   return (
-    <>
-      <Section title="Indicadores das orientações">
-        <IndicatorGrid>
-          <IndicatorCard
-            label="Orientandos ativos"
-            value={dashboard.adviseesCount}
-          />
-          {hasActivities && (
-            <>
-              <IndicatorCard
-                label="Total de atividades"
-                value={activities.total}
-              />
-              <IndicatorCard label="Pendentes" value={activities.pending} />
-              <IndicatorCard
-                label="Em andamento"
-                value={activities.inProgress}
-              />
-              <IndicatorCard
-                label="Aguardando revisão"
-                value={activities.inReview}
-              />
-              <IndicatorCard label="Concluídas" value={activities.completed} />
-              <IndicatorCard
-                label="Atrasadas"
-                value={activities.overdue}
-                alert
-              />
-            </>
-          )}
-        </IndicatorGrid>
-      </Section>
-      {!hasActivities && (
-        <DashboardEmptyState>{NO_ACTIVITIES_MESSAGE}</DashboardEmptyState>
-      )}
-      {hasActivities && activities.progressPercent !== null && (
-        <ProgressCard percent={activities.progressPercent} />
-      )}
+    <Stack spacing={4}>
+      <Stack spacing={2}>
+        <Section title="Indicadores das orientações">
+          <IndicatorGrid>
+            <IndicatorCard
+              label="Orientandos ativos"
+              value={dashboard.adviseesCount}
+            />
+            {hasActivities && (
+              <>
+                <IndicatorCard
+                  label="Total de atividades"
+                  value={activities.total}
+                />
+                <IndicatorCard label="Pendentes" value={activities.pending} />
+                <IndicatorCard
+                  label="Em andamento"
+                  value={activities.inProgress}
+                />
+                <IndicatorCard
+                  label="Aguardando revisão"
+                  value={activities.inReview}
+                />
+                <IndicatorCard
+                  label="Concluídas"
+                  value={activities.completed}
+                />
+                <IndicatorCard
+                  label="Atrasadas"
+                  value={activities.overdue}
+                  alert
+                />
+              </>
+            )}
+          </IndicatorGrid>
+        </Section>
+        {!hasActivities && (
+          <DashboardEmptyState>{NO_ACTIVITIES_MESSAGE}</DashboardEmptyState>
+        )}
+        {hasActivities && activities.progressPercent !== null && (
+          <ProgressCard percent={activities.progressPercent} />
+        )}
+      </Stack>
       {hasActivities && (
         <>
           <Section title="Orientandos que precisam de atenção">
@@ -106,7 +93,7 @@ function ActiveAdviseesView({ dashboard }: { dashboard: TeacherDashboard }) {
           />
         </Section>
       )}
-    </>
+    </Stack>
   );
 }
 
@@ -120,7 +107,6 @@ export function TeacherDashboardView({
     dashboard.adviseesCount === 0 || dashboard.activities === null;
   return (
     <>
-      <QuickAccess />
       {withoutAdvisees ? (
         <DashboardEmptyState>{NO_ADVISEES_MESSAGE}</DashboardEmptyState>
       ) : (
