@@ -63,7 +63,7 @@ describe('ForgotPasswordPage', () => {
 
     expect(
       await screen.findByText(
-        'Se houver uma conta com este e-mail, enviaremos um link para redefinir a senha. O link vale por 1 hora.',
+        'Se houver uma conta com este e-mail, enviaremos um link para redefinir a senha. O link vale por 1 hora. O e-mail pode levar até 1 minuto para chegar.',
       ),
     ).toBeInTheDocument();
     const [, init] = requestsTo(fetchMock, FORGOT_ROUTE)[0] ?? [];
@@ -74,6 +74,30 @@ describe('ForgotPasswordPage', () => {
       screen.getByRole('link', { name: 'Voltar ao login' }),
     ).toHaveAttribute('href', '/login');
   });
+
+  it.each([
+    ['alguem@example.com', 'Link enviado.'],
+    ['ninguem@example.com', 'Conta não encontrada.'],
+  ])(
+    'diz o mesmo prazo do e-mail no alerta, seja qual for o e-mail (%s) ou a resposta do servidor',
+    async (email, serverText) => {
+      mockApi({
+        ...sessionless,
+        [FORGOT_ROUTE]: { status: 200, body: { detail: serverText } },
+      });
+      const user = userEvent.setup();
+      await openForm();
+      await user.type(screen.getByLabelText('E-mail'), email);
+
+      await user.click(screen.getByRole('button', { name: 'Enviar link' }));
+
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent(
+        'Se houver uma conta com este e-mail, enviaremos um link para redefinir a senha. O link vale por 1 hora. O e-mail pode levar até 1 minuto para chegar.',
+      );
+      expect(alert).not.toHaveTextContent(serverText);
+    },
+  );
 
   it('desabilita o botão e mostra o andamento durante o envio', async () => {
     let finish: (value: MockResponse) => void = () => {};
@@ -115,6 +139,9 @@ describe('ForgotPasswordPage', () => {
       await screen.findByText('Muitas tentativas. Tente novamente em 1 hora.'),
     ).toBeInTheDocument();
     expect(screen.getByLabelText('E-mail')).toHaveValue('alguem@example.com');
+    expect(
+      screen.queryByText(/pode levar até 1 minuto/),
+    ).not.toBeInTheDocument();
   });
 
   it('avisa quando há pedidos demais e mantém o formulário', async () => {

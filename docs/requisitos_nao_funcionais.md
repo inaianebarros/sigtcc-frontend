@@ -16,9 +16,9 @@ RNF06 - **Controle de Acesso:** O sistema deve garantir que cada usuário acesse
 
 RNF07 - **Expiração de Sessão:** A sessão do usuário deve expirar automaticamente após 30 minutos de inatividade.
 
-RNF08 - **Validade do Link de Recuperação:** O link de recuperação de senha deve expirar em até 1 hora após seu envio.
+RNF08 - **Validade do Link de Recuperação:** O link de recuperação de senha deve expirar em até 1 hora após seu envio, contada do envio do e-mail e não do pedido.
 
-RNF25 - **Limitação de Tentativas:** O sistema deve limitar a taxa de tentativas de login, de pedidos de redefinição de senha e de confirmação da senha atual na alteração de senha, por conta e por cliente, bloqueando temporariamente novas tentativas após 5 falhas em 15 minutos, e limitar por cliente as requisições de cada rota de autenticação, inclusive a alteração de senha, para dificultar ataques automatizados. As senhas aceitas têm no máximo 128 caracteres, para que cada tentativa não custe o hash de um valor de tamanho arbitrário.
+RNF25 - **Limitação de Tentativas:** O sistema deve limitar a taxa de tentativas de login, de pedidos de redefinição de senha e de confirmação da senha atual na alteração de senha, por conta e por cliente, bloqueando temporariamente novas tentativas após 5 falhas em 15 minutos, e limitar por cliente as requisições de cada rota de autenticação, inclusive a alteração de senha, para dificultar ataques automatizados. O pedido de redefinição de senha também é limitado por e-mail, em 3 pedidos por hora, qualquer que seja o texto informado, exista a conta ou não: acima disso a resposta continua sendo a mesma resposta neutra e nenhum e-mail é enviado, para o limite não revelar quais e-mails existem (ADR 0020). As senhas aceitas têm no máximo 128 caracteres, para que cada tentativa não custe o hash de um valor de tamanho arbitrário.
 
 ## Confiabilidade
 

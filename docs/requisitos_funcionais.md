@@ -12,7 +12,7 @@ RF05 - **Editar Perfil do Professor:** O sistema deve permitir que o professor e
 
 RF06 - **Alterar Senha:** O sistema deve permitir que o usuário altere sua senha mediante confirmação da senha atual.
 
-RF07 - **Recuperar Senha:** O sistema deve permitir que usuários recuperem o acesso à sua conta por meio de um link de redefinição de senha enviado ao e-mail cadastrado, com validade de tempo limitado.
+RF07 - **Recuperar Senha:** O sistema deve permitir que usuários recuperem o acesso à sua conta por meio de um link de redefinição de senha enviado ao e-mail cadastrado, com validade de tempo limitado. A resposta ao pedido é sempre a mesma, exista ou não conta ativa com o e-mail informado, e o tempo de resposta também não depende disso, porque o e-mail sai por uma fila e não dentro do pedido (ADR 0020): assim ninguém descobre quais e-mails estão cadastrados. O e-mail pode levar até 1 minuto, e a tela avisa. Um pedido que o sistema não conseguiu enviar em 15 minutos é descartado, e o link é criado no momento do envio.
 
 RF08 - **Realizar Log Out:** O sistema deve permitir que o usuário encerre sua sessão com segurança.
 

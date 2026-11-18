@@ -24,7 +24,7 @@ const forgotSchema = z.object({ email: accountShape.email });
 type ForgotForm = z.infer<typeof forgotSchema>;
 
 const NEUTRAL_MESSAGE =
-  'Se houver uma conta com este e-mail, enviaremos um link para redefinir a senha. O link vale por 1 hora.';
+  'Se houver uma conta com este e-mail, enviaremos um link para redefinir a senha. O link vale por 1 hora. O e-mail pode levar até 1 minuto para chegar.';
 
 export function ForgotPasswordPage() {
   const { status, user } = useSession();
