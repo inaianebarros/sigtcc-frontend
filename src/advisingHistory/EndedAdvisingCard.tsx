@@ -34,7 +34,7 @@ function DateRow({ label, value }: { label: string; value: string }) {
 /**
  * Uma orientação encerrada: a outra parte (o professor, para o aluno; o aluno, para o professor),
  * o tema congelado e as datas (RF49). O motivo do encerramento fica no relatório, que o "Ver
- * relatório" abre (RF61).
+ * relatório da orientação" abre (RF61).
  */
 export function EndedAdvisingCard({
   advising,
@@ -99,10 +99,9 @@ export function EndedAdvisingCard({
             </Typography>
             <Typography>
               <OriginLink to={reportPath}>
-                Ver relatório
+                Ver relatório da orientação{' '}
                 <VisuallyHidden>
-                  {' '}
-                  de {advising.counterpart.fullName}
+                  com {advising.counterpart.fullName}
                 </VisuallyHidden>
               </OriginLink>
             </Typography>

@@ -66,12 +66,7 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     ).not.toBeInTheDocument();
     expect(
       screen.getByText(
-        'Aqui ficam só as orientações que já terminaram. Para ver a orientação em andamento, volte ao Início.',
-      ),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        'Veja o tema, as datas e o relatório de cada orientação que já terminou.',
+        'Orientações que já terminaram, com o tema, as datas e o relatório de cada uma. Se houver orientação em andamento, ela fica no Início.',
       ),
     ).toBeVisible();
     expect(
@@ -129,12 +124,14 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     ).toHaveAttribute('href', '/aluno/orientadores/50');
   });
 
-  it('"Ver relatório" é um link para o relatório da orientação, no endereço do aluno', async () => {
+  it('"Ver relatório da orientação" é um link para o relatório da orientação, no endereço do aluno', async () => {
     setup([makeEndedAdvising(9)]);
     await screen.findByText('Pessoa 9');
 
     expect(
-      within(cardOf('Pessoa 9')).getByRole('link', { name: /Ver relatório/ }),
+      within(cardOf('Pessoa 9')).getByRole('link', {
+        name: 'Ver relatório da orientação com Pessoa 9',
+      }),
     ).toHaveAttribute('href', '/aluno/historico/9/relatorio');
   });
 
@@ -156,7 +153,7 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
 
     expect(within(total).getByText('3')).toBeVisible();
     expect(
-      screen.queryByRole('group', { name: 'Orientandos' }),
+      screen.queryByRole('group', { name: 'Orientandos ativos' }),
     ).not.toBeInTheDocument();
   });
 
@@ -204,7 +201,7 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
 
     expect(
       await screen.findByText(
-        'Você ainda não tem orientações encerradas. Quando o professor encerrar uma orientação, ela aparece aqui, com o tema do TCC, as datas e o relatório. Para ver a orientação em andamento, volte ao Início.',
+        'Você ainda não tem orientações encerradas. Quando o professor encerrar uma orientação, ela aparece aqui, com o tema do TCC, as datas e o relatório.',
       ),
     ).toBeVisible();
     expect(screen.queryByRole('article')).not.toBeInTheDocument();
@@ -253,7 +250,7 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
     expect(within(card).getByText('Orientando(a)')).toBeVisible();
     expect(
       screen.getByText(
-        'Aqui ficam só as orientações que você encerrou. Os alunos que você orienta hoje estão em Orientandos.',
+        'Orientações que você encerrou, com o tema, as datas e o relatório de cada uma. Quem você orienta agora está em Orientandos.',
       ),
     ).toBeVisible();
     expect(
@@ -284,12 +281,14 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
     ).toHaveAttribute('href', '/professor/alunos/70');
   });
 
-  it('"Ver relatório" abre o relatório no endereço do professor', async () => {
+  it('"Ver relatório da orientação" abre o relatório no endereço do professor', async () => {
     setup([makeEndedAdvising(4)], { user: 'teacher' });
     await screen.findByText('Pessoa 4');
 
     expect(
-      within(cardOf('Pessoa 4')).getByRole('link', { name: /Ver relatório/ }),
+      within(cardOf('Pessoa 4')).getByRole('link', {
+        name: 'Ver relatório da orientação com Pessoa 4',
+      }),
     ).toHaveAttribute('href', '/professor/historico/4/relatorio');
   });
 
@@ -299,7 +298,7 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
     const ended = await screen.findByRole('group', {
       name: 'Orientações encerradas',
     });
-    const active = screen.getByRole('group', { name: 'Orientandos' });
+    const active = screen.getByRole('group', { name: 'Orientandos ativos' });
 
     expect(within(ended).getByText('2')).toBeVisible();
     expect(within(active).getByText('4')).toBeVisible();
@@ -339,7 +338,7 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
 
     expect(
       await screen.findByText(
-        'Você ainda não encerrou nenhuma orientação. As que você encerrar aparecem aqui, com o tema do TCC, as datas e o relatório. Os alunos que você orienta hoje estão em Orientandos.',
+        'Você ainda não encerrou nenhuma orientação. As que você encerrar aparecem aqui, com o tema do TCC, as datas e o relatório.',
       ),
     ).toBeVisible();
   });
@@ -429,6 +428,6 @@ describe('AdvisingHistoryPage: o celular', () => {
     const card = await screen.findByRole('article', { name: 'Pessoa 1' });
 
     expect(within(card).getByText('Tema da orientação 1')).toBeVisible();
-    expect(within(card).getByText('Ver relatório')).toBeVisible();
+    expect(within(card).getByText('Ver relatório da orientação')).toBeVisible();
   });
 });

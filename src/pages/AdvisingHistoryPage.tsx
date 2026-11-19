@@ -73,13 +73,8 @@ export function AdvisingHistoryPage() {
         </Typography>
         <Typography color="text.secondary">
           {isStudent
-            ? 'Aqui ficam só as orientações que já terminaram. Para ver a orientação em andamento, volte ao Início.'
-            : 'Aqui ficam só as orientações que você encerrou. Os alunos que você orienta hoje estão em Orientandos.'}
-        </Typography>
-        <Typography color="text.secondary">
-          {isStudent
-            ? 'Veja o tema, as datas e o relatório de cada orientação que já terminou.'
-            : 'Veja o tema, as datas e o relatório de cada orientação que você encerrou.'}
+            ? 'Orientações que já terminaram, com o tema, as datas e o relatório de cada uma. Se houver orientação em andamento, ela fica no Início.'
+            : 'Orientações que você encerrou, com o tema, as datas e o relatório de cada uma. Quem você orienta agora está em Orientandos.'}
         </Typography>
       </div>
       <HistoryTotals
@@ -125,8 +120,8 @@ export function AdvisingHistoryPage() {
         {list.status === 'ready' && list.data.count === 0 && search === '' && (
           <Alert severity="info">
             {isStudent
-              ? 'Você ainda não tem orientações encerradas. Quando o professor encerrar uma orientação, ela aparece aqui, com o tema do TCC, as datas e o relatório. Para ver a orientação em andamento, volte ao Início.'
-              : 'Você ainda não encerrou nenhuma orientação. As que você encerrar aparecem aqui, com o tema do TCC, as datas e o relatório. Os alunos que você orienta hoje estão em Orientandos.'}
+              ? 'Você ainda não tem orientações encerradas. Quando o professor encerrar uma orientação, ela aparece aqui, com o tema do TCC, as datas e o relatório.'
+              : 'Você ainda não encerrou nenhuma orientação. As que você encerrar aparecem aqui, com o tema do TCC, as datas e o relatório.'}
           </Alert>
         )}
         {list.status === 'ready' && list.data.count === 0 && search !== '' && (
