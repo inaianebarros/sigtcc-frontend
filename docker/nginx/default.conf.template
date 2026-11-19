@@ -2,6 +2,12 @@
 # (${PORT}, ${BACKEND_URL}, ${NGINX_LOCAL_RESOLVERS}) são substituídas; as variáveis do nginx ($uri etc.)
 # ficam intactas.
 
+# IP do cliente: o X-Real-IP da borda do Railway; sem ele, o IP de quem conectou ao nginx.
+map $http_x_real_ip $client_ip {
+    default $http_x_real_ip;
+    ""      $remote_addr;
+}
+
 # O X-Forwarded-Proto vindo da borda é preservado; sem ele (acesso direto) vale o esquema local.
 map $http_x_forwarded_proto $forwarded_proto {
     default $http_x_forwarded_proto;
@@ -47,9 +53,12 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Connection "";
         proxy_set_header Host $http_host;
-        # Acrescenta o IP de quem conectou ao nginx ao X-Forwarded-For que veio da borda: este proxy
-        # é UM salto a mais para o NUM_PROXIES do backend (ADR backend 0007).
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # O IP do cliente é o que a borda do Railway informa no X-Real-IP; o X-Forwarded-For dela não
+        # traz o cliente de forma confiável. O nginx o repassa como único valor do X-Forwarded-For,
+        # então o backend conta UM salto (NUM_PROXIES=1, ADR backend 0007) e um X-Forwarded-For
+        # forjado pelo cliente é descartado. Sem X-Real-IP (acesso direto), vale o IP da conexão.
+        proxy_set_header X-Forwarded-For $client_ip;
+        proxy_set_header X-Real-IP $client_ip;
         proxy_set_header X-Forwarded-Proto $forwarded_proto;
         proxy_set_header X-Forwarded-Host $http_host;
 
