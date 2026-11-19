@@ -13,7 +13,7 @@ interface DashboardScreenProps<T> {
 
 /**
  * A moldura das Dashboards (RF50 e RF51): o cabeçalho, o esqueleto, o erro com nova tentativa e,
- * pronto, o conteúdo de cada perfil. Relê ao abrir e ao voltar para a aba, sem polling.
+ * pronto, o conteúdo de cada perfil. Relê a cada 30 s e ao voltar para a aba (ADR frontend 0006).
  */
 export function DashboardScreen<T>({
   load,

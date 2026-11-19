@@ -1,46 +1,63 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
+import { useLastReady } from './useLastReady';
 import { useLoad } from './useLoad';
 import type { LoadState } from './useLoad';
+import { usePolling } from './usePolling';
+import { useSession } from './useSession';
 
-/** Um foco e uma aba que volta a ficar visível chegam quase juntos: valem uma leitura só. */
-const RELOAD_DEBOUNCE_MS = 1000;
+/** De quanto em quanto tempo uma tela aberta relê os próprios dados (ADR frontend 0006). */
+export const REFRESH_INTERVAL_MS = 30_000;
 
 /**
- * Uma leitura que se refaz quando a pessoa volta para a aba, sem polling (ADR 0003). Os dados já
- * na tela ficam enquanto a nova leitura corre ou se ela falha: só o primeiro carregamento mostra
- * o esqueleto ou o erro. `retry` refaz a leitura depois de uma falha.
+ * Uma leitura que a tela refaz sozinha a cada 30 s com a aba visível e na hora em que a pessoa
+ * volta para a aba (ADR frontend 0006). O ciclo é o de `usePolling`: pausa com a aba oculta e
+ * para ao desmontar ou sem sessão.
+ *
+ * Só a primeira leitura de cada `key` (página, filtros) e o `retry` mostram o carregamento ou o
+ * erro. A releitura em segundo plano não: enquanto corre, e se falhar, `state` continua `ready`
+ * com os dados já na tela, e o ciclo seguinte tenta de novo. Uma releitura só começa quando a
+ * anterior terminou, e só se já há dados da `key` atual na tela.
+ *
+ * Os dados novos chegam como um objeto novo; a tela os renderiza com as mesmas `key`s de lista,
+ * e o React troca só o que mudou: foco, rolagem, itens abertos e formulários ficam como estão.
  */
-export function useRefreshedLoad<T>(load: () => Promise<T>): {
+export function useRefreshedLoad<T>(
+  load: () => Promise<T>,
+  key: string | number = '',
+): {
   state: LoadState<T>;
   retry: () => void;
 } {
+  const { status } = useSession();
   const [reads, setReads] = useState(0);
-  const result = useLoad(load, reads);
-  const [kept, setKept] = useState<T | null>(null);
-  if (result.status === 'ready' && result.data !== kept) {
-    setKept(result.data);
-  }
-  const lastReload = useRef(0);
+  const [backgroundRead, setBackgroundRead] = useState<string | null>(null);
+  const readKey = `${key}|${reads}`;
+  const result = useLoad(load, readKey);
+  const kept = useLastReady(result);
+  const inBackground = backgroundRead === readKey && kept !== null;
 
-  useEffect(() => {
-    const reload = () => {
-      if (document.visibilityState === 'hidden') return;
-      const now = Date.now();
-      if (now - lastReload.current < RELOAD_DEBOUNCE_MS) return;
-      lastReload.current = now;
-      setReads((count) => count + 1);
-    };
-    window.addEventListener('focus', reload);
-    document.addEventListener('visibilitychange', reload);
-    return () => {
-      window.removeEventListener('focus', reload);
-      document.removeEventListener('visibilitychange', reload);
-    };
-  }, []);
+  usePolling(
+    () => {
+      // A releitura que falhou em segundo plano deixa os dados da mesma key na tela e pode ser
+      // tentada de novo; qualquer outra leitura em curso ou com erro espera.
+      const settledWithData =
+        result.status === 'ready' ||
+        (result.status === 'error' && inBackground);
+      if (!settledWithData) return;
+      const next = reads + 1;
+      setReads(next);
+      setBackgroundRead(`${key}|${next}`);
+    },
+    {
+      intervalMs: REFRESH_INTERVAL_MS,
+      enabled: status === 'authenticated',
+      pollOnStart: false,
+    },
+  );
 
-  const keepsTheScreen = result.status !== 'ready' && kept !== null;
-  const state: LoadState<T> = keepsTheScreen
-    ? { status: 'ready', data: kept }
-    : result;
+  const state: LoadState<T> =
+    inBackground && result.status !== 'ready'
+      ? { status: 'ready', data: kept }
+      : result;
   return { state, retry: () => setReads((count) => count + 1) };
 }

@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { REFRESH_INTERVAL_MS } from '../hooks/useRefreshedLoad';
 import { useSession } from '../hooks/useSession';
 import { tokenStore } from '../services/tokenStore';
 import { mockApi, requestsTo } from '../test/mockApi';
@@ -50,7 +51,7 @@ async function signedIn() {
       expect(screen.getByTestId('status')).toHaveTextContent('authenticated'),
     { timeout: 5000 },
   );
-  // Os ouvintes de foco e de visibilidade são registrados num efeito que depende da sessão
+  // O ciclo de releitura e o ouvinte de visibilidade são registrados num efeito que depende da sessão
   // autenticada. O React o descarrega logo depois da renderização, e um evento disparado antes
   // disso cai no vazio: o `act` descarrega o efeito antes de o teste seguir.
   await act(async () => {});
@@ -165,26 +166,61 @@ describe('SessionProvider: estado da orientação', () => {
   });
 });
 
-describe('SessionProvider: releitura ao voltar para a aba', () => {
+describe('SessionProvider: releitura periódica e ao voltar para a aba', () => {
   beforeEach(() => {
     tokenStore.clear();
     vi.unstubAllGlobals();
   });
 
-  it('relê o usuário quando a janela volta ao foco', async () => {
-    const fetchMock = mockApi({
-      'POST /api/auth/refresh': { body: { access_token: 't' } },
-      [ME]: { body: meBody({ has_active_advising: false }) },
-    });
-    renderProvider();
-    await signedIn();
-    expect(requestsTo(fetchMock, ME)).toHaveLength(1);
+  it('relê o usuário a cada 30 s com a aba visível', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const fetchMock = mockApi({
+        'POST /api/auth/refresh': { body: { access_token: 't' } },
+        [ME]: { body: meBody({ has_active_advising: false }) },
+      });
+      renderProvider();
+      await signedIn();
+      expect(requestsTo(fetchMock, ME)).toHaveLength(1);
 
-    act(() => {
-      window.dispatchEvent(new Event('focus'));
-    });
+      await act(async () => {
+        vi.advanceTimersByTime(REFRESH_INTERVAL_MS - 1000);
+      });
+      expect(requestsTo(fetchMock, ME)).toHaveLength(1);
 
-    await waitFor(() => expect(requestsTo(fetchMock, ME)).toHaveLength(2));
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+      await waitFor(() => expect(requestsTo(fetchMock, ME)).toHaveLength(2));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('com a aba oculta não relê o usuário', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const visibility = vi.spyOn(document, 'visibilityState', 'get');
+    try {
+      const fetchMock = mockApi({
+        'POST /api/auth/refresh': { body: { access_token: 't' } },
+        [ME]: { body: meBody({ has_active_advising: false }) },
+      });
+      renderProvider();
+      await signedIn();
+      visibility.mockReturnValue('hidden');
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(REFRESH_INTERVAL_MS * 3);
+      });
+
+      expect(requestsTo(fetchMock, ME)).toHaveLength(1);
+    } finally {
+      visibility.mockRestore();
+      vi.useRealTimers();
+    }
   });
 
   it('relê o usuário quando a aba volta a ficar visível, mas não quando ela é escondida', async () => {
@@ -212,20 +248,28 @@ describe('SessionProvider: releitura ao voltar para a aba', () => {
     visibility.mockRestore();
   });
 
-  it('não relê nada para quem não entrou e não faz polling', async () => {
-    const fetchMock = mockApi({
-      'POST /api/auth/refresh': { status: 401, body: {} },
-    });
-    renderProvider();
-    await waitFor(() =>
-      expect(screen.getByTestId('status')).toHaveTextContent('anonymous'),
-    );
+  it('não relê nada para quem não entrou', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const fetchMock = mockApi({
+        'POST /api/auth/refresh': { status: 401, body: {} },
+      });
+      renderProvider();
+      await waitFor(() =>
+        expect(screen.getByTestId('status')).toHaveTextContent('anonymous'),
+      );
 
-    act(() => {
-      window.dispatchEvent(new Event('focus'));
-    });
+      act(() => {
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(REFRESH_INTERVAL_MS * 3);
+      });
 
-    expect(requestsTo(fetchMock, ME)).toHaveLength(0);
+      expect(requestsTo(fetchMock, ME)).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

@@ -1,5 +1,6 @@
 import { act, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
+import { REFRESH_INTERVAL_MS } from '../hooks/useRefreshedLoad';
 import { tokenStore } from '../services/tokenStore';
 import { mockApi } from '../test/mockApi';
 import { renderApp } from '../test/renderApp';
@@ -38,7 +39,11 @@ describe('item que exige orientação ativa, no menu real', () => {
     setViewportWidth(DESKTOP_WIDTH);
   });
 
-  it('começa desabilitado com o motivo e é habilitado quando o servidor passa a informar a orientação, sem recarregar', async () => {
+  it('começa desabilitado com o motivo e é habilitado em até 30 s quando o servidor passa a informar a orientação, sem recarregar', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
     let advising = false;
     mockApi({
       'POST /api/auth/refresh': { body: { access_token: 't' } },
@@ -62,12 +67,12 @@ describe('item que exige orientação ativa, no menu real', () => {
     expect(disabled).toHaveAttribute('aria-disabled', 'true');
     expect(screen.getByText(REASON)).toBeVisible();
 
-    // O ouvinte de foco é registrado num efeito que depende da sessão autenticada: o `act`
-    // o descarrega antes do evento, que senão pode cair no vazio.
+    // O ciclo de releitura é registrado num efeito que depende da sessão autenticada: o `act`
+    // o descarrega antes de o relógio andar.
     await act(async () => {});
     advising = true;
-    act(() => {
-      window.dispatchEvent(new Event('focus'));
+    await act(async () => {
+      vi.advanceTimersByTime(REFRESH_INTERVAL_MS);
     });
 
     await waitFor(

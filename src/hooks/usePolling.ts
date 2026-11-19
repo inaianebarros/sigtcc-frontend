@@ -4,6 +4,11 @@ interface PollingOptions {
   intervalMs: number;
   /** Desabilitado, nada é consultado: quem não entrou, e o administrador (ADR 0003). */
   enabled: boolean;
+  /**
+   * Se consulta logo ao habilitar. Quem já leu os dados ao montar desliga, para não ler duas
+   * vezes; a volta para a aba consulta na hora de qualquer jeito. Padrão: `true`.
+   */
+  pollOnStart?: boolean;
 }
 
 /**
@@ -13,7 +18,7 @@ interface PollingOptions {
  */
 export function usePolling(
   poll: () => void,
-  { intervalMs, enabled }: PollingOptions,
+  { intervalMs, enabled, pollOnStart = true }: PollingOptions,
 ) {
   const latestPoll = useEffectEvent(poll);
 
@@ -24,20 +29,20 @@ export function usePolling(
       if (timer !== null) clearInterval(timer);
       timer = null;
     };
-    const start = () => {
+    const start = (pollNow: boolean) => {
       stop();
-      latestPoll();
+      if (pollNow) latestPoll();
       timer = setInterval(latestPoll, intervalMs);
     };
     const onVisibilityChange = () => {
       if (document.visibilityState === 'hidden') stop();
-      else start();
+      else start(true);
     };
-    if (document.visibilityState !== 'hidden') start();
+    if (document.visibilityState !== 'hidden') start(pollOnStart);
     document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
       stop();
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [enabled, intervalMs]);
+  }, [enabled, intervalMs, pollOnStart]);
 }

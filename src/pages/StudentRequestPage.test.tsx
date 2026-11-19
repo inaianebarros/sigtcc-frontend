@@ -556,7 +556,7 @@ describe('StudentRequestPage: carregamento, erro e releitura', () => {
     answered = true;
 
     act(() => {
-      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
     });
 
     expect(screen.queryByTestId('request-skeleton')).not.toBeInTheDocument();
@@ -565,9 +565,9 @@ describe('StudentRequestPage: carregamento, erro e releitura', () => {
     expect(requestsTo(fetchMock, LIST).length).toBeGreaterThanOrEqual(2);
   });
 
-  it('mantém o que está na tela quando a releitura falha, mas avisa que pode estar desatualizado e oferece atualizar', async () => {
+  it('mantém o que está na tela, sem aviso, quando a releitura em segundo plano falha', async () => {
     let fail = false;
-    mockApi({
+    const fetchMock = mockApi({
       ...routes([]),
       [LIST]: () =>
         fail
@@ -581,35 +581,35 @@ describe('StudentRequestPage: carregamento, erro e releitura', () => {
               },
             },
     });
-    const user = userEvent.setup();
     renderApp('/aluno/solicitacao');
     await screen.findByText('Pendente');
+    const before = requestsTo(fetchMock, LIST).length;
     fail = true;
 
     act(() => {
-      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
     });
 
-    expect(await screen.findByText(/pode estar desatualizado/)).toBeVisible();
-    expect(screen.getByText('Pendente')).toBeVisible();
-    fail = false;
-    await user.click(screen.getByRole('button', { name: 'Atualizar' }));
     await waitFor(() =>
-      expect(
-        screen.queryByText(/pode estar desatualizado/),
-      ).not.toBeInTheDocument(),
+      expect(requestsTo(fetchMock, LIST).length).toBeGreaterThan(before),
     );
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(screen.getByText('Pendente')).toBeVisible();
+    expect(
+      screen.queryByText(/pode estar desatualizado/),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('junta o foco da janela e a visibilidade da aba numa só releitura', async () => {
+  it('dois avisos de aba visível seguidos fazem uma só releitura', async () => {
     const fetchMock = mockApi(routes([item(1, 'rejected')]));
     renderApp('/aluno/solicitacao');
     await screen.findByRole('article');
     const before = requestsTo(fetchMock, LIST).length;
 
-    // No navegador os dois eventos chegam em momentos diferentes, e cada um renderiza sozinho.
+    // A segunda chega com a primeira releitura ainda em curso e não começa outra.
     act(() => {
-      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
     });
     act(() => {
       document.dispatchEvent(new Event('visibilitychange'));
