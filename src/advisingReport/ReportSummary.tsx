@@ -1,12 +1,14 @@
 import { Paper, Stack, Typography } from '@mui/material';
 import type { AdvisingReport } from '../services/advisingReportService';
 
-/** O resumo do relatório: os três totais gerais, que não mudam com o filtro dos registros. */
+/** O resumo do relatório: os dois totais gerais, que não mudam com o filtro da lista. */
 export function ReportSummary({ report }: { report: AdvisingReport }) {
   const totals = [
-    { label: 'Registros', value: report.recordsCount },
-    { label: 'Reuniões', value: report.meetingsCount },
-    { label: 'Atividades', value: report.activitiesCount },
+    { label: 'Reuniões realizadas', value: report.meetingsCount },
+    {
+      label: 'Atividades concluídas ou arquivadas',
+      value: report.activitiesCount,
+    },
   ];
   return (
     <Stack spacing={2} component="section">

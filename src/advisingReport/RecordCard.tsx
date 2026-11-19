@@ -25,10 +25,18 @@ const ACTIVITY_STATUS_LABELS: Record<RecordActivityStatus, string> = {
   archived: 'Arquivada',
 };
 
-const MEETING_RECORD_TITLE = 'Reunião realizada';
+/** No detalhe, a atividade arquivada diz por quê: só o encerramento da orientação a arquiva (RN07). */
+const ARCHIVED_DETAIL_LABEL = 'Arquivada ao encerrar a orientação';
 
 function recordTitle(record: AdvisingRecord): string {
-  return record.type === 'meeting' ? MEETING_RECORD_TITLE : record.title;
+  return record.type === 'meeting'
+    ? `Reunião de ${formatDeadlineShort(record.date)}`
+    : record.title;
+}
+
+function recordDateText(record: AdvisingRecord): string {
+  const date = formatDeadlineShort(record.date);
+  return record.type === 'meeting' ? `Realizada em ${date}` : `Prazo: ${date}`;
 }
 
 function Detail({ label, children }: { label: string; children: string }) {
@@ -61,7 +69,11 @@ function RecordDetails({ record }: { record: AdvisingRecord }) {
   return (
     <Stack spacing={1.5}>
       <Detail label="Prazo">{formatDeadline(record.deadline)}</Detail>
-      <Detail label="Situação">{ACTIVITY_STATUS_LABELS[record.status]}</Detail>
+      <Detail label="Situação">
+        {record.status === 'archived'
+          ? ARCHIVED_DETAIL_LABEL
+          : ACTIVITY_STATUS_LABELS[record.status]}
+      </Detail>
     </Stack>
   );
 }
@@ -69,7 +81,7 @@ function RecordDetails({ record }: { record: AdvisingRecord }) {
 /**
  * Um registro do relatório (RF61), só para leitura: fechado, o tipo, a data, o título e duas linhas
  * da descrição; aberto no próprio lugar, a descrição completa e os detalhes de cada tipo. A reunião
- * não tem título próprio, por isso o fixo "Reunião realizada".
+ * não tem título próprio, por isso o título é "Reunião de" e a data.
  */
 export function RecordCard({ record }: { record: AdvisingRecord }) {
   const titleId = useId();
@@ -94,7 +106,7 @@ export function RecordCard({ record }: { record: AdvisingRecord }) {
               variant="outlined"
             />
             <Typography color="text.secondary">
-              {formatDeadlineShort(record.date)}
+              {recordDateText(record)}
             </Typography>
           </Stack>
           <Typography

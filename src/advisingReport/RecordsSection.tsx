@@ -29,11 +29,6 @@ const TYPE_URL_VALUES: Record<RecordType, string> = {
   meeting: 'reunioes',
   activity: 'atividades',
 };
-const TYPE_TITLES: Record<RecordType | 'all', string> = {
-  all: 'Todos os registros',
-  meeting: 'Reuniões',
-  activity: 'Atividades',
-};
 
 /** Só "reunioes" ou "atividades" valem; qualquer outra coisa na URL é "Todos". */
 function typeFrom(value: string | null): RecordType | null {
@@ -43,13 +38,19 @@ function typeFrom(value: string | null): RecordType | null {
   return (found?.[0] as RecordType | undefined) ?? null;
 }
 
-function countText(count: number): string {
-  return `${count} ${count === 1 ? 'registro' : 'registros'}`;
+function countText(count: number, type: RecordType | null): string {
+  const singular = count === 1;
+  if (type === 'meeting')
+    return `${count} ${singular ? 'reunião' : 'reuniões'}`;
+  if (type === 'activity') {
+    return `${count} ${singular ? 'atividade' : 'atividades'}`;
+  }
+  return `${count} ${singular ? 'item' : 'itens'}`;
 }
 
 /**
- * O "Histórico de acontecimentos" do relatório (RF61): os registros da orientação, filtrados por
- * tipo e paginados. O tipo e a página ficam na URL (RNF30); mudar o tipo volta à primeira página.
+ * A lista "Reuniões e atividades da orientação" do relatório (RF61): as reuniões realizadas e as
+ * atividades concluídas ou arquivadas, filtradas por tipo e paginadas. O filtro e a página ficam na URL (RNF30); mudar o tipo volta à primeira página.
  */
 export function RecordsSection({ advisingId }: { advisingId: number }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -87,32 +88,33 @@ export function RecordsSection({ advisingId }: { advisingId: number }) {
       aria-labelledby={headingId}
     >
       <Typography id={headingId} variant="h5" component="h2">
-        Histórico de acontecimentos
+        Reuniões e atividades da orientação
       </Typography>
+      <Stack>
+        <Typography color="text.secondary">
+          Reuniões que aconteceram e atividades concluídas ou arquivadas, da
+          mais recente para a mais antiga.
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Reuniões canceladas e atividades excluídas não aparecem.
+        </Typography>
+      </Stack>
       <Stack spacing={1}>
         <Typography
           variant="body2"
           color="text.secondary"
           id="record-type-label"
         >
-          Tipo de registro
+          Mostrar
         </Typography>
         <RecordTypeFilter value={type} onChange={changeType} />
       </Stack>
-      <Stack
-        direction="row"
-        sx={{ justifyContent: 'space-between', alignItems: 'center', gap: 2 }}
-      >
-        <Typography variant="h6" component="h3">
-          {TYPE_TITLES[type ?? 'all']}
-        </Typography>
-        {/* A região existe desde o início, para a mudança da quantidade ser anunciada. */}
-        <span role="status" aria-live="polite">
-          {list.status === 'ready' && (
-            <Chip label={countText(list.data.count)} size="small" />
-          )}
-        </span>
-      </Stack>
+      {/* A região existe desde o início, para a mudança da quantidade ser anunciada. */}
+      <span role="status" aria-live="polite">
+        {list.status === 'ready' && (
+          <Chip label={countText(list.data.count, type)} size="small" />
+        )}
+      </span>
       {list.status === 'loading' && (
         <Stack spacing={2} data-testid="records-skeleton" aria-hidden>
           {[0, 1].map((item) => (
@@ -133,21 +135,22 @@ export function RecordsSection({ advisingId }: { advisingId: number }) {
       )}
       {list.status === 'ready' && list.data.count === 0 && type === null && (
         <Alert severity="info">
-          Esta orientação não tem registros. As reuniões realizadas e as
-          atividades concluídas ou arquivadas aparecem aqui.
+          Esta orientação não tem reunião realizada nem atividade concluída ou
+          arquivada.
         </Alert>
       )}
       {list.status === 'ready' && list.data.count === 0 && type !== null && (
         <Stack spacing={2}>
           <Alert severity="info">
-            Nenhum registro deste tipo nesta orientação. Escolha outro tipo de
-            registro.
+            {type === 'meeting'
+              ? 'Nenhuma reunião foi realizada nesta orientação.'
+              : 'Nenhuma atividade foi concluída ou arquivada nesta orientação.'}
           </Alert>
           <Button
             onClick={() => changeType(null)}
             sx={{ alignSelf: 'flex-start' }}
           >
-            Ver todos os registros
+            Ver reuniões e atividades
           </Button>
         </Stack>
       )}
@@ -159,7 +162,7 @@ export function RecordsSection({ advisingId }: { advisingId: number }) {
         </Stack>
       )}
       <PagePagination
-        ariaLabel="Paginação dos registros"
+        ariaLabel="Paginação da lista de reuniões e atividades"
         knownCount={knownCount}
         pageSize={RECORDS_PAGE_SIZE}
         lastPage={lastPage}
