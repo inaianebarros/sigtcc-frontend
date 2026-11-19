@@ -1311,12 +1311,14 @@ describe('Reuniões: apontamentos da reunião realizada (RF58, RN44)', () => {
         HELD,
         makeMeeting(10, {
           ...HELD,
+          id: 10,
           description: 'Pauta com texto',
           scheduled_at: '2026-11-06T14:30:00-03:00',
           notes: 'Combinamos a entrega.',
         }),
         makeMeeting(11, {
           ...HELD,
+          id: 11,
           description: 'Pauta congelada',
           scheduled_at: '2026-11-07T14:30:00-03:00',
           notes: 'Texto final.',

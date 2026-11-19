@@ -12,6 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useId, useState } from 'react';
+import type { ReactNode } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useDiscardGuard } from '../hooks/useDiscardGuard';
 import { PendingChangesNotice } from '../profile/PendingChangesNotice';
@@ -28,6 +29,8 @@ export const NOTES_TOO_LONG_MESSAGE = `Os apontamentos devem ter no máximo ${NO
 interface MeetingNotesDialogProps {
   open: boolean;
   meeting: MeetingItem;
+  /** Um aviso no topo, como o de que a reunião mudou na releitura do calendário. */
+  notice?: ReactNode;
   /** `removed` é verdadeiro quando o texto ficou vazio e os apontamentos foram apagados. */
   onSaved: (removed: boolean) => void;
   /** 404 ou 409: a reunião mudou ou a orientação encerrou; quem usa avisa e atualiza a lista. */
@@ -45,6 +48,7 @@ interface MeetingNotesDialogProps {
 export function MeetingNotesDialog({
   open,
   meeting,
+  notice,
   onSaved,
   onStateChanged,
   onClose,
@@ -114,6 +118,7 @@ export function MeetingNotesDialog({
           <DialogTitle id={`${id}-title`}>Apontamentos da reunião</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
+              {notice}
               <DialogContentText>
                 Registre o que foi tratado na reunião. O aluno orientando lê os
                 apontamentos, e eles ficam congelados quando a orientação for

@@ -12,6 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useId, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { applyApiFieldErrors } from '../forms/applyApiFieldErrors';
 import { useDiscardGuard } from '../hooks/useDiscardGuard';
@@ -47,6 +48,8 @@ interface MeetingRequestDialogProps {
   meeting?: MeetingItem;
   /** Numa solicitação nova, o que o clique no calendário já preencheu (RF60); conta como o estado inicial. */
   prefill?: SlotPrefill;
+  /** Um aviso no topo, como o de que a reunião mudou na releitura do calendário. */
+  notice?: ReactNode;
   onSaved: () => void;
   /** Editar sem mudar nada: quem usa avisa e fecha, sem chamar o servidor. */
   onNoChanges: () => void;
@@ -71,6 +74,7 @@ export function MeetingRequestDialog({
   preselectedStudent,
   meeting,
   prefill,
+  notice,
   onSaved,
   onNoChanges,
   onStateChanged,
@@ -218,6 +222,7 @@ export function MeetingRequestDialog({
           </DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
+              {notice}
               <PendingChangesNotice
                 visible={pending && !ended}
                 actionLabel={editing ? 'Salvar' : 'Solicitar'}

@@ -51,6 +51,8 @@ interface MeetingDetailsDialogProps {
   userId: number;
   /** As ações permitidas (responder, editar e cancelar), que o servidor decide. */
   actions: ReactNode;
+  /** Um aviso no topo, como o de que a reunião mudou na releitura do calendário. */
+  notice?: ReactNode;
   onClose: () => void;
   onExited: () => void;
 }
@@ -64,6 +66,7 @@ export function MeetingDetailsDialog({
   item,
   userId,
   actions,
+  notice,
   onClose,
   onExited,
 }: MeetingDetailsDialogProps) {
@@ -80,6 +83,7 @@ export function MeetingDetailsDialog({
       <DialogTitle id={`${id}-title`}>Reunião</DialogTitle>
       <DialogContent>
         <Stack spacing={1.5} sx={{ pt: 1 }}>
+          {notice}
           <Typography>
             {formatDateTimeRange(item.scheduledAt, item.endsAt)}
           </Typography>
