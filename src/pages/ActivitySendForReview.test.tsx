@@ -13,7 +13,7 @@ import { DESKTOP_WIDTH, setViewportWidth } from '../test/viewport';
 const STATUS = 'PATCH /api/atividades/:id/status';
 const REASON = 'Entregue ao menos um arquivo para enviar para revisão';
 const AWAITING =
-  'Aguardando a revisão do orientador: você não altera o status agora';
+  'O orientador está revisando. Enquanto isso, você não pode entregar arquivos nem mudar a situação. Se a revisão for recusada, a atividade volta para Pendente.';
 
 const DELIVERED = {
   id: 1,
@@ -159,10 +159,12 @@ describe('Enviar para revisão: quando o botão vale', () => {
     ]);
 
     await events.click(
-      within(delivery).getByRole('button', { name: 'Entregar' }),
+      within(delivery).getByRole('button', { name: 'Entregar arquivos' }),
     );
 
-    await screen.findByText('Entrega enviada.');
+    await screen.findByText(
+      'Arquivos entregues. Quando terminar, envie a atividade para revisão.',
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', { name: 'Enviar para revisão' }),
@@ -181,7 +183,7 @@ describe('Enviar para revisão: a confirmação (RNF21)', () => {
     const dialog = await confirmDialog();
     expect(
       within(dialog).getByText(
-        /deixará de poder alterar o status da atividade até o orientador revisá-la/,
+        /Enquanto o orientador revisa, você não poderá entregar arquivos nem mudar a situação da atividade/,
       ),
     ).toBeVisible();
     await events.click(
@@ -215,7 +217,7 @@ describe('Enviar para revisão: a confirmação (RNF21)', () => {
     );
     expect(screen.getByText('Em revisão')).toBeVisible();
     expect(
-      screen.queryByRole('group', { name: 'Status da atividade' }),
+      screen.queryByRole('group', { name: 'Situação da atividade' }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Enviar para revisão' }),

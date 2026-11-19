@@ -117,7 +117,7 @@ export function ActivityTimeline({
               Mais recente primeiro
             </Typography>
             <Typography role="status" color="text.secondary">
-              {`${state.items.length} de ${state.count} eventos carregados`}
+              {`Mostrando ${state.items.length} de ${state.count} eventos`}
             </Typography>
           </Stack>
           <Stack
@@ -162,7 +162,7 @@ export function ActivityTimeline({
           ) : (
             state.items.some((event) => event.index === 1) && (
               <Typography color="text.secondary">
-                Início do histórico
+                Início da atividade
               </Typography>
             )
           )}

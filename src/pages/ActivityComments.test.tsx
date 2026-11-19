@@ -189,7 +189,7 @@ describe('Comentários: o formulário', () => {
     const item = (
       await within(region).findByText('Pode enviar até sexta.')
     ).closest('li')!;
-    expect(within(item).getByText('Professor')).toBeVisible();
+    expect(within(item).getByText('Orientador')).toBeVisible();
     expect(within(item).getByText('Você')).toBeVisible();
     expect(postBodies(fetchMock)).toEqual([{ text: 'Pode enviar até sexta.' }]);
   });
@@ -250,7 +250,7 @@ describe('Comentários: alterações não enviadas (RNF28)', () => {
 
     await events.click(screen.getByRole('button', { name: 'Em andamento' }));
 
-    await screen.findByText('Status atualizado.');
+    await screen.findByText('Situação atualizada para Em andamento.');
     expect((await field()) as HTMLTextAreaElement).toHaveValue(
       'Ainda escrevendo',
     );

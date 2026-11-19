@@ -4,6 +4,7 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   LinearProgress,
   Stack,
@@ -101,7 +102,14 @@ export function DeliveryDialog({
         <DialogTitle id={`${id}-title`}>Entregar arquivos</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
-            <PendingChangesNotice visible={pending} actionLabel="Entregar" />
+            <DialogContentText>
+              Os arquivos ficam na linha do tempo. O orientador só os revisa
+              depois que você enviar a atividade para revisão.
+            </DialogContentText>
+            <PendingChangesNotice
+              visible={pending}
+              actionLabel="Entregar arquivos"
+            />
             <ChosenFilesField
               chosenFiles={chosenFiles}
               instructions={`Arraste os arquivos até aqui ou escolha no computador. De 1 a ${MAX_FILES} arquivos de até ${MAX_FILE_MEGABYTES} MB: PDF, DOC, DOCX, ZIP, PNG ou JPG.`}
@@ -129,7 +137,7 @@ export function DeliveryDialog({
             disabled={!pending || hasProblem || sending}
             onClick={() => void submit()}
           >
-            {sending ? 'Enviando…' : 'Entregar'}
+            {sending ? 'Enviando…' : 'Entregar arquivos'}
           </Button>
         </DialogActions>
       </Dialog>

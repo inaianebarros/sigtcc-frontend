@@ -154,7 +154,12 @@ describe('Detalhe da atividade: a faixa Ações', () => {
 
     const strip = await actions();
 
-    for (const name of ['Editar', 'Excluir', 'Aceitar', 'Recusar']) {
+    for (const name of [
+      'Editar',
+      'Excluir',
+      'Aceitar atividade',
+      'Recusar atividade',
+    ]) {
       expect(within(strip).getByRole('button', { name })).toBeVisible();
     }
   });
@@ -166,7 +171,7 @@ describe('Detalhe da atividade: a faixa Ações', () => {
 
     expect(within(strip).getByRole('button', { name: 'Editar' })).toBeVisible();
     expect(
-      within(strip).queryByRole('button', { name: 'Aceitar' }),
+      within(strip).queryByRole('button', { name: 'Aceitar atividade' }),
     ).not.toBeInTheDocument();
   });
 
@@ -176,7 +181,7 @@ describe('Detalhe da atividade: a faixa Ações', () => {
     const strip = await actions();
 
     expect(
-      within(strip).getByRole('group', { name: 'Status da atividade' }),
+      within(strip).getByRole('group', { name: 'Situação da atividade' }),
     ).toBeVisible();
     expect(
       within(strip).getByRole('button', { name: 'Entregar arquivos' }),

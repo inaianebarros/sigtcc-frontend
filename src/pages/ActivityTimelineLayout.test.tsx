@@ -113,9 +113,9 @@ function sides(region: HTMLElement): [string, string | null][] {
 }
 
 const ORDER = [
-  'Avaliação da versão 1',
+  'Revisão da 1ª entrega',
   'Enviada para revisão',
-  'Entrega — Versão 1',
+  '1ª entrega',
   'Comentário',
   'Comentário',
   'Situação alterada para Em andamento',
@@ -135,9 +135,9 @@ describe('Linha do tempo: duas colunas a partir de 600 px', () => {
       });
       expect(list).toHaveAttribute('data-layout', 'split');
       expect(sides(region)).toEqual([
-        ['Avaliação da versão 1', 'teacher'],
+        ['Revisão da 1ª entrega', 'teacher'],
         ['Enviada para revisão', 'student'],
-        ['Entrega — Versão 1', 'student'],
+        ['1ª entrega', 'student'],
         ['Comentário', 'teacher'],
         ['Comentário', 'student'],
         ['Situação alterada para Em andamento', 'student'],
@@ -156,7 +156,7 @@ describe('Linha do tempo: duas colunas a partir de 600 px', () => {
 
     const region = await timeline();
     const teacherCard = within(region)
-      .getByText('Avaliação da versão 1')
+      .getByText('Revisão da 1ª entrega')
       .closest('[data-card]')!;
     const studentCard = within(region)
       .getByText('Enviada para revisão')
@@ -172,8 +172,8 @@ describe('Linha do tempo: duas colunas a partir de 600 px', () => {
     const region = await timeline();
 
     expect(within(region).getByLabelText('Novo comentário')).toBeVisible();
-    expect(within(region).getByText('Início do histórico')).toBeVisible();
-    expect(within(region).getByText('7 de 7 eventos carregados')).toBeVisible();
+    expect(within(region).getByText('Início da atividade')).toBeVisible();
+    expect(within(region).getByText('Mostrando 7 de 7 eventos')).toBeVisible();
   });
 });
 
@@ -193,7 +193,7 @@ describe('Linha do tempo: carregar mais e erro nas duas colunas', () => {
       const region = await screen.findByRole('region', {
         name: 'Linha do tempo',
       });
-      await within(region).findByText('10 de 25 eventos carregados');
+      await within(region).findByText('Mostrando 10 de 25 eventos');
       const events = userEvent.setup();
 
       expect(titles(region)).toHaveLength(10);
@@ -201,7 +201,7 @@ describe('Linha do tempo: carregar mais e erro nas duas colunas', () => {
         within(region).getByRole('button', { name: 'Carregar mais eventos' }),
       );
 
-      await within(region).findByText('20 de 25 eventos carregados');
+      await within(region).findByText('Mostrando 20 de 25 eventos');
       const loaded = sides(region);
       expect(loaded).toHaveLength(20);
       if (width === DESKTOP_WIDTH) {
@@ -257,7 +257,7 @@ describe('Linha do tempo: uma coluna abaixo de 600 px', () => {
     const region = await timeline();
 
     expect(within(region).getByLabelText('Novo comentário')).toBeVisible();
-    expect(within(region).getByText('Início do histórico')).toBeVisible();
+    expect(within(region).getByText('Início da atividade')).toBeVisible();
   });
 });
 

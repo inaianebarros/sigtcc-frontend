@@ -43,7 +43,7 @@ export function AttachedFileItem({ file, load }: AttachedFileItemProps) {
     <li>
       <Typography component="span">{file.fileName}</Typography>
       <Typography component="span" color="text.secondary">
-        {` (${formatFileSize(file.sizeBytes)}, ${file.contentType}) `}
+        {` (${formatFileSize(file.sizeBytes)}) `}
       </Typography>
       <Button
         size="small"

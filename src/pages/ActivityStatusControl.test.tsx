@@ -34,7 +34,7 @@ function setup(
 }
 
 const AWAITING =
-  'Aguardando a revisão do orientador: você não altera o status agora';
+  'O orientador está revisando. Enquanto isso, você não pode entregar arquivos nem mudar a situação. Se a revisão for recusada, a atividade volta para Pendente.';
 
 function statusBodies(fetchMock: ReturnType<typeof mockApi>) {
   return fetchMock.mock.calls
@@ -49,7 +49,7 @@ function statusBodies(fetchMock: ReturnType<typeof mockApi>) {
 }
 
 async function statusGroup() {
-  return screen.findByRole('group', { name: 'Status da atividade' });
+  return screen.findByRole('group', { name: 'Situação da atividade' });
 }
 
 beforeEach(() => {
@@ -80,12 +80,14 @@ describe('Status da atividade: o controle do aluno', () => {
       within(group).getByRole('button', { name: 'Em andamento' }),
     );
 
-    expect(await screen.findByText('Status atualizado.')).toBeVisible();
+    expect(
+      await screen.findByText('Situação atualizada para Em andamento.'),
+    ).toBeVisible();
     expect(statusBodies(fetchMock)).toEqual([{ status: 'in_progress' }]);
     await waitFor(() =>
       expect(
         within(
-          screen.getByRole('group', { name: 'Status da atividade' }),
+          screen.getByRole('group', { name: 'Situação da atividade' }),
         ).getByRole('button', { name: 'Em andamento' }),
       ).toHaveAttribute('aria-pressed', 'true'),
     );
@@ -153,7 +155,7 @@ describe('Status da atividade: o controle do aluno', () => {
       within(group).getByRole('button', { name: 'Em andamento' }),
     ).toBeDisabled();
     release();
-    await screen.findByText('Status atualizado.');
+    await screen.findByText('Situação atualizada para Em andamento.');
     expect(statusBodies(fetchMock)).toHaveLength(1);
   });
 
@@ -162,20 +164,24 @@ describe('Status da atividade: o controle do aluno', () => {
 
     expect(await screen.findByText(AWAITING)).toBeVisible();
     expect(
-      screen.queryByRole('group', { name: 'Status da atividade' }),
+      screen.queryByRole('group', { name: 'Situação da atividade' }),
     ).not.toBeInTheDocument();
   });
 
-  it('concluída o controle some e aparece "Atividade concluída"', async () => {
+  it('concluída o controle some e aparece que o orientador aceitou a atividade', async () => {
     setup({ status: 'completed' });
 
     const section = (
-      await screen.findByRole('heading', { name: 'Status e entrega' })
+      await screen.findByRole('heading', { name: 'Situação e entrega' })
     ).closest('section')!;
 
-    expect(within(section).getByText('Atividade concluída')).toBeVisible();
     expect(
-      screen.queryByRole('group', { name: 'Status da atividade' }),
+      within(section).getByText(
+        'O orientador aceitou esta atividade. Não há mais nada a fazer nela.',
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole('group', { name: 'Situação da atividade' }),
     ).not.toBeInTheDocument();
   });
 
@@ -186,11 +192,11 @@ describe('Status da atividade: o controle do aluno', () => {
 
     expect(screen.getByText('Em revisão')).toBeVisible();
     expect(
-      screen.queryByRole('group', { name: 'Status da atividade' }),
+      screen.queryByRole('group', { name: 'Situação da atividade' }),
     ).not.toBeInTheDocument();
     expect(screen.queryByText(AWAITING)).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('heading', { name: 'Status e entrega' }),
+      screen.queryByRole('heading', { name: 'Situação e entrega' }),
     ).not.toBeInTheDocument();
   });
 });
