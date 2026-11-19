@@ -59,10 +59,23 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
         .map((card) => within(card).getByRole('heading').textContent),
     ).toEqual(['Pessoa 7', 'Pessoa 3', 'Pessoa 5']);
     expect(
-      screen.getByRole('heading', { level: 2, name: 'Orientações anteriores' }),
+      screen.queryByRole('heading', {
+        level: 2,
+        name: 'Orientações anteriores',
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Aqui ficam só as orientações que já terminaram. Para ver a orientação em andamento, volte ao Início.',
+      ),
     ).toBeVisible();
     expect(
-      screen.getByText('Consulte os registros das orientações encerradas.'),
+      screen.getByText(
+        'Veja o tema, as datas e o relatório de cada orientação que já terminou.',
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByPlaceholderText('Nome do orientador ou tema'),
     ).toBeVisible();
   });
 
@@ -81,7 +94,11 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     const card = cardOf('Paulo Professor');
 
     expect(within(card).getByText('Encerrada')).toBeVisible();
-    expect(within(card).getByText('Tema da orientação')).toBeVisible();
+    expect(within(card).getByText('Orientador(a)')).toBeVisible();
+    expect(
+      within(card).getByText('O motivo do encerramento está no relatório.'),
+    ).toBeVisible();
+    expect(within(card).getByText('Tema do TCC')).toBeVisible();
     expect(
       within(card).getByText('Aprendizado de máquina na saúde'),
     ).toBeVisible();
@@ -143,7 +160,7 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('o campo se chama "Buscar orientador" e a busca vai ao servidor, sem acento e por tema', async () => {
+  it('o campo se chama "Buscar por nome ou tema do TCC" e a busca vai ao servidor, sem acento e por tema', async () => {
     const { fetchMock, user } = setup([
       makeEndedAdvising(1, {
         counterpart: { id: 50, full_name: 'Márcia Professora' },
@@ -156,7 +173,10 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     ]);
     await screen.findByText('Márcia Professora');
 
-    await user.type(screen.getByLabelText('Buscar orientador'), 'marcia');
+    await user.type(
+      screen.getByLabelText('Buscar por nome ou tema do TCC'),
+      'marcia',
+    );
 
     await waitFor(() =>
       expect(screen.queryByText('João Orientador')).not.toBeInTheDocument(),
@@ -171,8 +191,11 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     expect(screen.getByTestId('location')).toHaveTextContent('?busca=marcia');
     expect(screen.getByText('1 orientação encontrada')).toBeVisible();
 
-    await user.clear(screen.getByLabelText('Buscar orientador'));
-    await user.type(screen.getByLabelText('Buscar orientador'), 'dados');
+    await user.clear(screen.getByLabelText('Buscar por nome ou tema do TCC'));
+    await user.type(
+      screen.getByLabelText('Buscar por nome ou tema do TCC'),
+      'dados',
+    );
     expect(await screen.findByText('João Orientador')).toBeVisible();
   });
 
@@ -180,7 +203,9 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     setup([]);
 
     expect(
-      await screen.findByText(/Você ainda não tem orientações encerradas/),
+      await screen.findByText(
+        'Você ainda não tem orientações encerradas. Quando o professor encerrar uma orientação, ela aparece aqui, com o tema do TCC, as datas e o relatório. Para ver a orientação em andamento, volte ao Início.',
+      ),
     ).toBeVisible();
     expect(screen.queryByRole('article')).not.toBeInTheDocument();
     expect(
@@ -196,12 +221,16 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     expect(
       await screen.findByText(/Nenhuma orientação encontrada para essa busca/),
     ).toBeVisible();
-    expect(screen.getByLabelText('Buscar orientador')).toHaveValue('zzz');
+    expect(screen.getByLabelText('Buscar por nome ou tema do TCC')).toHaveValue(
+      'zzz',
+    );
 
     await user.click(screen.getByRole('button', { name: 'Limpar busca' }));
 
     expect(await screen.findByText('Pessoa 1')).toBeVisible();
-    expect(screen.getByLabelText('Buscar orientador')).toHaveValue('');
+    expect(screen.getByLabelText('Buscar por nome ou tema do TCC')).toHaveValue(
+      '',
+    );
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/aluno\/historico$/,
     );
@@ -219,7 +248,17 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
       { user: 'teacher' },
     );
 
-    await screen.findByRole('article', { name: 'Ana Souza' });
+    const card = await screen.findByRole('article', { name: 'Ana Souza' });
+
+    expect(within(card).getByText('Orientando(a)')).toBeVisible();
+    expect(
+      screen.getByText(
+        'Aqui ficam só as orientações que você encerrou. Os alunos que você orienta hoje estão em Orientandos.',
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByPlaceholderText('Nome do orientando ou tema'),
+    ).toBeVisible();
 
     expect(
       screen.getByRole('heading', {
@@ -266,7 +305,7 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
     expect(within(active).getByText('4')).toBeVisible();
   });
 
-  it('os totais não mudam com a busca, e o campo se chama "Buscar orientando"', async () => {
+  it('os totais não mudam com a busca, e o campo se chama "Buscar por nome ou tema do TCC"', async () => {
     const { user } = setup(
       [
         makeEndedAdvising(1, {
@@ -280,7 +319,10 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
     );
     await screen.findByText('Ana Souza');
 
-    await user.type(screen.getByLabelText('Buscar orientando'), 'bruno');
+    await user.type(
+      screen.getByLabelText('Buscar por nome ou tema do TCC'),
+      'bruno',
+    );
 
     await waitFor(() =>
       expect(screen.queryByText('Ana Souza')).not.toBeInTheDocument(),
@@ -296,7 +338,9 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
     setup([], { user: 'teacher' });
 
     expect(
-      await screen.findByText(/Você ainda não encerrou nenhuma orientação/),
+      await screen.findByText(
+        'Você ainda não encerrou nenhuma orientação. As que você encerrar aparecem aqui, com o tema do TCC, as datas e o relatório. Os alunos que você orienta hoje estão em Orientandos.',
+      ),
     ).toBeVisible();
   });
 });

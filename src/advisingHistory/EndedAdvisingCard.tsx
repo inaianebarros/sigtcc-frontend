@@ -16,6 +16,8 @@ interface EndedAdvisingCardProps {
   advising: EndedAdvising;
   /** O perfil da outra parte: o do professor, para o aluno, e o do aluno, para o professor. */
   counterpartPath: string;
+  /** O papel da outra parte, escrito acima do nome: "Orientador(a)" ou "Orientando(a)". */
+  counterpartRole: string;
   /** O relatório da orientação (RF61). */
   reportPath: string;
 }
@@ -37,6 +39,7 @@ function DateRow({ label, value }: { label: string; value: string }) {
 export function EndedAdvisingCard({
   advising,
   counterpartPath,
+  counterpartRole,
   reportPath,
 }: EndedAdvisingCardProps) {
   const titleId = useId();
@@ -52,11 +55,16 @@ export function EndedAdvisingCard({
               gap: 2,
             }}
           >
-            <Typography id={titleId} variant="h6" component="h2">
-              <OriginLink to={counterpartPath}>
-                {advising.counterpart.fullName}
-              </OriginLink>
-            </Typography>
+            <div>
+              <Typography variant="caption" color="text.secondary">
+                {counterpartRole}
+              </Typography>
+              <Typography id={titleId} variant="h6" component="h2">
+                <OriginLink to={counterpartPath}>
+                  {advising.counterpart.fullName}
+                </OriginLink>
+              </Typography>
+            </div>
             <Chip
               label="Encerrada"
               color="success"
@@ -66,7 +74,7 @@ export function EndedAdvisingCard({
           </Stack>
           <div>
             <Typography variant="body2" color="text.secondary">
-              Tema da orientação
+              Tema do TCC
             </Typography>
             <Typography sx={{ overflowWrap: 'anywhere' }}>
               {advising.thesisTopic ?? 'Sem tema cadastrado'}
@@ -77,15 +85,28 @@ export function EndedAdvisingCard({
             <DateRow label="Início" value={advising.startedAt} />
             <DateRow label="Encerramento" value={advising.endedAt} />
           </Stack>
-          <Typography sx={{ alignSelf: 'flex-end' }}>
-            <OriginLink to={reportPath}>
-              Ver relatório
-              <VisuallyHidden>
-                {' '}
-                de {advising.counterpart.fullName}
-              </VisuallyHidden>
-            </OriginLink>
-          </Typography>
+          <Stack
+            direction="row"
+            sx={{
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 1,
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              O motivo do encerramento está no relatório.
+            </Typography>
+            <Typography>
+              <OriginLink to={reportPath}>
+                Ver relatório
+                <VisuallyHidden>
+                  {' '}
+                  de {advising.counterpart.fullName}
+                </VisuallyHidden>
+              </OriginLink>
+            </Typography>
+          </Stack>
         </Stack>
       </CardContent>
     </Card>
