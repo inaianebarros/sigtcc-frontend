@@ -34,32 +34,37 @@ beforeEach(() => {
   setViewportWidth(DESKTOP_WIDTH);
 });
 
-describe('AdvisingReportPage: o histórico de acontecimentos (RF61)', () => {
-  it('mostra o subtítulo, o título "Todos os registros" e o contador do filtro', async () => {
+describe('AdvisingReportPage: a lista "Reuniões e atividades da orientação" (RF61)', () => {
+  it('mostra o título da lista, a frase de apoio, o aviso do que fica de fora e o contador do filtro', async () => {
     setup([makeMeetingRecord(1), makeActivityRecord(2), makeActivityRecord(3)]);
 
     expect(
       await screen.findByRole('heading', {
         level: 2,
-        name: 'Histórico de acontecimentos',
+        name: 'Reuniões e atividades da orientação',
       }),
     ).toBeVisible();
     expect(
-      await screen.findByRole('heading', {
-        level: 3,
-        name: 'Todos os registros',
-      }),
+      screen.getByText(
+        'Reuniões que aconteceram e atividades concluídas ou arquivadas, da mais recente para a mais antiga.',
+      ),
     ).toBeVisible();
-    expect(await screen.findByText('3 registros')).toBeVisible();
+    expect(
+      screen.getByText(
+        'Reuniões canceladas e atividades excluídas não aparecem.',
+      ),
+    ).toBeVisible();
+    expect(await screen.findByText('3 itens')).toBeVisible();
+    expect(screen.queryByRole('heading', { level: 3 })).not.toBeInTheDocument();
   });
 
-  it('o contador fala "1 registro" no singular', async () => {
+  it('o contador fala "1 item" no singular', async () => {
     setup([makeActivityRecord(2)]);
 
-    expect(await screen.findByText('1 registro')).toBeVisible();
+    expect(await screen.findByText('1 item')).toBeVisible();
   });
 
-  it('o cartão da reunião tem o chip, o título fixo, a data e a descrição', async () => {
+  it('o cartão da reunião tem o chip, o título com a data, a data rotulada e a descrição', async () => {
     setup([
       makeMeetingRecord(1, {
         date: '2026-10-20',
@@ -68,11 +73,11 @@ describe('AdvisingReportPage: o histórico de acontecimentos (RF61)', () => {
     ]);
 
     const card = await screen.findByRole('article', {
-      name: 'Reunião realizada',
+      name: 'Reunião de 20/10/2026',
     });
 
     expect(within(card).getByText('Reunião')).toBeVisible();
-    expect(within(card).getByText('20/10/2026')).toBeVisible();
+    expect(within(card).getByText('Realizada em 20/10/2026')).toBeVisible();
     expect(
       within(card).getByText('Discussão dos ajustes finais do trabalho.'),
     ).toBeVisible();
@@ -94,7 +99,7 @@ describe('AdvisingReportPage: o histórico de acontecimentos (RF61)', () => {
     });
 
     expect(within(card).getByText('Atividade')).toBeVisible();
-    expect(within(card).getByText('05/11/2026')).toBeVisible();
+    expect(within(card).getByText('Prazo: 05/11/2026')).toBeVisible();
     expect(within(card).getByText('Arquivada')).toBeVisible();
     expect(
       within(card).getByText('Atividade entregue pelo orientando.'),
@@ -114,17 +119,17 @@ describe('AdvisingReportPage: o histórico de acontecimentos (RF61)', () => {
       makeMeetingRecord(1),
       makeActivityRecord(1, { title: 'Atividade A' }),
     ]);
-    await screen.findByText('2 registros');
+    await screen.findByText('2 itens');
 
     expect(
       screen
         .getAllByRole('article')
         .map((card) => within(card).getByRole('heading').textContent),
-    ).toEqual(['Reunião realizada', 'Atividade A']);
+    ).toEqual(['Reunião de 20/10/2026', 'Atividade A']);
   });
 });
 
-describe('AdvisingReportPage: o filtro "Tipo de registro" e a URL (RNF30)', () => {
+describe('AdvisingReportPage: o filtro "Mostrar" e a URL (RNF30)', () => {
   const records: FakeRecord[] = [
     makeMeetingRecord(1),
     makeActivityRecord(2, { title: 'Atividade A' }),
@@ -137,9 +142,9 @@ describe('AdvisingReportPage: o filtro "Tipo de registro" e a URL (RNF30)', () =
 
   it('abre em "Todos", com os três tipos de filtro disponíveis', async () => {
     setup(records);
-    await screen.findByText('3 registros');
+    await screen.findByText('3 itens');
 
-    const group = screen.getByRole('group', { name: 'Tipo de registro' });
+    const group = screen.getByRole('group', { name: 'Mostrar' });
 
     expect(
       within(group)
@@ -152,14 +157,11 @@ describe('AdvisingReportPage: o filtro "Tipo de registro" e a URL (RNF30)', () =
   it('"Reuniões" mostra só reuniões, com o título e o contador do filtro, e a URL guarda o tipo', async () => {
     const fetchMock = setup(records);
     const user = userEvent.setup();
-    await screen.findByText('3 registros');
+    await screen.findByText('3 itens');
 
     await user.click(screen.getByRole('button', { name: 'Reuniões' }));
 
-    expect(await screen.findByText('1 registro')).toBeVisible();
-    expect(
-      screen.getByRole('heading', { level: 3, name: 'Reuniões' }),
-    ).toBeVisible();
+    expect(await screen.findByText('1 reunião')).toBeVisible();
     expect(screen.getAllByRole('article')).toHaveLength(1);
     expect(screen.getByTestId('location')).toHaveTextContent(
       `${PATH}?tipo=reunioes`,
@@ -180,33 +182,30 @@ describe('AdvisingReportPage: o filtro "Tipo de registro" e a URL (RNF30)', () =
   it('o filtro funciona só pelo teclado, com a seta e o Espaço', async () => {
     setup(records);
     const user = userEvent.setup();
-    await screen.findByText('3 registros');
+    await screen.findByText('3 itens');
 
     screen.getByRole('button', { name: 'Todos' }).focus();
     await user.keyboard('{ArrowRight}');
     expect(screen.getByRole('button', { name: 'Reuniões' })).toHaveFocus();
     await user.keyboard(' ');
 
-    expect(await screen.findByText('1 registro')).toBeVisible();
+    expect(await screen.findByText('1 reunião')).toBeVisible();
     expect(pressed('Reuniões')).toBe('true');
   });
 
   it('"Atividades" mostra só atividades e "Todos" volta a URL ao padrão', async () => {
     setup(records);
     const user = userEvent.setup();
-    await screen.findByText('3 registros');
+    await screen.findByText('3 itens');
 
     await user.click(screen.getByRole('button', { name: 'Atividades' }));
-    expect(await screen.findByText('2 registros')).toBeVisible();
-    expect(
-      screen.getByRole('heading', { level: 3, name: 'Atividades' }),
-    ).toBeVisible();
+    expect(await screen.findByText('2 atividades')).toBeVisible();
     expect(screen.getByTestId('location')).toHaveTextContent(
       '?tipo=atividades',
     );
 
     await user.click(screen.getByRole('button', { name: 'Todos' }));
-    expect(await screen.findByText('3 registros')).toBeVisible();
+    expect(await screen.findByText('3 itens')).toBeVisible();
     expect(screen.getByTestId('location')).toHaveTextContent(
       new RegExp(`${PATH}$`),
     );
@@ -215,28 +214,30 @@ describe('AdvisingReportPage: o filtro "Tipo de registro" e a URL (RNF30)', () =
   it('o filtro não altera os totais do resumo', async () => {
     setup(records);
     const user = userEvent.setup();
-    await screen.findByText('3 registros');
+    await screen.findByText('3 itens');
 
     await user.click(screen.getByRole('button', { name: 'Reuniões' }));
-    await screen.findByText('1 registro');
+    await screen.findByText('1 reunião');
 
     expect(
-      within(screen.getByRole('group', { name: 'Registros' })).getByText('5'),
+      within(
+        screen.getByRole('group', { name: 'Reuniões realizadas' }),
+      ).getByText('3'),
     ).toBeVisible();
   });
 
   it('recarregar em ?tipo=atividades abre o filtro já aplicado', async () => {
     setup(records, { path: `${PATH}?tipo=atividades` });
 
-    expect(await screen.findByText('2 registros')).toBeVisible();
+    expect(await screen.findByText('2 atividades')).toBeVisible();
     expect(pressed('Atividades')).toBe('true');
-    expect(screen.queryByText('Reunião realizada')).not.toBeInTheDocument();
+    expect(screen.queryByText('Reunião de 20/10/2026')).not.toBeInTheDocument();
   });
 
   it('um tipo inválido na URL vale como "Todos"', async () => {
     setup(records, { path: `${PATH}?tipo=xyz` });
 
-    expect(await screen.findByText('3 registros')).toBeVisible();
+    expect(await screen.findByText('3 itens')).toBeVisible();
     expect(pressed('Todos')).toBe('true');
   });
 
@@ -244,8 +245,8 @@ describe('AdvisingReportPage: o filtro "Tipo de registro" e a URL (RNF30)', () =
     setup(records, { path: `${PATH}?pagina=2` });
     const user = userEvent.setup();
     await screen.findByRole('heading', {
-      level: 3,
-      name: 'Todos os registros',
+      level: 2,
+      name: 'Reuniões e atividades da orientação',
     });
 
     await user.click(screen.getByRole('button', { name: 'Atividades' }));
@@ -254,7 +255,7 @@ describe('AdvisingReportPage: o filtro "Tipo de registro" e a URL (RNF30)', () =
   });
 });
 
-describe('AdvisingReportPage: abrir um registro no próprio lugar', () => {
+describe('AdvisingReportPage: abrir um item da lista no próprio lugar', () => {
   const meeting = makeMeetingRecord(1, {
     date: '2026-10-20',
     starts_at: '2026-10-20T10:00:00-03:00',
@@ -277,7 +278,7 @@ describe('AdvisingReportPage: abrir um registro no próprio lugar', () => {
   it('cada cartão fechado oferece "Ver detalhes", sem mostrar os detalhes', async () => {
     setup([meeting, activity]);
     const card = await screen.findByRole('article', {
-      name: 'Reunião realizada',
+      name: 'Reunião de 20/10/2026',
     });
 
     expect(detailsButton(card)).toHaveTextContent('Ver detalhes');
@@ -291,7 +292,7 @@ describe('AdvisingReportPage: abrir um registro no próprio lugar', () => {
     setup([meeting]);
     const user = userEvent.setup();
     const card = await screen.findByRole('article', {
-      name: 'Reunião realizada',
+      name: 'Reunião de 20/10/2026',
     });
 
     await user.click(detailsButton(card));
@@ -314,7 +315,7 @@ describe('AdvisingReportPage: abrir um registro no próprio lugar', () => {
     setup([makeMeetingRecord(1, { notes: '' })]);
     const user = userEvent.setup();
     const card = await screen.findByRole('article', {
-      name: 'Reunião realizada',
+      name: 'Reunião de 20/10/2026',
     });
 
     await user.click(detailsButton(card));
@@ -336,7 +337,10 @@ describe('AdvisingReportPage: abrir um registro no próprio lugar', () => {
     expect(within(card).getByText('Prazo')).toBeVisible();
     expect(within(card).getByText('5 de novembro de 2026')).toBeVisible();
     expect(within(card).getByText('Situação')).toBeVisible();
-    expect(within(card).getAllByText('Arquivada')).toHaveLength(1);
+    expect(
+      within(card).getByText('Arquivada ao encerrar a orientação'),
+    ).toBeVisible();
+    expect(within(card).queryByText('Arquivada')).not.toBeInTheDocument();
     expect(
       within(card).getByText('Atividade entregue pelo orientando.'),
     ).toBeVisible();
@@ -346,7 +350,7 @@ describe('AdvisingReportPage: abrir um registro no próprio lugar', () => {
     setup([meeting]);
     const user = userEvent.setup();
     const card = await screen.findByRole('article', {
-      name: 'Reunião realizada',
+      name: 'Reunião de 20/10/2026',
     });
 
     await user.click(detailsButton(card));
@@ -366,7 +370,7 @@ describe('AdvisingReportPage: abrir um registro no próprio lugar', () => {
     setup([meeting]);
     const user = userEvent.setup();
     const card = await screen.findByRole('article', {
-      name: 'Reunião realizada',
+      name: 'Reunião de 20/10/2026',
     });
 
     detailsButton(card).focus();
@@ -380,7 +384,7 @@ describe('AdvisingReportPage: abrir um registro no próprio lugar', () => {
     setup([meeting, activity]);
     const user = userEvent.setup();
     const first = await screen.findByRole('article', {
-      name: 'Reunião realizada',
+      name: 'Reunião de 20/10/2026',
     });
     const second = screen.getByRole('article', {
       name: 'Revisar capítulo de resultados',
@@ -402,7 +406,7 @@ describe('AdvisingReportPage: estados da lista e anúncio', () => {
       'aria-hidden',
       'true',
     );
-    await screen.findByText('1 registro');
+    await screen.findByText('1 item');
     expect(screen.queryByTestId('records-skeleton')).not.toBeInTheDocument();
   });
 
@@ -424,62 +428,70 @@ describe('AdvisingReportPage: estados da lista e anúncio', () => {
     expect(
       screen.getByRole('heading', { level: 2, name: 'Pessoa 7' }),
     ).toBeVisible();
-    expect(screen.getByRole('group', { name: 'Registros' })).toBeVisible();
+    expect(
+      screen.getByRole('group', { name: 'Reuniões realizadas' }),
+    ).toBeVisible();
 
     await user.click(screen.getByRole('button', { name: 'Tentar novamente' }));
 
-    expect(await screen.findByText('1 registro')).toBeVisible();
+    expect(await screen.findByText('1 item')).toBeVisible();
     expect(
       requestsTo(fetchMock, 'GET /api/orientacao/historico/7/registros'),
     ).toHaveLength(2);
   });
 
-  it('uma orientação sem registros mostra uma mensagem informativa', async () => {
+  it('uma orientação sem reunião nem atividade mostra uma mensagem informativa', async () => {
     setup([]);
 
     expect(
-      await screen.findByText(/Esta orientação não tem registros/),
+      await screen.findByText(
+        /Esta orientação não tem reunião realizada nem atividade concluída ou arquivada\./,
+      ),
     ).toBeVisible();
     expect(screen.queryByRole('article')).not.toBeInTheDocument();
   });
 
-  it('um filtro sem resultado mostra a mensagem do filtro e "Ver todos os registros"', async () => {
+  it('um filtro sem resultado mostra a mensagem do filtro e "Ver reuniões e atividades"', async () => {
     setup([makeActivityRecord(2)], { path: `${PATH}?tipo=reunioes` });
     const user = userEvent.setup();
 
-    expect(await screen.findByText(/Nenhum registro deste tipo/)).toBeVisible();
     expect(
-      screen.queryByText(/Esta orientação não tem registros/),
+      await screen.findByText(
+        'Nenhuma reunião foi realizada nesta orientação.',
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByText(
+        /Esta orientação não tem reunião realizada nem atividade concluída ou arquivada\./,
+      ),
     ).not.toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('button', { name: 'Ver todos os registros' }),
+      screen.getByRole('button', { name: 'Ver reuniões e atividades' }),
     );
 
-    expect(await screen.findByText('1 registro')).toBeVisible();
+    expect(await screen.findByText('1 item')).toBeVisible();
     expect(screen.getByTestId('location')).toHaveTextContent(
       new RegExp(`${PATH}$`),
     );
   });
 
-  it('anuncia a quantidade de registros do filtro numa região de status', async () => {
+  it('anuncia a quantidade de itens do filtro numa região de status', async () => {
     setup([makeMeetingRecord(1), makeActivityRecord(2), makeActivityRecord(3)]);
     const user = userEvent.setup();
-    await screen.findByText('3 registros');
+    await screen.findByText('3 itens');
 
     const section = screen.getByRole('region', {
-      name: 'Histórico de acontecimentos',
+      name: 'Reuniões e atividades da orientação',
     });
 
-    expect(within(section).getByRole('status')).toHaveTextContent(
-      '3 registros',
-    );
+    expect(within(section).getByRole('status')).toHaveTextContent('3 itens');
 
     await user.click(screen.getByRole('button', { name: 'Atividades' }));
 
     await waitFor(() =>
       expect(within(section).getByRole('status')).toHaveTextContent(
-        '2 registros',
+        '2 atividades',
       ),
     );
   });
@@ -500,10 +512,10 @@ describe('AdvisingReportPage: a paginação e a URL (RNF30)', () => {
     });
   }
 
-  it('pede 10 por página e mostra os 10 primeiros registros', async () => {
+  it('pede 10 por página e mostra os 10 primeiros itens', async () => {
     const fetchMock = setup(many);
 
-    expect(await screen.findByText('25 registros')).toBeVisible();
+    expect(await screen.findByText('25 itens')).toBeVisible();
 
     expect(offsets(fetchMock)).toEqual([{ limit: '10', offset: '0' }]);
     expect(screen.getAllByRole('article')).toHaveLength(10);
@@ -512,11 +524,13 @@ describe('AdvisingReportPage: a paginação e a URL (RNF30)', () => {
   it('abre a segunda página pela navegação e guarda a página na URL', async () => {
     const fetchMock = setup(many);
     const user = userEvent.setup();
-    await screen.findByText('25 registros');
+    await screen.findByText('25 itens');
 
     await user.click(
       within(
-        screen.getByRole('navigation', { name: 'Paginação dos registros' }),
+        screen.getByRole('navigation', {
+          name: 'Paginação da lista de reuniões e atividades',
+        }),
       ).getByRole('button', { name: /Ir para a página 2/ }),
     );
 
@@ -528,14 +542,16 @@ describe('AdvisingReportPage: a paginação e a URL (RNF30)', () => {
     expect(screen.queryByText('Atividade 1')).not.toBeInTheDocument();
   });
 
-  it('mantém o tipo de registro na URL ao trocar de página', async () => {
+  it('mantém o filtro na URL ao trocar de página', async () => {
     setup(many, { path: `${PATH}?tipo=atividades` });
     const user = userEvent.setup();
-    await screen.findByText('25 registros');
+    await screen.findByText('25 atividades');
 
     await user.click(
       within(
-        screen.getByRole('navigation', { name: 'Paginação dos registros' }),
+        screen.getByRole('navigation', {
+          name: 'Paginação da lista de reuniões e atividades',
+        }),
       ).getByRole('button', { name: /Ir para a página 2/ }),
     );
 
@@ -564,12 +580,14 @@ describe('AdvisingReportPage: a paginação e a URL (RNF30)', () => {
     );
   });
 
-  it('com 10 registros ou menos, a navegação não aparece', async () => {
+  it('com 10 itens ou menos, a navegação não aparece', async () => {
     setup(many.slice(0, 10));
-    await screen.findByText('10 registros');
+    await screen.findByText('10 itens');
 
     expect(
-      screen.queryByRole('navigation', { name: 'Paginação dos registros' }),
+      screen.queryByRole('navigation', {
+        name: 'Paginação da lista de reuniões e atividades',
+      }),
     ).not.toBeInTheDocument();
   });
 });
@@ -581,13 +599,13 @@ describe('AdvisingReportPage: o celular', () => {
       Array.from({ length: 12 }, (_, index) => makeActivityRecord(index + 1)),
     );
 
-    expect(await screen.findByText('12 registros')).toBeVisible();
-    expect(
-      screen.getByRole('group', { name: 'Tipo de registro' }),
-    ).toBeVisible();
+    expect(await screen.findByText('12 itens')).toBeVisible();
+    expect(screen.getByRole('group', { name: 'Mostrar' })).toBeVisible();
     expect(screen.getAllByRole('article')).toHaveLength(10);
     expect(
-      screen.getByRole('navigation', { name: 'Paginação dos registros' }),
+      screen.getByRole('navigation', {
+        name: 'Paginação da lista de reuniões e atividades',
+      }),
     ).toBeVisible();
   });
 });

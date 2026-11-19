@@ -46,6 +46,11 @@ export function AdvisingReportPage() {
       <Typography variant="h4" component="h1">
         Relatório da orientação
       </Typography>
+      <Typography color="text.secondary">
+        Resumo de uma orientação que terminou: o motivo do encerramento, as
+        reuniões que aconteceram e as atividades concluídas ou arquivadas. Aqui
+        você só consulta.
+      </Typography>
       {report.status === 'loading' && (
         <Stack spacing={2} data-testid="report-skeleton" aria-hidden>
           <Skeleton variant="rounded" height={260} />
@@ -65,7 +70,10 @@ export function AdvisingReportPage() {
       )}
       {report.status === 'ready' && report.data !== null && (
         <>
-          <ReportHeader report={report.data} />
+          <ReportHeader
+            report={report.data}
+            counterpartLabel={isStudent ? 'Professor orientador' : 'Aluno'}
+          />
           <ReportSummary report={report.data} />
           <RecordsSection advisingId={report.data.id} />
         </>

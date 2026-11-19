@@ -43,6 +43,39 @@ describe('AdvisingReportPage: o cabeçalho e os totais (RF61)', () => {
     ).toBeVisible();
   });
 
+  it('o cabeçalho segue a ordem: datas, motivo e só então o tema, com os rótulos novos', async () => {
+    mockApi(reportRoutes([makeAdvisingReport(7)]));
+    renderApp('/aluno/historico/7/relatorio');
+
+    await screen.findByRole('heading', { level: 2, name: 'Pessoa 7' });
+    expect(screen.getByText('Professor orientador')).toBeVisible();
+    const labels = [
+      'Iniciada em',
+      'Encerrada em',
+      'Motivo do encerramento',
+      'Tema da orientação',
+    ];
+    const nodes = labels.map((label) => screen.getByText(label));
+    nodes.forEach((node) => expect(node).toBeVisible());
+    // A ordem no documento é a ordem de leitura: cada rótulo vem depois do anterior.
+    const order = [...document.querySelectorAll('p')].filter((p) =>
+      nodes.includes(p as HTMLElement),
+    );
+    expect(order.map((p) => p.textContent)).toEqual(labels);
+    expect(screen.queryByText('Encerramento')).toBeNull();
+  });
+
+  it('explica que a tela é só de consulta, logo abaixo do título', async () => {
+    mockApi(reportRoutes([makeAdvisingReport(7)]));
+    renderApp('/aluno/historico/7/relatorio');
+
+    expect(
+      await screen.findByText(
+        'Resumo de uma orientação que terminou: o motivo do encerramento, as reuniões que aconteceram e as atividades concluídas ou arquivadas. Aqui você só consulta.',
+      ),
+    ).toBeVisible();
+  });
+
   it('o título da página é "Relatório da orientação", e o resumo tem o seu subtítulo', async () => {
     mockApi(reportRoutes([makeAdvisingReport(7)]));
     renderApp('/aluno/historico/7/relatorio');
@@ -66,7 +99,7 @@ describe('AdvisingReportPage: o cabeçalho e os totais (RF61)', () => {
     expect(await screen.findByText('Sem tema cadastrado')).toBeVisible();
   });
 
-  it('mostra os totais de registros, de reuniões e de atividades', async () => {
+  it('mostra só os totais de reuniões realizadas e de atividades concluídas ou arquivadas', async () => {
     mockApi(
       reportRoutes([
         makeAdvisingReport(7, {
@@ -78,11 +111,14 @@ describe('AdvisingReportPage: o cabeçalho e os totais (RF61)', () => {
     );
     renderApp('/aluno/historico/7/relatorio');
 
-    const records = await screen.findByRole('group', { name: 'Registros' });
-    const meetings = screen.getByRole('group', { name: 'Reuniões' });
-    const activities = screen.getByRole('group', { name: 'Atividades' });
+    const meetings = await screen.findByRole('group', {
+      name: 'Reuniões realizadas',
+    });
+    const activities = screen.getByRole('group', {
+      name: 'Atividades concluídas ou arquivadas',
+    });
 
-    expect(within(records).getByText('9')).toBeVisible();
+    expect(screen.queryByRole('group', { name: 'Registros' })).toBeNull();
     expect(within(meetings).getByText('4')).toBeVisible();
     expect(within(activities).getByText('5')).toBeVisible();
   });
@@ -103,6 +139,8 @@ describe('AdvisingReportPage: o cabeçalho e os totais (RF61)', () => {
     expect(
       await screen.findByRole('heading', { level: 2, name: 'Ana Souza' }),
     ).toBeVisible();
+    expect(screen.getByText('Aluno')).toBeVisible();
+    expect(screen.queryByText('Professor orientador')).toBeNull();
   });
 });
 
@@ -263,8 +301,13 @@ describe('AdvisingReportPage: o menu e o celular', () => {
       await screen.findByRole('heading', { level: 2, name: 'Pessoa 7' }),
     ).toBeVisible();
     expect(screen.getByText('Motivo do encerramento')).toBeVisible();
-    expect(screen.getByRole('group', { name: 'Registros' })).toBeVisible();
-    expect(screen.getByRole('group', { name: 'Reuniões' })).toBeVisible();
-    expect(screen.getByRole('group', { name: 'Atividades' })).toBeVisible();
+    expect(
+      screen.getByRole('group', { name: 'Reuniões realizadas' }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('group', {
+        name: 'Atividades concluídas ou arquivadas',
+      }),
+    ).toBeVisible();
   });
 });

@@ -11,7 +11,7 @@ interface RecordTypeFilterProps {
 }
 
 /**
- * O filtro "Tipo de registro" (Todos, Reuniões, Atividades). Num grupo exclusivo, clicar no que já
+ * O filtro "Mostrar" (Todos, Reuniões, Atividades). Num grupo exclusivo, clicar no que já
  * está marcado entrega `null`, e isso não faz nada: sempre há um tipo escolhido.
  */
 export function RecordTypeFilter({ value, onChange }: RecordTypeFilterProps) {
@@ -22,7 +22,7 @@ export function RecordTypeFilter({ value, onChange }: RecordTypeFilterProps) {
       fullWidth
       color="primary"
       size="small"
-      aria-label="Tipo de registro"
+      aria-label="Mostrar"
       value={current}
       onChange={(_, next: RecordType | 'all' | null) => {
         if (next === null) return;

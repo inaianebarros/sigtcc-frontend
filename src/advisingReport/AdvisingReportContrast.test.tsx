@@ -37,14 +37,14 @@ describe('Relatório da orientação: contraste mínimo de 4,5:1 (WCAG 2.1 AA)',
     expect(contrast(text, background)).toBeGreaterThanOrEqual(MINIMUM);
   });
 
-  it('o contador "N registros" lê-se sobre o próprio fundo', () => {
+  it('o contador "N itens" lê-se sobre o próprio fundo', () => {
     render(
       <ThemeProvider theme={theme}>
-        <Chip label="12 registros" size="small" />
+        <Chip label="12 itens" size="small" />
       </ThemeProvider>,
     );
     const { text, background } = colorsOf(
-      screen.getByText('12 registros').parentElement!,
+      screen.getByText('12 itens').parentElement!,
       WHITE,
     );
 
