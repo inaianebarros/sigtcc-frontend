@@ -247,7 +247,7 @@ describe('Linha do tempo: os cartões', () => {
     expect(within(review).getByText('correcoes.pdf')).toBeVisible();
   });
 
-  it('o aceite mostra o selo Aceita, sem justificativa nem anexos', async () => {
+  it('o aceite mostra o selo Atividade aceita, sem justificativa nem anexos', async () => {
     setup('student', {
       ...FULL,
       status: 'completed',
@@ -673,8 +673,8 @@ describe('Linha do tempo: contraste (WCAG 2.1 AA)', () => {
 
   it.each([
     ['o selo Aguardando revisão', primary.main],
-    ['o selo Aceita', success.main],
-    ['o selo Recusada', error.main],
+    ['o selo Atividade aceita', success.main],
+    ['o selo Atividade recusada', error.main],
   ])('%s lê-se sobre o cartão', (_label, color) => {
     expect(contrast(opaque(color, white), white)).toBeGreaterThanOrEqual(4.5);
   });

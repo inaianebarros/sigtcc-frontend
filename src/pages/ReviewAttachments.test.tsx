@@ -109,7 +109,7 @@ const history = async () => {
   return region;
 };
 
-/** O cartão da avaliação que tem esta justificativa. */
+/** O cartão da revisão que tem esta justificativa. */
 const reviewCard = (region: HTMLElement, justification: string) =>
   within(region).getByText(justification).closest('li')!;
 const downloadButton = (name: string) =>
@@ -117,17 +117,20 @@ const downloadButton = (name: string) =>
 
 describe('Linha do tempo: os anexos da recusa', () => {
   it.each(['student', 'teacher'] as const)(
-    'o %s vê nome, tamanho e tipo de cada anexo dentro do cartão da avaliação que o trouxe',
+    'o %s vê nome e tamanho de cada anexo dentro do cartão da revisão que o trouxe',
     async (user) => {
       setup(user);
 
       const first = reviewCard(await history(), 'Veja as correções anexas.');
 
       expect(within(first).getByText('correcoes.pdf')).toBeVisible();
-      expect(within(first).getByText(/1,5 KB, application\/pdf/)).toBeVisible();
+      expect(within(first).getByText('(1,5 KB)')).toBeVisible();
       expect(within(first).getByText('versão corrigida.zip')).toBeVisible();
-      expect(within(first).getByText(/3,0 MB, application\/zip/)).toBeVisible();
-      expect(within(first).getByText('Recusada')).toBeVisible();
+      expect(within(first).getByText('(3,0 MB)')).toBeVisible();
+      expect(
+        within(first).queryByText(/application\//),
+      ).not.toBeInTheDocument();
+      expect(within(first).getByText('Atividade recusada')).toBeVisible();
     },
   );
 
@@ -138,7 +141,7 @@ describe('Linha do tempo: os anexos da recusa', () => {
 
     const textOnly = reviewCard(section, 'Só texto.');
     expect(within(textOnly).queryByRole('list')).not.toBeInTheDocument();
-    expect(within(section).getByText('Aceita')).toBeVisible();
+    expect(within(section).getByText('Atividade aceita')).toBeVisible();
     expect(
       within(section).getAllByRole('button', { name: /^Baixar / }),
     ).toHaveLength(2);
