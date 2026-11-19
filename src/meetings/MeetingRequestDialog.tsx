@@ -50,6 +50,8 @@ interface MeetingRequestDialogProps {
   prefill?: SlotPrefill;
   /** Um aviso no topo, como o de que a reunião mudou na releitura do calendário. */
   notice?: ReactNode;
+  /** A reunião mudou e a ação já não cabe: o botão de confirmar fica desabilitado, e o aviso diz por quê. */
+  actionBlocked?: boolean;
   onSaved: () => void;
   /** Editar sem mudar nada: quem usa avisa e fecha, sem chamar o servidor. */
   onNoChanges: () => void;
@@ -75,6 +77,7 @@ export function MeetingRequestDialog({
   meeting,
   prefill,
   notice,
+  actionBlocked = false,
   onSaved,
   onNoChanges,
   onStateChanged,
@@ -158,6 +161,7 @@ export function MeetingRequestDialog({
   });
 
   const submit = handleSubmit(async (form) => {
+    if (actionBlocked) return;
     setFailure(null);
     try {
       if (meeting) {
@@ -326,7 +330,7 @@ export function MeetingRequestDialog({
                 <Button
                   type="submit"
                   variant="contained"
-                  disabled={!valid || isSubmitting}
+                  disabled={!valid || isSubmitting || actionBlocked}
                 >
                   {isSubmitting
                     ? editing

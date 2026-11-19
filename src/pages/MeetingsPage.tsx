@@ -28,7 +28,14 @@ import {
 import type { CalendarView } from '../meetings/calendar/viewPreference';
 import { MeetingActions } from '../meetings/MeetingActions';
 import { MeetingChangedNotice } from '../meetings/MeetingChangedNotice';
-import { freshnessOf } from '../meetings/meetingFreshness';
+import {
+  MEETING_GONE_DETAILS_MESSAGE,
+  noticeForForm,
+} from '../meetings/meetingFreshness';
+import type {
+  MeetingFormAction,
+  MeetingNotice,
+} from '../meetings/meetingFreshness';
 import { REASON_ACTIONS } from '../meetings/reasonActions';
 import { MeetingReasonDialog } from '../meetings/MeetingReasonDialog';
 import { MeetingDetailsDialog } from '../meetings/MeetingDetailsDialog';
@@ -264,14 +271,20 @@ export function MeetingsPage() {
   const noMeetingsInPeriod =
     noSituation || (list.status === 'ready' && list.data.length === 0);
   // Um diálogo aberto acompanha a reunião na última leitura: o de detalhe a mostra como está, e os
-  // de formulário mantêm o que foi digitado e avisam se ela mudou ou saiu do calendário.
+  // de formulário mantêm o que foi digitado, avisam o que mudou e desabilitam a confirmação quando
+  // a ação já não cabe. Fechando, o diálogo não reage mais à releitura.
   const latestOf = (item: MeetingItem) =>
     meetings.find((meeting) => meeting.id === item.id);
-  const noticeFor = (item: MeetingItem, open: boolean) => (
-    <MeetingChangedNotice
-      freshness={open ? freshnessOf(item, latestOf(item)) : 'same'}
-    />
-  );
+  const noticeFor = (
+    action: MeetingFormAction,
+    item: MeetingItem,
+    open: boolean,
+  ): MeetingNotice | null =>
+    open ? noticeForForm(action, item, latestOf(item)) : null;
+  const noticeProps = (found: MeetingNotice | null) => ({
+    notice: <MeetingChangedNotice message={found?.message ?? null} />,
+    actionBlocked: found?.blocksAction ?? false,
+  });
   const detailsLatest = detailsSlot && latestOf(detailsSlot.payload);
   // Se a reunião sai do calendário, o modal a mostra como foi lida por último, não como foi aberta.
   const [detailsLastSeen, setDetailsLastSeen] = useState<MeetingItem | null>(
@@ -374,7 +387,11 @@ export function MeetingsPage() {
           actions={detailsLatest ? renderActions(detailsLatest) : null}
           notice={
             <MeetingChangedNotice
-              freshness={detailsSlot.open && !detailsLatest ? 'gone' : 'same'}
+              message={
+                detailsSlot.open && !detailsLatest
+                  ? MEETING_GONE_DETAILS_MESSAGE
+                  : null
+              }
             />
           }
           onClose={detailsDialog.hide}
@@ -386,7 +403,9 @@ export function MeetingsPage() {
           key={`notes-${notesSlot.openCount}`}
           open={notesSlot.open}
           meeting={notesSlot.payload}
-          notice={noticeFor(notesSlot.payload, notesSlot.open)}
+          {...noticeProps(
+            noticeFor('notes', notesSlot.payload, notesSlot.open),
+          )}
           onSaved={(removed) => {
             notesDialog.hide();
             notify(
@@ -428,7 +447,13 @@ export function MeetingsPage() {
           noun={reasonAction.noun}
           confirmLabel={reasonAction.confirmLabel}
           sendingLabel={reasonAction.sendingLabel}
-          notice={noticeFor(reasonSlot.payload.item, reasonSlot.open)}
+          {...noticeProps(
+            noticeFor(
+              reasonSlot.payload.kind,
+              reasonSlot.payload.item,
+              reasonSlot.open,
+            ),
+          )}
           send={(reason) =>
             reasonAction.send(reasonSlot.payload.item.id, reason)
           }
@@ -452,7 +477,8 @@ export function MeetingsPage() {
           isTeacher={isTeacher}
           preselectedStudent={null}
           meeting={editedMeeting}
-          notice={editedMeeting && noticeFor(editedMeeting, dialog.slot.open)}
+          {...(editedMeeting &&
+            noticeProps(noticeFor('edit', editedMeeting, dialog.slot.open)))}
           prefill={dialog.slot.payload?.prefill}
           onSaved={() => {
             dialog.hide();
