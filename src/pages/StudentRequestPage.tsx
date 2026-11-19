@@ -6,7 +6,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { StudentRequestCard } from '../advisingRequests/StudentRequestCard';
 import { blockedMessage } from '../advisors/blockedMessages';
@@ -14,8 +14,8 @@ import { VisuallyHidden } from '../components/VisuallyHidden';
 import { PagePagination } from '../components/PagePagination';
 import { UrlSearchField } from '../components/UrlSearchField';
 import { useLastReady } from '../hooks/useLastReady';
-import { useLoad } from '../hooks/useLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
+import { useRefreshedLoad } from '../hooks/useRefreshedLoad';
 import { useSession } from '../hooks/useSession';
 import {
   PAGE_PARAM,
@@ -60,14 +60,17 @@ export function StudentRequestPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const search = (searchParams.get(SEARCH_PARAM) ?? '').trim();
   const [page, setPage] = useUrlPage();
-  const [reload, setReload] = useState(0);
   const listTop = useRef<HTMLDivElement>(null);
-  const status = useLoad(getRequestStatus, `status-${reload}`);
-  const list = useLoad(
+  // As duas leituras se refazem a cada 30 s e ao voltar para a aba, que é quando o professor pode
+  // ter respondido, sem esqueleto nem erro se a releitura falhar (ADR frontend 0006).
+  const statusLoad = useRefreshedLoad(getRequestStatus);
+  const listLoad = useRefreshedLoad(
     () => listMyRequests(page, search),
-    `${page}|${search}|${reload}`,
+    `${page}|${search}`,
   );
-  // O que já foi lido fica na tela enquanto a releitura acontece: sem esqueleto piscando.
+  const status = statusLoad.state;
+  const list = listLoad.state;
+  // Ao trocar de página ou de busca, o que já foi lido fica na tela: sem esqueleto piscando.
   const shown = useLastReady(list);
   const shownStatus = useLastReady(status);
   const { knownCount, lastPage, fallbackPage } = usePageBounds(
@@ -77,27 +80,6 @@ export function StudentRequestPage() {
   );
   useReturnToLastPage(fallbackPage, page, setPage);
   const refreshed = useRef(false);
-  const lastReload = useRef(0);
-
-  // Sem polling: relê ao voltar para a aba, que é quando o professor pode ter respondido. O foco
-  // da janela e a visibilidade da aba costumam chegar juntos, então valem como uma releitura só.
-  useEffect(() => {
-    const reloadOnReturn = () => {
-      const now = Date.now();
-      if (now - lastReload.current < 1000) return;
-      lastReload.current = now;
-      setReload((current) => current + 1);
-    };
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') reloadOnReturn();
-    };
-    window.addEventListener('focus', reloadOnReturn);
-    document.addEventListener('visibilitychange', onVisible);
-    return () => {
-      window.removeEventListener('focus', reloadOnReturn);
-      document.removeEventListener('visibilitychange', onVisible);
-    };
-  }, []);
 
   // O que importa para o menu é a orientação ativa: uma solicitação aceita cuja orientação já
   // foi encerrada não habilita nada. Um pedido de relê que falhou é tentado de novo na visita.
@@ -116,7 +98,6 @@ export function StudentRequestPage() {
       else params.set(SEARCH_PARAM, next);
       return params;
     });
-  const retry = () => setReload((current) => current + 1);
   const searching = search !== '';
   // Sem nenhuma solicitação o próprio aviso já traz o link para a busca: não se repete acima.
   const emptyList = shown !== null && shown.count === 0 && !searching;
@@ -143,7 +124,7 @@ export function StudentRequestPage() {
       {shownStatus === null && status.status === 'error' && (
         <Alert
           severity="warning"
-          action={<Button onClick={retry}>Atualizar</Button>}
+          action={<Button onClick={statusLoad.retry}>Atualizar</Button>}
         >
           Não foi possível verificar se você pode solicitar orientação agora.
         </Alert>
@@ -167,7 +148,7 @@ export function StudentRequestPage() {
         {shown === null && list.status === 'error' && (
           <Stack spacing={2}>
             <Alert severity="error">{list.message}</Alert>
-            <Button onClick={retry} sx={{ alignSelf: 'flex-start' }}>
+            <Button onClick={listLoad.retry} sx={{ alignSelf: 'flex-start' }}>
               Tentar novamente
             </Button>
           </Stack>
@@ -175,7 +156,7 @@ export function StudentRequestPage() {
         {shown !== null && list.status === 'error' && (
           <Alert
             severity="warning"
-            action={<Button onClick={retry}>Atualizar</Button>}
+            action={<Button onClick={listLoad.retry}>Atualizar</Button>}
             sx={{ mb: 2 }}
           >
             Não foi possível atualizar as solicitações. O que aparece abaixo

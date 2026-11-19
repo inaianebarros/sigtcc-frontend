@@ -436,8 +436,8 @@ describe('Dashboard do professor: carregamento e erros', () => {
   });
 });
 
-describe('Dashboard do professor: atualização ao voltar o foco', () => {
-  it('relê ao voltar o foco para a aba e mostra os novos números, sem esqueleto', async () => {
+describe('Dashboard do professor: atualização automática', () => {
+  it('relê ao voltar para a aba e mostra os novos números, sem esqueleto', async () => {
     const { fetchMock, serve } = setup();
     const progress = await screen.findByRole('region', {
       name: 'Progresso geral',
@@ -459,7 +459,7 @@ describe('Dashboard do professor: atualização ao voltar o foco', () => {
     );
 
     act(() => {
-      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
     });
 
     expect(screen.queryByTestId('dashboard-skeleton')).not.toBeInTheDocument();

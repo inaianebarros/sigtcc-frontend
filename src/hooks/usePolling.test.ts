@@ -136,4 +136,25 @@ describe('usePolling', () => {
     expect(first).toHaveBeenCalledTimes(1);
     expect(second).toHaveBeenCalledTimes(1);
   });
+
+  it('sem consulta inicial, espera o intervalo, mas ao voltar para a aba consulta na hora', () => {
+    const poll = vi.fn();
+    renderHook(() =>
+      usePolling(poll, {
+        intervalMs: INTERVAL,
+        enabled: true,
+        pollOnStart: false,
+      }),
+    );
+    expect(poll).not.toHaveBeenCalled();
+
+    act(() => {
+      vi.advanceTimersByTime(INTERVAL);
+    });
+    expect(poll).toHaveBeenCalledTimes(1);
+
+    act(() => setVisibility('hidden'));
+    act(() => setVisibility('visible'));
+    expect(poll).toHaveBeenCalledTimes(2);
+  });
 });

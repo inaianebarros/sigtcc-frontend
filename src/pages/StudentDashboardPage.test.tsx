@@ -465,8 +465,8 @@ describe('Dashboard do aluno: carregamento e erros', () => {
   });
 });
 
-describe('Dashboard do aluno: atualização ao voltar o foco', () => {
-  it('relê ao voltar o foco para a aba e mostra os novos números, sem esqueleto', async () => {
+describe('Dashboard do aluno: atualização automática', () => {
+  it('relê ao voltar para a aba e mostra os novos números, sem esqueleto', async () => {
     const { fetchMock, serve } = setup();
     const progress = await screen.findByRole('region', {
       name: 'Progresso geral',
@@ -488,7 +488,7 @@ describe('Dashboard do aluno: atualização ao voltar o foco', () => {
     );
 
     act(() => {
-      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
     });
 
     expect(screen.queryByTestId('dashboard-skeleton')).not.toBeInTheDocument();
@@ -512,13 +512,13 @@ describe('Dashboard do aluno: atualização ao voltar o foco', () => {
     );
   });
 
-  it('um foco e uma aba visível quase juntos fazem uma leitura só', async () => {
+  it('dois avisos de aba visível quase juntos fazem uma leitura só', async () => {
     const { fetchMock } = setup();
     await screen.findByRole('region', { name: 'Orientação' });
     const before = requestsTo(fetchMock, DASHBOARD).length;
 
     act(() => {
-      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
       document.dispatchEvent(new Event('visibilitychange'));
     });
 
@@ -543,7 +543,7 @@ describe('Dashboard do aluno: atualização ao voltar o foco', () => {
     const before = requestsTo(fetchMock, DASHBOARD).length;
 
     act(() => {
-      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
     });
 
     await waitFor(() =>

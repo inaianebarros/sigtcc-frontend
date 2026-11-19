@@ -6,6 +6,8 @@ import {
   logout,
   restoreSession,
 } from '../services/authService';
+import { usePolling } from '../hooks/usePolling';
+import { REFRESH_INTERVAL_MS } from '../hooks/useRefreshedLoad';
 import { setSessionExpiredHandler } from '../services/httpClient';
 import type { SessionUser } from '../types/session';
 import { SessionContext } from './sessionContext';
@@ -80,19 +82,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [startSession, refreshUser],
   );
 
-  useEffect(() => {
-    if (status !== 'authenticated') return;
-    const onFocus = () => void refreshUser();
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') void refreshUser();
-    };
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => {
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, [status, refreshUser]);
+  // O usuário traz o estado da orientação, que habilita Atividades e Reuniões no menu: relido no
+  // mesmo ciclo das telas, ele acompanha a outra parte aceitar ou encerrar a orientação.
+  usePolling(() => void refreshUser(), {
+    intervalMs: REFRESH_INTERVAL_MS,
+    enabled: status === 'authenticated',
+    pollOnStart: false,
+  });
 
   const signOut = useCallback(async () => {
     try {
