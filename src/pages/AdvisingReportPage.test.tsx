@@ -219,9 +219,9 @@ describe('AdvisingReportPage: a volta ao histórico', () => {
       '/aluno/historico?busca=pessoa&pagina=1',
     );
     await user.click(back);
-    expect(await screen.findByLabelText('Buscar orientador')).toHaveValue(
-      'pessoa',
-    );
+    expect(
+      await screen.findByLabelText('Buscar por nome ou tema do TCC'),
+    ).toHaveValue('pessoa');
   });
 
   it('mesmo com o relatório em erro, a seta de voltar continua disponível', async () => {

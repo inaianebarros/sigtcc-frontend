@@ -56,7 +56,7 @@ describe('item Reuniões do menu lateral', () => {
         .getAllByRole('link')
         .map((item) => item.textContent),
     ).toEqual([
-      'Dashboard',
+      'Início',
       'Orientadores',
       'Minhas solicitações',
       'Atividades',
@@ -89,7 +89,7 @@ describe('item Reuniões do menu lateral', () => {
         .getAllByRole('link')
         .map((item) => item.textContent),
     ).toEqual([
-      'Dashboard',
+      'Início',
       'Solicitações',
       'Orientandos',
       'Atividades',

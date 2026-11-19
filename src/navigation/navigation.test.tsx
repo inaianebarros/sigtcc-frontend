@@ -26,19 +26,19 @@ describe('menu lateral por perfil', () => {
     setViewportWidth(DESKTOP_WIDTH);
   });
 
-  it('mostra ao aluno os itens Dashboard, Orientadores, Minhas solicitações, Histórico de orientações e Meu perfil e abre no Dashboard', async () => {
+  it('mostra ao aluno os itens Início, Orientadores, Minhas solicitações, Histórico de orientações e Meu perfil e abre no Início', async () => {
     mockApi(sessionOf('student', { has_active_advising: false }));
 
     renderApp('/login');
 
-    await screen.findByRole('heading', { name: 'Dashboard' });
+    await screen.findByRole('heading', { name: 'Início' });
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
     expect(
       within(menu)
         .getAllByRole('link')
         .map((link) => link.textContent),
     ).toEqual([
-      'Dashboard',
+      'Início',
       'Orientadores',
       'Minhas solicitações',
       'Histórico de orientações',
@@ -49,19 +49,19 @@ describe('menu lateral por perfil', () => {
     );
   });
 
-  it('mostra ao professor os itens Dashboard, Solicitações, Histórico de orientações e Meu perfil e abre no Dashboard', async () => {
+  it('mostra ao professor os itens Início, Solicitações, Histórico de orientações e Meu perfil e abre no Início', async () => {
     mockApi(sessionOf('teacher', { active_advisees_count: 0 }));
 
     renderApp('/login');
 
-    await screen.findByRole('heading', { name: 'Dashboard' });
+    await screen.findByRole('heading', { name: 'Início' });
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
     expect(
       within(menu)
         .getAllByRole('link')
         .map((link) => link.textContent),
     ).toEqual([
-      'Dashboard',
+      'Início',
       'Solicitações',
       'Histórico de orientações',
       'Meu perfil',
@@ -90,14 +90,14 @@ describe('menu lateral por perfil', () => {
 
     renderApp('/login');
 
-    await screen.findByRole('heading', { name: 'Dashboard' });
+    await screen.findByRole('heading', { name: 'Início' });
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
     expect(
       within(menu)
         .getAllByRole('link')
         .map((link) => link.textContent),
     ).toEqual([
-      'Dashboard',
+      'Início',
       'Solicitações',
       'Orientandos',
       'Atividades',
@@ -129,7 +129,7 @@ describe('menu lateral por perfil', () => {
     renderApp('/aluno');
 
     expect(
-      await screen.findByRole('heading', { name: 'Dashboard' }),
+      await screen.findByRole('heading', { name: 'Início' }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/aluno/dashboard',
@@ -153,7 +153,7 @@ describe('menu lateral por perfil', () => {
     renderApp('/');
 
     expect(
-      await screen.findByRole('heading', { name: 'Dashboard' }),
+      await screen.findByRole('heading', { name: 'Início' }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/aluno\/dashboard$/,
@@ -166,7 +166,7 @@ describe('menu lateral por perfil', () => {
     renderApp('/');
 
     expect(
-      await screen.findByRole('heading', { name: 'Dashboard' }),
+      await screen.findByRole('heading', { name: 'Início' }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/professor\/dashboard$/,

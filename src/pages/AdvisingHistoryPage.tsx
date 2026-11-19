@@ -72,7 +72,9 @@ export function AdvisingHistoryPage() {
           Histórico de orientações
         </Typography>
         <Typography color="text.secondary">
-          Consulte os registros das orientações encerradas.
+          {isStudent
+            ? 'Orientações que já terminaram, com o tema, as datas e o relatório de cada uma. Se houver orientação em andamento, ela fica no Início.'
+            : 'Orientações que você encerrou, com o tema, as datas e o relatório de cada uma. Quem você orienta agora está em Orientandos.'}
         </Typography>
       </div>
       <HistoryTotals
@@ -81,8 +83,12 @@ export function AdvisingHistoryPage() {
         onRetry={() => setSummaryReload((current) => current + 1)}
       />
       <UrlSearchField
-        label={isStudent ? 'Buscar orientador' : 'Buscar orientando'}
-        placeholder="Digite o nome ou tema da orientação..."
+        label="Buscar por nome ou tema do TCC"
+        placeholder={
+          isStudent
+            ? 'Nome do orientador ou tema'
+            : 'Nome do orientando ou tema'
+        }
         value={search}
         onSearch={changeSearch}
       />
@@ -91,9 +97,6 @@ export function AdvisingHistoryPage() {
         {list.status === 'ready' && search !== ''
           ? foundText(list.data.count)
           : ''}
-      </Typography>
-      <Typography variant="h5" component="h2">
-        Orientações anteriores
       </Typography>
       <div ref={listTop}>
         {list.status === 'loading' && (
@@ -117,10 +120,8 @@ export function AdvisingHistoryPage() {
         {list.status === 'ready' && list.data.count === 0 && search === '' && (
           <Alert severity="info">
             {isStudent
-              ? 'Você ainda não tem orientações encerradas. '
-              : 'Você ainda não encerrou nenhuma orientação. '}
-            Quando uma orientação terminar, ela aparece aqui, com o tema do TCC
-            e as datas.
+              ? 'Você ainda não tem orientações encerradas. Quando o professor encerrar uma orientação, ela aparece aqui, com o tema do TCC, as datas e o relatório.'
+              : 'Você ainda não encerrou nenhuma orientação. As que você encerrar aparecem aqui, com o tema do TCC, as datas e o relatório.'}
           </Alert>
         )}
         {list.status === 'ready' && list.data.count === 0 && search !== '' && (
@@ -143,6 +144,7 @@ export function AdvisingHistoryPage() {
               <EndedAdvisingCard
                 key={advising.id}
                 advising={advising}
+                counterpartRole={isStudent ? 'Orientador(a)' : 'Orientando(a)'}
                 reportPath={advisingReportPath(
                   isStudent ? 'student' : 'teacher',
                   advising.id,

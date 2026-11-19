@@ -46,7 +46,7 @@ function setup(
 }
 
 const heading = () =>
-  screen.findByRole('heading', { level: 1, name: 'Dashboard' });
+  screen.findByRole('heading', { level: 1, name: 'Início' });
 
 const attention = () =>
   screen.findByRole('region', {
@@ -67,7 +67,7 @@ describe('Dashboard do professor: a navegação', () => {
 
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
     const links = within(menu).getAllByRole('link');
-    expect(links[0]).toHaveTextContent('Dashboard');
+    expect(links[0]).toHaveTextContent('Início');
     expect(links[0]).toHaveAttribute('aria-current', 'page');
   });
 
@@ -77,7 +77,7 @@ describe('Dashboard do professor: a navegação', () => {
     await heading();
 
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
-    expect(within(menu).getByRole('link', { name: 'Dashboard' })).toBeVisible();
+    expect(within(menu).getByRole('link', { name: 'Início' })).toBeVisible();
   });
 });
 
