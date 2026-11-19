@@ -50,7 +50,7 @@ describe('menu lateral do aluno sem o item Tema do TCC', () => {
         .getAllByRole('link')
         .map((item) => item.textContent),
     ).toEqual([
-      'Dashboard',
+      'Início',
       'Orientadores',
       'Minhas solicitações',
       'Atividades',

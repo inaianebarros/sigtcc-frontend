@@ -64,7 +64,7 @@ describe('menu lateral recolhível', () => {
         .getAllByRole('link')
         .map((link) => link.textContent),
     ).toEqual([
-      'Dashboard',
+      'Início',
       'Orientadores',
       'Minhas solicitações',
       'Histórico de orientações',

@@ -341,7 +341,7 @@ describe('Perfil do aluno: tema e alterações não salvas (RNF28)', () => {
     await ready();
     await events.type(field(), VALID);
 
-    await events.click(screen.getByRole('link', { name: 'Dashboard' }));
+    await events.click(screen.getByRole('link', { name: 'Início' }));
 
     const confirm = await screen.findByRole('dialog', {
       name: 'Descartar alterações?',
@@ -362,7 +362,7 @@ describe('Perfil do aluno: tema e alterações não salvas (RNF28)', () => {
     const { events } = setup();
     await ready();
 
-    await events.click(screen.getByRole('link', { name: 'Dashboard' }));
+    await events.click(screen.getByRole('link', { name: 'Início' }));
 
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent(

@@ -26,7 +26,7 @@ describe('menu lateral por perfil', () => {
     setViewportWidth(DESKTOP_WIDTH);
   });
 
-  it('mostra ao aluno os itens Dashboard, Orientadores, Minhas solicitações, Histórico de orientações e Meu perfil e abre no Dashboard', async () => {
+  it('mostra ao aluno os itens Início, Orientadores, Minhas solicitações, Histórico de orientações e Meu perfil e abre no Início', async () => {
     mockApi(sessionOf('student', { has_active_advising: false }));
 
     renderApp('/login');
@@ -38,7 +38,7 @@ describe('menu lateral por perfil', () => {
         .getAllByRole('link')
         .map((link) => link.textContent),
     ).toEqual([
-      'Dashboard',
+      'Início',
       'Orientadores',
       'Minhas solicitações',
       'Histórico de orientações',
@@ -49,7 +49,7 @@ describe('menu lateral por perfil', () => {
     );
   });
 
-  it('mostra ao professor os itens Dashboard, Solicitações, Histórico de orientações e Meu perfil e abre no Dashboard', async () => {
+  it('mostra ao professor os itens Início, Solicitações, Histórico de orientações e Meu perfil e abre no Início', async () => {
     mockApi(sessionOf('teacher', { active_advisees_count: 0 }));
 
     renderApp('/login');
@@ -61,7 +61,7 @@ describe('menu lateral por perfil', () => {
         .getAllByRole('link')
         .map((link) => link.textContent),
     ).toEqual([
-      'Dashboard',
+      'Início',
       'Solicitações',
       'Histórico de orientações',
       'Meu perfil',
@@ -97,7 +97,7 @@ describe('menu lateral por perfil', () => {
         .getAllByRole('link')
         .map((link) => link.textContent),
     ).toEqual([
-      'Dashboard',
+      'Início',
       'Solicitações',
       'Orientandos',
       'Atividades',
