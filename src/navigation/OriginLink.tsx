@@ -1,4 +1,4 @@
-import { Link } from '@mui/material';
+import { Link, type SxProps, type Theme } from '@mui/material';
 import type { ReactNode } from 'react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { originState } from './origin';
@@ -10,13 +10,15 @@ import { originState } from './origin';
 export function OriginLink({
   to,
   children,
+  sx,
 }: {
   to: string;
   children: ReactNode;
+  sx?: SxProps<Theme>;
 }) {
   const location = useLocation();
   return (
-    <Link component={RouterLink} to={to} state={originState(location)}>
+    <Link component={RouterLink} to={to} state={originState(location)} sx={sx}>
       {children}
     </Link>
   );

@@ -98,7 +98,14 @@ export function EndedAdvisingCard({
               O motivo do encerramento está no relatório.
             </Typography>
             <Typography>
-              <OriginLink to={reportPath}>
+              <OriginLink
+                to={reportPath}
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  minHeight: { xs: 44, sm: 24 },
+                }}
+              >
                 Ver relatório da orientação{' '}
                 <VisuallyHidden>
                   com {advising.counterpart.fullName}
