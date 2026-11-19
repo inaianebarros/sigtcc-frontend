@@ -59,10 +59,18 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
         .map((card) => within(card).getByRole('heading').textContent),
     ).toEqual(['Pessoa 7', 'Pessoa 3', 'Pessoa 5']);
     expect(
-      screen.getByRole('heading', { level: 2, name: 'Orientações anteriores' }),
+      screen.queryByRole('heading', {
+        level: 2,
+        name: 'Orientações anteriores',
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Orientações que já terminaram, com o tema, as datas e o relatório de cada uma. Se houver orientação em andamento, ela fica no Início.',
+      ),
     ).toBeVisible();
     expect(
-      screen.getByText('Consulte os registros das orientações encerradas.'),
+      screen.getByPlaceholderText('Nome do orientador ou tema'),
     ).toBeVisible();
   });
 
@@ -81,7 +89,11 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     const card = cardOf('Paulo Professor');
 
     expect(within(card).getByText('Encerrada')).toBeVisible();
-    expect(within(card).getByText('Tema da orientação')).toBeVisible();
+    expect(within(card).getByText('Orientador(a)')).toBeVisible();
+    expect(
+      within(card).getByText('O motivo do encerramento está no relatório.'),
+    ).toBeVisible();
+    expect(within(card).getByText('Tema do TCC')).toBeVisible();
     expect(
       within(card).getByText('Aprendizado de máquina na saúde'),
     ).toBeVisible();
@@ -112,12 +124,14 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     ).toHaveAttribute('href', '/aluno/orientadores/50');
   });
 
-  it('"Ver relatório" é um link para o relatório da orientação, no endereço do aluno', async () => {
+  it('"Ver relatório da orientação" é um link para o relatório da orientação, no endereço do aluno', async () => {
     setup([makeEndedAdvising(9)]);
     await screen.findByText('Pessoa 9');
 
     expect(
-      within(cardOf('Pessoa 9')).getByRole('link', { name: /Ver relatório/ }),
+      within(cardOf('Pessoa 9')).getByRole('link', {
+        name: 'Ver relatório da orientação com Pessoa 9',
+      }),
     ).toHaveAttribute('href', '/aluno/historico/9/relatorio');
   });
 
@@ -139,11 +153,11 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
 
     expect(within(total).getByText('3')).toBeVisible();
     expect(
-      screen.queryByRole('group', { name: 'Orientandos' }),
+      screen.queryByRole('group', { name: 'Orientandos ativos' }),
     ).not.toBeInTheDocument();
   });
 
-  it('o campo se chama "Buscar orientador" e a busca vai ao servidor, sem acento e por tema', async () => {
+  it('o campo se chama "Buscar por nome ou tema do TCC" e a busca vai ao servidor, sem acento e por tema', async () => {
     const { fetchMock, user } = setup([
       makeEndedAdvising(1, {
         counterpart: { id: 50, full_name: 'Márcia Professora' },
@@ -156,7 +170,10 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     ]);
     await screen.findByText('Márcia Professora');
 
-    await user.type(screen.getByLabelText('Buscar orientador'), 'marcia');
+    await user.type(
+      screen.getByLabelText('Buscar por nome ou tema do TCC'),
+      'marcia',
+    );
 
     await waitFor(() =>
       expect(screen.queryByText('João Orientador')).not.toBeInTheDocument(),
@@ -171,8 +188,11 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     expect(screen.getByTestId('location')).toHaveTextContent('?busca=marcia');
     expect(screen.getByText('1 orientação encontrada')).toBeVisible();
 
-    await user.clear(screen.getByLabelText('Buscar orientador'));
-    await user.type(screen.getByLabelText('Buscar orientador'), 'dados');
+    await user.clear(screen.getByLabelText('Buscar por nome ou tema do TCC'));
+    await user.type(
+      screen.getByLabelText('Buscar por nome ou tema do TCC'),
+      'dados',
+    );
     expect(await screen.findByText('João Orientador')).toBeVisible();
   });
 
@@ -180,7 +200,9 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     setup([]);
 
     expect(
-      await screen.findByText(/Você ainda não tem orientações encerradas/),
+      await screen.findByText(
+        'Você ainda não tem orientações encerradas. Quando o professor encerrar uma orientação, ela aparece aqui, com o tema do TCC, as datas e o relatório.',
+      ),
     ).toBeVisible();
     expect(screen.queryByRole('article')).not.toBeInTheDocument();
     expect(
@@ -196,12 +218,16 @@ describe('AdvisingHistoryPage: o histórico do aluno', () => {
     expect(
       await screen.findByText(/Nenhuma orientação encontrada para essa busca/),
     ).toBeVisible();
-    expect(screen.getByLabelText('Buscar orientador')).toHaveValue('zzz');
+    expect(screen.getByLabelText('Buscar por nome ou tema do TCC')).toHaveValue(
+      'zzz',
+    );
 
     await user.click(screen.getByRole('button', { name: 'Limpar busca' }));
 
     expect(await screen.findByText('Pessoa 1')).toBeVisible();
-    expect(screen.getByLabelText('Buscar orientador')).toHaveValue('');
+    expect(screen.getByLabelText('Buscar por nome ou tema do TCC')).toHaveValue(
+      '',
+    );
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/aluno\/historico$/,
     );
@@ -219,7 +245,17 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
       { user: 'teacher' },
     );
 
-    await screen.findByRole('article', { name: 'Ana Souza' });
+    const card = await screen.findByRole('article', { name: 'Ana Souza' });
+
+    expect(within(card).getByText('Orientando(a)')).toBeVisible();
+    expect(
+      screen.getByText(
+        'Orientações que você encerrou, com o tema, as datas e o relatório de cada uma. Quem você orienta agora está em Orientandos.',
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByPlaceholderText('Nome do orientando ou tema'),
+    ).toBeVisible();
 
     expect(
       screen.getByRole('heading', {
@@ -245,12 +281,14 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
     ).toHaveAttribute('href', '/professor/alunos/70');
   });
 
-  it('"Ver relatório" abre o relatório no endereço do professor', async () => {
+  it('"Ver relatório da orientação" abre o relatório no endereço do professor', async () => {
     setup([makeEndedAdvising(4)], { user: 'teacher' });
     await screen.findByText('Pessoa 4');
 
     expect(
-      within(cardOf('Pessoa 4')).getByRole('link', { name: /Ver relatório/ }),
+      within(cardOf('Pessoa 4')).getByRole('link', {
+        name: 'Ver relatório da orientação com Pessoa 4',
+      }),
     ).toHaveAttribute('href', '/professor/historico/4/relatorio');
   });
 
@@ -260,13 +298,13 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
     const ended = await screen.findByRole('group', {
       name: 'Orientações encerradas',
     });
-    const active = screen.getByRole('group', { name: 'Orientandos' });
+    const active = screen.getByRole('group', { name: 'Orientandos ativos' });
 
     expect(within(ended).getByText('2')).toBeVisible();
     expect(within(active).getByText('4')).toBeVisible();
   });
 
-  it('os totais não mudam com a busca, e o campo se chama "Buscar orientando"', async () => {
+  it('os totais não mudam com a busca, e o campo se chama "Buscar por nome ou tema do TCC"', async () => {
     const { user } = setup(
       [
         makeEndedAdvising(1, {
@@ -280,7 +318,10 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
     );
     await screen.findByText('Ana Souza');
 
-    await user.type(screen.getByLabelText('Buscar orientando'), 'bruno');
+    await user.type(
+      screen.getByLabelText('Buscar por nome ou tema do TCC'),
+      'bruno',
+    );
 
     await waitFor(() =>
       expect(screen.queryByText('Ana Souza')).not.toBeInTheDocument(),
@@ -296,7 +337,9 @@ describe('AdvisingHistoryPage: o histórico do professor', () => {
     setup([], { user: 'teacher' });
 
     expect(
-      await screen.findByText(/Você ainda não encerrou nenhuma orientação/),
+      await screen.findByText(
+        'Você ainda não encerrou nenhuma orientação. As que você encerrar aparecem aqui, com o tema do TCC, as datas e o relatório.',
+      ),
     ).toBeVisible();
   });
 });
@@ -385,6 +428,6 @@ describe('AdvisingHistoryPage: o celular', () => {
     const card = await screen.findByRole('article', { name: 'Pessoa 1' });
 
     expect(within(card).getByText('Tema da orientação 1')).toBeVisible();
-    expect(within(card).getByText('Ver relatório')).toBeVisible();
+    expect(within(card).getByText('Ver relatório da orientação')).toBeVisible();
   });
 });

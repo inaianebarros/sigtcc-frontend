@@ -21,7 +21,7 @@ function totalsOf(summary: AdvisingHistorySummary, showActive: boolean) {
     { label: 'Orientações encerradas', value: summary.endedCount },
   ];
   if (showActive && summary.activeCount !== null) {
-    totals.push({ label: 'Orientandos', value: summary.activeCount });
+    totals.push({ label: 'Orientandos ativos', value: summary.activeCount });
   }
   return totals;
 }
