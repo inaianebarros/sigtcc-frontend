@@ -46,7 +46,7 @@ function setup(
 }
 
 const heading = () =>
-  screen.findByRole('heading', { level: 1, name: 'Dashboard' });
+  screen.findByRole('heading', { level: 1, name: 'Início' });
 
 const attention = () =>
   screen.findByRole('region', {

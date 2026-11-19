@@ -5,7 +5,7 @@ export function DashboardHeader({ name }: { name: string | null }) {
   return (
     <Stack spacing={0.5}>
       <Typography variant="h4" component="h1">
-        Dashboard
+        Início
       </Typography>
       {name && <Typography color="text.secondary">Olá, {name}!</Typography>}
     </Stack>

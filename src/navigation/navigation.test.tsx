@@ -31,7 +31,7 @@ describe('menu lateral por perfil', () => {
 
     renderApp('/login');
 
-    await screen.findByRole('heading', { name: 'Dashboard' });
+    await screen.findByRole('heading', { name: 'Início' });
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
     expect(
       within(menu)
@@ -54,7 +54,7 @@ describe('menu lateral por perfil', () => {
 
     renderApp('/login');
 
-    await screen.findByRole('heading', { name: 'Dashboard' });
+    await screen.findByRole('heading', { name: 'Início' });
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
     expect(
       within(menu)
@@ -90,7 +90,7 @@ describe('menu lateral por perfil', () => {
 
     renderApp('/login');
 
-    await screen.findByRole('heading', { name: 'Dashboard' });
+    await screen.findByRole('heading', { name: 'Início' });
     const menu = screen.getByRole('navigation', { name: 'Menu principal' });
     expect(
       within(menu)
@@ -129,7 +129,7 @@ describe('menu lateral por perfil', () => {
     renderApp('/aluno');
 
     expect(
-      await screen.findByRole('heading', { name: 'Dashboard' }),
+      await screen.findByRole('heading', { name: 'Início' }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
       '/aluno/dashboard',
@@ -153,7 +153,7 @@ describe('menu lateral por perfil', () => {
     renderApp('/');
 
     expect(
-      await screen.findByRole('heading', { name: 'Dashboard' }),
+      await screen.findByRole('heading', { name: 'Início' }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/aluno\/dashboard$/,
@@ -166,7 +166,7 @@ describe('menu lateral por perfil', () => {
     renderApp('/');
 
     expect(
-      await screen.findByRole('heading', { name: 'Dashboard' }),
+      await screen.findByRole('heading', { name: 'Início' }),
     ).toBeInTheDocument();
     expect(screen.getByTestId('location')).toHaveTextContent(
       /^\/professor\/dashboard$/,
