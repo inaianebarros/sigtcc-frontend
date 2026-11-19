@@ -112,23 +112,26 @@ describe('ActivityDetailPage: o conteúdo', () => {
 
     await screen.findByRole('heading', { level: 1, name: 'Atividade 5' });
 
-    expect(screen.queryByText('Orientador')).not.toBeInTheDocument();
+    const summary = screen.getByRole('region', { name: 'Resumo da atividade' });
+    expect(within(summary).queryByText('Orientador')).not.toBeInTheDocument();
   });
 
-  it('lista as entregas na linha do tempo com a data de envio e os arquivos, com nome, tamanho e tipo', async () => {
+  it('lista as entregas na linha do tempo com a data de envio e os arquivos, com nome e tamanho, sem o tipo', async () => {
     setup([FULL], 'teacher', '/professor/atividades/5');
 
     const section = await screen.findByRole('region', {
       name: 'Linha do tempo',
     });
-    const delivery = (
-      await within(section).findByText('Entrega — Versão 1')
-    ).closest('li')!;
+    const delivery = (await within(section).findByText('1ª entrega')).closest(
+      'li',
+    )!;
 
     expect(within(delivery).getByText(/5 de novembro de 2026/)).toBeVisible();
     expect(within(delivery).getByText('capitulo2.pdf')).toBeVisible();
     expect(within(delivery).getByText(/1,5 KB/)).toBeVisible();
-    expect(within(delivery).getByText(/application\/pdf/)).toBeVisible();
+    expect(
+      within(delivery).queryByText(/application\//),
+    ).not.toBeInTheDocument();
     expect(within(delivery).getByText('anexos.zip')).toBeVisible();
     expect(within(delivery).getByText(/3,0 MB/)).toBeVisible();
     expect(within(delivery).queryByRole('link')).not.toBeInTheDocument();
@@ -142,9 +145,9 @@ describe('ActivityDetailPage: o conteúdo', () => {
     });
     await within(section).findByText('Atividade criada');
 
-    expect(within(section).getByText('Recusada')).toBeVisible();
+    expect(within(section).getByText('Atividade recusada')).toBeVisible();
     expect(within(section).getByText(/6 de novembro de 2026/)).toBeVisible();
-    expect(within(section).getByText('Aceita')).toBeVisible();
+    expect(within(section).getByText('Atividade aceita')).toBeVisible();
     expect(within(section).getAllByText('Comentário')).toHaveLength(3);
   });
 
@@ -156,7 +159,7 @@ describe('ActivityDetailPage: o conteúdo', () => {
     });
 
     expect(await within(section).findByText('Atividade criada')).toBeVisible();
-    expect(within(section).getByText('Início do histórico')).toBeVisible();
+    expect(within(section).getByText('Início da atividade')).toBeVisible();
     expect(within(section).queryByText(/Entrega —/)).not.toBeInTheDocument();
     expect(within(section).queryByText('Comentário')).not.toBeInTheDocument();
   });
@@ -173,18 +176,24 @@ describe('ActivityDetailPage: o conteúdo', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('a seção "Status e entrega" já é do aluno: com conteúdo e sem o aviso de em breve', async () => {
+  it('a seção "Situação e entrega" já é do aluno: com o rótulo da situação, a frase de apoio e sem o aviso de em breve', async () => {
     setup([makeActivity(5)], 'student', '/aluno/atividades/5');
 
     const section = await screen.findByRole('region', {
-      name: 'Status e entrega',
+      name: 'Situação e entrega',
     });
 
     expect(
       within(section).queryByText('Disponível em breve'),
     ).not.toBeInTheDocument();
     expect(
-      within(section).getByRole('group', { name: 'Status da atividade' }),
+      within(section).getByRole('group', { name: 'Situação da atividade' }),
+    ).toBeVisible();
+    expect(within(section).getByText('Situação:')).toBeVisible();
+    expect(
+      within(section).getByText(
+        'Entregue os arquivos do trabalho. Quando terminar, envie a atividade para o orientador revisar.',
+      ),
     ).toBeVisible();
   });
 });
@@ -313,6 +322,11 @@ describe('ActivityDetailPage: navegação e erros', () => {
 
     expect(
       await screen.findByRole('heading', { name: 'Atividade não encontrada' }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        'Esta atividade não existe ou não está mais disponível para você. Volte para a lista de atividades.',
+      ),
     ).toBeVisible();
     await events.click(
       screen.getByRole('link', { name: 'Voltar para as atividades' }),

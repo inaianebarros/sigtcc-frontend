@@ -54,17 +54,18 @@ beforeEach(() => {
 });
 
 describe('Excluir atividade: a confirmação (RNF21)', () => {
-  it('pede confirmação explícita, diz que a atividade deixa de ser exibida e que entregas, comentários e revisões são preservados', async () => {
+  it('pede confirmação explícita, diz que a atividade deixa de aparecer junto com as entregas e os comentários e que não há como recuperá-la', async () => {
     const { fetchMock, events } = setup();
 
     const dialog = await askToDelete(events);
 
     expect(within(dialog).getByText(/Capítulo 2/)).toBeVisible();
-    expect(within(dialog).getByText(/deixará de ser exibida/)).toBeVisible();
     expect(
-      within(dialog).getByText(/entregas, os comentários e as revisões/),
+      within(dialog).getByText(
+        /deixará de aparecer para você e para o aluno, junto com as entregas e os comentários dela\. Não será possível recuperá-la\./,
+      ),
     ).toBeVisible();
-    expect(within(dialog).getByText(/não pode ser desfeita/)).toBeVisible();
+    expect(within(dialog).queryByText(/preservad/)).not.toBeInTheDocument();
     expect(deleteRequests(fetchMock)).toHaveLength(0);
   });
 

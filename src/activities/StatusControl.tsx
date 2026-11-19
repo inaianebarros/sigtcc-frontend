@@ -12,7 +12,7 @@ interface StatusControlProps {
 }
 
 /**
- * O controle do aluno entre Pendente e Em andamento (RF28): o clique muda o status na hora, sem
+ * O controle do aluno entre Pendente e Em andamento (RF28): o clique muda a situação na hora, sem
  * botão de salvar. Num grupo exclusivo, clicar no que já está marcado entrega `null`, e isso não
  * faz nada.
  */
@@ -22,7 +22,7 @@ export function StatusControl({ status, busy, onChange }: StatusControlProps) {
       exclusive
       color="primary"
       size="small"
-      aria-label="Status da atividade"
+      aria-label="Situação da atividade"
       value={status}
       disabled={busy}
       onChange={(_, next: StudentSettableStatus | null) => {

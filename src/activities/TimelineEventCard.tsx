@@ -10,14 +10,15 @@ import type { TimelineEvent } from '../services/activityTimelineService';
 import { AttachedFileItem } from './AttachedFileItem';
 import { STATUS_LABELS } from './activityStatus';
 
-const AUTHOR_LABELS = { student: 'Aluno', teacher: 'Professor' } as const;
+// Só o aluno e o orientador da atividade agem nela: o professor que aparece é sempre o orientador.
+const AUTHOR_LABELS = { student: 'Aluno', teacher: 'Orientador' } as const;
 
 function titleOf(event: TimelineEvent): string {
   switch (event.type) {
     case 'created':
       return 'Atividade criada';
     case 'delivery':
-      return `Entrega — Versão ${event.version}`;
+      return `${event.version}ª entrega`;
     case 'status_change':
       return `Situação alterada para ${STATUS_LABELS[event.status]}`;
     case 'sent_for_review':
@@ -25,7 +26,7 @@ function titleOf(event: TimelineEvent): string {
     case 'comment':
       return 'Comentário';
     case 'review':
-      return `Avaliação da versão ${event.version}`;
+      return `Revisão da ${event.version}ª entrega`;
   }
 }
 
@@ -55,15 +56,25 @@ function Badge({ event }: { event: TimelineEvent }) {
         size="small"
         color="primary"
         variant="outlined"
-        label="Aguardando avaliação"
+        label="Aguardando revisão"
       />
     );
   }
   if (event.type === 'review') {
     return event.decision === 'accepted' ? (
-      <Chip size="small" color="success" variant="outlined" label="Aceita" />
+      <Chip
+        size="small"
+        color="success"
+        variant="outlined"
+        label="Atividade aceita"
+      />
     ) : (
-      <Chip size="small" color="error" variant="outlined" label="Recusada" />
+      <Chip
+        size="small"
+        color="error"
+        variant="outlined"
+        label="Atividade recusada"
+      />
     );
   }
   return null;
@@ -87,7 +98,7 @@ function Body({
       return (
         <Files
           files={event.files}
-          label={`Arquivos da versão ${event.version}`}
+          label={`Arquivos da ${event.version}ª entrega`}
           load={(file) => downloadSubmissionFile(activityId, file.id)}
         />
       );
@@ -103,7 +114,7 @@ function Body({
           )}
           <Files
             files={event.files}
-            label={`Anexos da avaliação da versão ${event.version}`}
+            label={`Anexos da revisão da ${event.version}ª entrega`}
             load={(file) => downloadReviewFile(activityId, event.id, file.id)}
           />
         </>

@@ -76,7 +76,7 @@ async function openDialog(events: ReturnType<typeof userEvent.setup>) {
 const chooser = (dialog: HTMLElement) =>
   within(dialog).getByLabelText(/Escolher arquivos/);
 const submit = (dialog: HTMLElement) =>
-  within(dialog).getByRole('button', { name: 'Entregar' });
+  within(dialog).getByRole('button', { name: 'Entregar arquivos' });
 
 async function choose(
   events: ReturnType<typeof userEvent.setup>,
@@ -134,6 +134,11 @@ describe('Entregar arquivos: escolher e conferir', () => {
 
     const dialog = await openDialog(events);
 
+    expect(
+      within(dialog).getByText(
+        'Os arquivos ficam na linha do tempo. O orientador só os revisa depois que você enviar a atividade para revisão.',
+      ),
+    ).toBeVisible();
     expect(within(dialog).getByText('Nenhum arquivo escolhido.')).toBeVisible();
     expect(submit(dialog)).toBeDisabled();
     expect(
@@ -314,7 +319,11 @@ describe('Entregar arquivos: o envio', () => {
 
     await events.click(submit(dialog));
 
-    expect(await screen.findByText('Entrega enviada.')).toBeVisible();
+    expect(
+      await screen.findByText(
+        'Arquivos entregues. Quando terminar, envie a atividade para revisão.',
+      ),
+    ).toBeVisible();
     expect(uploads).toHaveLength(1);
     expect(uploads[0]!.files.map((item) => item.name)).toEqual([
       'primeiro.pdf',
@@ -363,7 +372,9 @@ describe('Entregar arquivos: o envio', () => {
     ).toBeDisabled();
     expect(chooser(dialog)).toBeDisabled();
     release();
-    await screen.findByText('Entrega enviada.');
+    await screen.findByText(
+      'Arquivos entregues. Quando terminar, envie a atividade para revisão.',
+    );
   });
 
   it('o Esc durante o envio não fecha o diálogo nem pede para descartar', async () => {
@@ -400,7 +411,9 @@ describe('Entregar arquivos: o envio', () => {
       screen.getByRole('dialog', { name: 'Entregar arquivos' }),
     ).toBeVisible();
     release();
-    await screen.findByText('Entrega enviada.');
+    await screen.findByText(
+      'Arquivos entregues. Quando terminar, envie a atividade para revisão.',
+    );
   });
 
   it('um erro por arquivo do servidor aparece junto do arquivo certo, e o diálogo continua aberto', async () => {
@@ -559,7 +572,7 @@ describe('Entregar arquivos: alterações não enviadas (RNF28)', () => {
 
     expect(
       await within(dialog).findByText(/Você tem alterações não salvas/),
-    ).toHaveTextContent('Clique em Entregar para gravá-las.');
+    ).toHaveTextContent('Clique em Entregar arquivos para gravá-las.');
     await events.click(
       within(dialog).getByRole('button', { name: 'Cancelar' }),
     );
@@ -623,7 +636,9 @@ describe('Entregar arquivos: alterações não enviadas (RNF28)', () => {
     let dialog = await openDialog(events);
     await choose(events, dialog, file('a.pdf'));
     await events.click(submit(dialog));
-    await screen.findByText('Entrega enviada.');
+    await screen.findByText(
+      'Arquivos entregues. Quando terminar, envie a atividade para revisão.',
+    );
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );

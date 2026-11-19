@@ -8,6 +8,7 @@ import { ActivityFormDialog } from '../activities/ActivityFormDialog';
 import { DeliveryDialog } from '../activities/DeliveryDialog';
 import { RefuseReviewDialog } from '../activities/RefuseReviewDialog';
 import { changesOf } from '../activities/activityForm';
+import { STATUS_LABELS } from '../activities/activityStatus';
 import type { ActivityFormValues } from '../activities/activityForm';
 import { useStateChangedNotice } from '../hooks/useStateChangedNotice';
 import { useDialogSlot } from '../hooks/useDialogSlot';
@@ -101,7 +102,7 @@ export function ActivityDetailPage() {
     setChangingStatus(true);
     try {
       await changeActivityStatus(id, next);
-      notify('Status atualizado.', 'success');
+      notify(`Situação atualizada para ${STATUS_LABELS[next]}.`, 'success');
       refresh();
     } catch (error) {
       if (isStateChangedError(error)) {
@@ -199,6 +200,7 @@ export function ActivityDetailPage() {
         backPath={backPath}
         backLabel="Voltar para as atividades"
         notFoundTitle="Atividade não encontrada"
+        notFoundMessage="Esta atividade não existe ou não está mais disponível para você. Volte para a lista de atividades."
         genericTitle="Atividade"
         skeletonTestId="activity-skeleton"
         invalidId={id === null}
@@ -262,7 +264,10 @@ export function ActivityDetailPage() {
           send={(files, onProgress) => submitDelivery(id, files, onProgress)}
           onSaved={() => {
             deliveryDialog.hide();
-            notify('Entrega enviada.', 'success');
+            notify(
+              'Arquivos entregues. Quando terminar, envie a atividade para revisão.',
+              'success',
+            );
             refresh();
           }}
           onStateChanged={(error) => {
@@ -295,7 +300,7 @@ export function ActivityDetailPage() {
       <ConfirmDialog
         open={confirmingAccept}
         title="Aceitar a atividade?"
-        message="Aceitar concluirá a atividade de forma definitiva e não pode ser desfeito. Depois disso, ela não poderá mais ser editada nem excluída."
+        message="Ao aceitar, a atividade é concluída de forma definitiva. Depois disso, ela não poderá mais ser editada, excluída nem receber comentários. Esta ação não pode ser desfeita."
         confirmLabel="Aceitar atividade"
         confirmColor="primary"
         busy={accepting}
@@ -306,7 +311,7 @@ export function ActivityDetailPage() {
       <ConfirmDialog
         open={confirmingReview}
         title="Enviar para revisão?"
-        message="Você deixará de poder alterar o status da atividade até o orientador revisá-la. Se ele recusar, a atividade volta para Pendente e você pode reenviar."
+        message="Enquanto o orientador revisa, você não poderá entregar arquivos nem mudar a situação da atividade. Se a revisão for recusada, a atividade volta para Pendente e você poderá entregar de novo."
         confirmLabel="Enviar para revisão"
         confirmColor="primary"
         busy={sendingReview}
@@ -318,7 +323,7 @@ export function ActivityDetailPage() {
         <ConfirmDialog
           open={confirmingDelete}
           title="Excluir a atividade?"
-          message={`A atividade "${lastLoaded.title}" deixará de ser exibida para você e para o aluno. As entregas, os comentários e as revisões são preservados. Esta ação não pode ser desfeita.`}
+          message={`A atividade "${lastLoaded.title}" deixará de aparecer para você e para o aluno, junto com as entregas e os comentários dela. Não será possível recuperá-la.`}
           confirmLabel="Excluir atividade"
           busy={deleting}
           busyLabel="Excluindo…"

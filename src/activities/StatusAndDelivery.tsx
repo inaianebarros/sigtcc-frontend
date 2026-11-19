@@ -7,8 +7,11 @@ import type {
 import { StatusControl } from './StatusControl';
 
 export const AWAITING_REVIEW_MESSAGE =
-  'Aguardando a revisão do orientador: você não altera o status agora';
-export const COMPLETED_MESSAGE = 'Atividade concluída';
+  'O orientador está revisando. Enquanto isso, você não pode entregar arquivos nem mudar a situação. Se a revisão for recusada, a atividade volta para Pendente.';
+export const COMPLETED_MESSAGE =
+  'O orientador aceitou esta atividade. Não há mais nada a fazer nela.';
+export const DELIVERY_GUIDANCE =
+  'Entregue os arquivos do trabalho. Quando terminar, envie a atividade para o orientador revisar.';
 export const NO_DELIVERY_REASON =
   'Entregue ao menos um arquivo para enviar para revisão';
 
@@ -22,7 +25,7 @@ interface StatusAndDeliveryProps {
   onSendForReview: () => void;
 }
 
-/** O que o aluno faz com a atividade (RF28): o controle de status, ou por que ele não existe. */
+/** O que o aluno faz com a atividade (RF28): o controle da situação, ou por que ele não existe. */
 export function StatusAndDelivery({
   status,
   statusBusy,
@@ -40,11 +43,20 @@ export function StatusAndDelivery({
   }
   return (
     <Stack spacing={2} sx={{ alignItems: 'flex-start' }}>
-      <StatusControl
-        status={status}
-        busy={statusBusy}
-        onChange={onChangeStatus}
-      />
+      <Stack
+        direction="row"
+        useFlexGap
+        sx={{ alignItems: 'center', gap: 1, flexWrap: 'wrap' }}
+      >
+        {/* O nome acessível do grupo, "Situação da atividade", já contém o rótulo visível. */}
+        <Typography aria-hidden>Situação:</Typography>
+        <StatusControl
+          status={status}
+          busy={statusBusy}
+          onChange={onChangeStatus}
+        />
+      </Stack>
+      <Typography>{DELIVERY_GUIDANCE}</Typography>
       <Stack direction="row" useFlexGap sx={{ gap: 1, flexWrap: 'wrap' }}>
         <Button variant="outlined" onClick={onDeliver}>
           Entregar arquivos

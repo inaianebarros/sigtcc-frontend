@@ -28,6 +28,8 @@ interface ProfileViewProps<T> {
   backLabel?: string;
   /** O título do aluno ou do professor que não existe: um id inválido ou um 404. */
   notFoundTitle: string;
+  /** O texto sob o título de "não encontrado"; sem ele, os perfis de pessoas usam o texto padrão. */
+  notFoundMessage?: string;
   /** O título geral enquanto o perfil carrega e quando ele falha: o nome só chega com o perfil. */
   genericTitle: string;
   skeletonTestId: string;
@@ -58,6 +60,7 @@ export function ProfileView<T>({
   backPath,
   backLabel = 'Voltar',
   notFoundTitle,
+  notFoundMessage,
   genericTitle,
   skeletonTestId,
   invalidId,
@@ -114,11 +117,15 @@ export function ProfileView<T>({
       {notFound && (
         <>
           <Typography {...titleProps}>{notFoundTitle}</Typography>
-          {profileLayout && (
-            // Sem dizer o motivo (RN28 e RN32): o mesmo texto para qualquer caso.
-            <Typography color="text.secondary">
-              Não foi possível abrir este perfil.
-            </Typography>
+          {notFoundMessage ? (
+            <Typography color="text.secondary">{notFoundMessage}</Typography>
+          ) : (
+            profileLayout && (
+              // Sem dizer o motivo (RN28 e RN32): o mesmo texto para qualquer caso.
+              <Typography color="text.secondary">
+                Não foi possível abrir este perfil.
+              </Typography>
+            )
           )}
         </>
       )}

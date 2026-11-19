@@ -133,10 +133,10 @@ export function RefuseReviewDialog({
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
               <DialogContentText>
-                A atividade voltará para Pendente e o aluno recupera o controle.
-                As entregas anteriores continuam. Explique o que precisa ser
-                refeito: o aluno e você veem a justificativa no histórico de
-                revisões.
+                A atividade volta para Pendente e o aluno poderá entregar de
+                novo. As entregas anteriores continuam. Explique o que precisa
+                ser refeito: você e o aluno verão a justificativa na linha do
+                tempo.
               </DialogContentText>
               <PendingChangesNotice
                 visible={pending}

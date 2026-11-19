@@ -100,14 +100,14 @@ function reviewBodies(fetchMock: ReturnType<typeof mockApi>) {
 
 async function openRefusal(events: ReturnType<typeof userEvent.setup>) {
   await events.click(
-    within(await panel()).getByRole('button', { name: 'Recusar' }),
+    within(await panel()).getByRole('button', { name: 'Recusar atividade' }),
   );
   return screen.findByRole('dialog', { name: 'Recusar a atividade' });
 }
 
 async function openAcceptance(events: ReturnType<typeof userEvent.setup>) {
   await events.click(
-    within(await panel()).getByRole('button', { name: 'Aceitar' }),
+    within(await panel()).getByRole('button', { name: 'Aceitar atividade' }),
   );
   return screen.findByRole('dialog', { name: 'Aceitar a atividade?' });
 }
@@ -152,17 +152,21 @@ beforeEach(() => {
 });
 
 describe('Revisão: quando o painel aparece', () => {
-  it('o orientador vê "Aguardando a sua revisão" com Aceitar e Recusar enquanto a atividade está em revisão', async () => {
+  it('o orientador vê a explicação da revisão com Aceitar atividade e Recusar atividade enquanto a atividade está em revisão', async () => {
     setup();
 
     const region = await panel();
 
-    expect(within(region).getByText('Aguardando a sua revisão')).toBeVisible();
     expect(
-      within(region).getByRole('button', { name: 'Aceitar' }),
+      within(region).getByText(
+        'O aluno enviou esta atividade para revisão. Confira a entrega mais recente na linha do tempo e decida. Aceitar conclui a atividade. Recusar a devolve ao aluno, com uma justificativa.',
+      ),
+    ).toBeVisible();
+    expect(
+      within(region).getByRole('button', { name: 'Aceitar atividade' }),
     ).toBeEnabled();
     expect(
-      within(region).getByRole('button', { name: 'Recusar' }),
+      within(region).getByRole('button', { name: 'Recusar atividade' }),
     ).toBeEnabled();
   });
 
@@ -185,10 +189,10 @@ describe('Revisão: quando o painel aparece', () => {
       screen.queryByRole('region', { name: 'Revisão' }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'Aceitar' }),
+      screen.queryByRole('button', { name: 'Aceitar atividade' }),
     ).not.toBeInTheDocument();
     expect(
-      await screen.findByText(/Aguardando a revisão do orientador/),
+      await screen.findByText(/O orientador está revisando/),
     ).toBeVisible();
   });
 
@@ -203,10 +207,10 @@ describe('Revisão: quando o painel aparece', () => {
         screen.queryByRole('region', { name: 'Revisão' }),
       ).not.toBeInTheDocument();
       expect(
-        screen.queryByRole('button', { name: 'Aceitar' }),
+        screen.queryByRole('button', { name: 'Aceitar atividade' }),
       ).not.toBeInTheDocument();
       expect(
-        screen.queryByRole('button', { name: 'Recusar' }),
+        screen.queryByRole('button', { name: 'Recusar atividade' }),
       ).not.toBeInTheDocument();
     },
   );
@@ -220,7 +224,7 @@ describe('Revisão: aceitar (RN15, RNF21)', () => {
 
     expect(
       within(dialog).getByText(
-        /concluirá a atividade de forma definitiva e não pode ser desfeito/,
+        /a atividade é concluída de forma definitiva\..*Esta ação não pode ser desfeita\./,
       ),
     ).toBeVisible();
     await events.click(
@@ -257,7 +261,7 @@ describe('Revisão: aceitar (RN15, RNF21)', () => {
     const history = await screen.findByRole('region', {
       name: 'Linha do tempo',
     });
-    expect(await within(history).findByText('Aceita')).toBeVisible();
+    expect(await within(history).findByText('Atividade aceita')).toBeVisible();
   });
 
   it('trava a confirmação enquanto envia e faz um pedido só', async () => {
@@ -296,7 +300,7 @@ describe('Revisão: recusar (RN40)', () => {
 
     expect(
       within(dialog).getByText(
-        /voltará para Pendente e o aluno recupera o controle/,
+        /volta para Pendente e o aluno poderá entregar de novo.*você e o aluno verão a justificativa na linha do tempo/,
       ),
     ).toBeVisible();
     const refuse = within(dialog).getByRole('button', {
@@ -362,7 +366,9 @@ describe('Revisão: recusar (RN40)', () => {
     const history = await screen.findByRole('region', {
       name: 'Linha do tempo',
     });
-    expect(await within(history).findByText('Recusada')).toBeVisible();
+    expect(
+      await within(history).findByText('Atividade recusada'),
+    ).toBeVisible();
     const justification = within(history).getByText(/Faltou a conclusão\./);
     expect(justification.textContent).toBe(
       'Faltou a conclusão.\nRefaça o capítulo.',
@@ -759,17 +765,17 @@ describe('Revisão: as avaliações na linha do tempo (RN40)', () => {
         .getAllByRole('heading', { level: 3 })
         .map((heading) => heading.textContent);
       expect(titles).toEqual([
-        'Avaliação da versão 1',
-        'Avaliação da versão 1',
-        'Entrega — Versão 1',
+        'Revisão da 1ª entrega',
+        'Revisão da 1ª entrega',
+        '1ª entrega',
         'Atividade criada',
       ]);
       const [accepted, refused] = within(timeline)
-        .getAllByText(/^Avaliação da versão/)
+        .getAllByText(/^Revisão da \d+ª entrega/)
         .map((title) => title.closest('li')!);
-      expect(accepted).toHaveTextContent('Aceita');
+      expect(accepted).toHaveTextContent('Atividade aceita');
       expect(accepted).not.toHaveTextContent('Faltou a conclusão.');
-      expect(refused).toHaveTextContent('Recusada');
+      expect(refused).toHaveTextContent('Atividade recusada');
       expect(refused).toHaveTextContent('Faltou a conclusão.');
       expect(refused).toHaveTextContent(/6 de novembro de 2026/);
     },
@@ -876,7 +882,7 @@ describe('Revisão: erros', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
     expect(
-      within(await panel()).getByRole('button', { name: 'Aceitar' }),
+      within(await panel()).getByRole('button', { name: 'Aceitar atividade' }),
     ).toBeEnabled();
   });
 });

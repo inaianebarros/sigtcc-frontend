@@ -77,19 +77,17 @@ export interface ReviewActions {
 function ReviewPanel({ onAccept, onRefuse }: ReviewActions) {
   return (
     <Section title="Revisão" nested>
-      <Typography sx={{ fontWeight: 'medium' }}>
-        Aguardando a sua revisão
-      </Typography>
-      <Typography color="text.secondary">
-        Abra os arquivos na linha do tempo e decida: aceitar conclui a
-        atividade; recusar a devolve ao aluno com uma justificativa.
+      <Typography>
+        O aluno enviou esta atividade para revisão. Confira a entrega mais
+        recente na linha do tempo e decida. Aceitar conclui a atividade. Recusar
+        a devolve ao aluno, com uma justificativa.
       </Typography>
       <Stack direction="row" useFlexGap sx={{ gap: 1, flexWrap: 'wrap' }}>
         <Button variant="contained" onClick={onAccept}>
-          Aceitar
+          Aceitar atividade
         </Button>
         <Button variant="outlined" color="error" onClick={onRefuse}>
-          Recusar
+          Recusar atividade
         </Button>
       </Stack>
     </Section>
@@ -170,7 +168,7 @@ export function ActivityDetailView({
           />
         )}
         {student && (
-          <Section title="Status e entrega" nested>
+          <Section title="Situação e entrega" nested>
             <StatusAndDelivery
               status={activity.status}
               statusBusy={student.statusBusy}

@@ -186,10 +186,10 @@ describe('Linha do tempo: os cartões', () => {
       await within(region).findByText('Atividade criada');
 
       expect(cardTitles(region)).toEqual([
-        'Entrega — Versão 2',
-        'Avaliação da versão 1',
+        '2ª entrega',
+        'Revisão da 1ª entrega',
         'Enviada para revisão',
-        'Entrega — Versão 1',
+        '1ª entrega',
         'Comentário',
         'Situação alterada para Em andamento',
         'Atividade criada',
@@ -217,20 +217,20 @@ describe('Linha do tempo: os cartões', () => {
     expect(within(created).queryByText(/Descrição/)).not.toBeInTheDocument();
   });
 
-  it('a entrega mostra os arquivos e o selo "Aguardando avaliação" só na mais recente sem decisão depois', async () => {
+  it('a entrega mostra os arquivos e o selo "Aguardando revisão" só na mais recente sem decisão depois', async () => {
     setup('teacher', FULL, FULL_COMMENTS);
 
     const region = await timeline();
-    const latest = (
-      await within(region).findByText('Entrega — Versão 2')
-    ).closest('li')!;
-    const first = within(region).getByText('Entrega — Versão 1').closest('li')!;
+    const latest = (await within(region).findByText('2ª entrega')).closest(
+      'li',
+    )!;
+    const first = within(region).getByText('1ª entrega').closest('li')!;
 
     expect(within(latest).getByText('capitulo2-v2.pdf')).toBeVisible();
-    expect(within(latest).getByText('Aguardando avaliação')).toBeVisible();
+    expect(within(latest).getByText('Aguardando revisão')).toBeVisible();
     expect(within(first).getByText('capitulo2.pdf')).toBeVisible();
     expect(
-      within(first).queryByText('Aguardando avaliação'),
+      within(first).queryByText('Aguardando revisão'),
     ).not.toBeInTheDocument();
   });
 
@@ -239,10 +239,10 @@ describe('Linha do tempo: os cartões', () => {
 
     const region = await timeline();
     const review = (
-      await within(region).findByText('Avaliação da versão 1')
+      await within(region).findByText('Revisão da 1ª entrega')
     ).closest('li')!;
 
-    expect(within(review).getByText('Recusada')).toBeVisible();
+    expect(within(review).getByText('Atividade recusada')).toBeVisible();
     expect(within(review).getByText('Falta a conclusão.')).toBeVisible();
     expect(within(review).getByText('correcoes.pdf')).toBeVisible();
   });
@@ -264,10 +264,10 @@ describe('Linha do tempo: os cartões', () => {
 
     const region = await timeline();
     const review = (
-      await within(region).findByText('Avaliação da versão 2')
+      await within(region).findByText('Revisão da 2ª entrega')
     ).closest('li')!;
 
-    expect(within(review).getByText('Aceita')).toBeVisible();
+    expect(within(review).getByText('Atividade aceita')).toBeVisible();
     expect(within(review).queryByRole('button')).not.toBeInTheDocument();
   });
 
@@ -354,21 +354,21 @@ describe('Linha do tempo: carregar de 10 em 10', () => {
 
     expect(cardTitles(region)).toHaveLength(10);
     expect(
-      within(region).getByText('10 de 25 eventos carregados'),
+      within(region).getByText('Mostrando 10 de 25 eventos'),
     ).toBeVisible();
     expect(
-      within(region).queryByText('Início do histórico'),
+      within(region).queryByText('Início da atividade'),
     ).not.toBeInTheDocument();
 
     await events.click(await loadMore());
-    await within(region).findByText('20 de 25 eventos carregados');
+    await within(region).findByText('Mostrando 20 de 25 eventos');
     expect(cardTitles(region)).toHaveLength(20);
 
     await events.click(await loadMore());
-    await within(region).findByText('Início do histórico');
+    await within(region).findByText('Início da atividade');
     expect(cardTitles(region)).toHaveLength(25);
     expect(
-      within(region).getByText('25 de 25 eventos carregados'),
+      within(region).getByText('Mostrando 25 de 25 eventos'),
     ).toBeVisible();
     expect(
       screen.queryByRole('button', { name: 'Carregar mais eventos' }),
@@ -383,7 +383,7 @@ describe('Linha do tempo: carregar de 10 em 10', () => {
 
     act(() => observers.at(-1)!([{ isIntersecting: true }]));
 
-    await within(region).findByText('20 de 25 eventos carregados');
+    await within(region).findByText('Mostrando 20 de 25 eventos');
     expect(cardTitles(region)).toHaveLength(20);
   });
 
@@ -432,7 +432,7 @@ describe('Linha do tempo: carregar de 10 em 10', () => {
     expect(cardTitles(region)).toHaveLength(10);
     control.failOlder = false;
     await events.click(await loadMore());
-    await within(region).findByText('20 de 25 eventos carregados');
+    await within(region).findByText('Mostrando 20 de 25 eventos');
   });
 
   it('o carregamento automático não insiste depois de uma falha', async () => {
@@ -466,7 +466,7 @@ describe('Linha do tempo: comentar e agir', () => {
 
     const region = await timeline();
     const field = within(region).getByLabelText('Novo comentário');
-    const first = await within(region).findByText('Entrega — Versão 2');
+    const first = await within(region).findByText('2ª entrega');
 
     expect(
       field.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -572,7 +572,7 @@ describe('Linha do tempo: comentar e agir', () => {
     await within(region).findByText('Comentário 24');
 
     await events.click(await loadMore());
-    await within(region).findByText('20 de 25 eventos carregados');
+    await within(region).findByText('Mostrando 20 de 25 eventos');
 
     expect(window.location.search).toBe('');
     expect(window.location.hash).toBe('');
@@ -629,7 +629,7 @@ describe('Linha do tempo: carregamento e erro', () => {
     const region = await timeline();
 
     expect(await within(region).findByText('Atividade criada')).toBeVisible();
-    expect(within(region).getByText('Início do histórico')).toBeVisible();
+    expect(within(region).getByText('Início da atividade')).toBeVisible();
   });
 });
 
@@ -672,7 +672,7 @@ describe('Linha do tempo: contraste (WCAG 2.1 AA)', () => {
   const white: [number, number, number] = [255, 255, 255];
 
   it.each([
-    ['o selo Aguardando avaliação', primary.main],
+    ['o selo Aguardando revisão', primary.main],
     ['o selo Aceita', success.main],
     ['o selo Recusada', error.main],
   ])('%s lê-se sobre o cartão', (_label, color) => {
