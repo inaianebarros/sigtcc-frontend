@@ -1,0 +1,49 @@
+# syntax=docker/dockerfile:1
+
+# Imagem de PRODUÇÃO do frontend: build do Vite + nginx servindo a SPA e repassando /api ao backend
+# (mesma origem, ADR backend 0021). Fica em arquivo separado do `Dockerfile` (desenvolvimento) para que
+# o compose do backend, que constrói o `Dockerfile` sem `target:`, continue gerando o estágio `dev`.
+#
+#   docker build -f Dockerfile.production -t sigtcc-frontend:local .
+#
+# Nenhum segredo entra na imagem: VITE_* é público e o endereço do backend é lido em tempo de execução.
+ARG NODE_VERSION=22.22.3
+ARG NGINX_VERSION=1.30.6-alpine3.24
+
+FROM node:${NODE_VERSION}-trixie-slim AS build
+
+ENV npm_config_update_notifier=false
+
+WORKDIR /app
+RUN chown node:node /app
+USER node
+
+COPY --chown=node:node package.json package-lock.json ./
+RUN --mount=type=cache,target=/home/node/.npm,uid=1000,gid=1000 \
+    npm ci --no-audit --no-fund
+
+# Mesma origem: o navegador chama /api e o nginx repassa ao backend. Valor público, embutido no bundle.
+ARG VITE_API_BASE_URL=/api
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
+COPY --chown=node:node . .
+RUN npm run build
+
+
+FROM nginxinc/nginx-unprivileged:${NGINX_VERSION} AS runtime
+
+# PORT é injetada pelo Railway; BACKEND_URL é o endereço do backend (sem caminho), lido na subida.
+# NGINX_ENTRYPOINT_LOCAL_RESOLVERS faz o entrypoint preencher NGINX_LOCAL_RESOLVERS a partir de
+# /etc/resolv.conf do contêiner (IPv6 entre colchetes).
+ENV PORT=8080 \
+    BACKEND_URL=http://backend:8000 \
+    NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
+
+COPY docker/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+COPY docker/nginx/security-headers.conf /etc/nginx/snippets/security-headers.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget -q -O /dev/null "http://127.0.0.1:${PORT}/healthz" || exit 1
