@@ -10,6 +10,10 @@ import { RefuseReviewDialog } from '../activities/RefuseReviewDialog';
 import { changesOf } from '../activities/activityForm';
 import {
   ACTIVITY_GONE_MESSAGE,
+  hasNewSubmission,
+  isDecision,
+  latestSubmissionId,
+  NEW_SUBMISSION_NOTICE,
   noticeForActivityDialog,
 } from '../activities/activityFreshness';
 import type {
@@ -43,6 +47,7 @@ import type {
   StudentSettableStatus,
 } from '../services/activityService';
 import {
+  ApiError,
   isStateChangedError,
   messageOf,
   nullOnNotFound,
@@ -94,15 +99,25 @@ export function ActivityDetailPage() {
   // última leitura para avisar o que mudou. `null` na leitura é a atividade que sumiu (404).
   const [openedAs, setOpenedAs] = useState<ActivityDetail | null>(null);
   const latest = activity.status === 'ready' ? activity.data : undefined;
+  // Um 409 ao aceitar ou recusar mostrou, na releitura, uma entrega que não existia na abertura:
+  // o bloqueio fica mesmo enquanto o detalhe recarrega e até o diálogo ser reaberto.
+  const [newSubmissionOnConflict, setNewSubmissionOnConflict] = useState(false);
   const openWith = (data: ActivityDetail, show: () => void) => {
     setOpenedAs(data);
+    setNewSubmissionOnConflict(false);
     show();
   };
   const noticeFor = (
     action: ActivityDialogAction,
     open: boolean,
-  ): ActivityNotice | null =>
-    open && openedAs ? noticeForActivityDialog(action, openedAs, latest) : null;
+  ): ActivityNotice | null => {
+    if (!open || openedAs === null) return null;
+    const found = noticeForActivityDialog(action, openedAs, latest);
+    if (found?.blocksAction) return found;
+    return isDecision(action) && newSubmissionOnConflict
+      ? NEW_SUBMISSION_NOTICE
+      : found;
+  };
   const noticeProps = (action: ActivityDialogAction, open: boolean) => {
     const found = noticeFor(action, open);
     return {
@@ -168,17 +183,47 @@ export function ActivityDetailPage() {
     }
   };
 
+  /**
+   * Num 409 ao aceitar ou recusar, relê a atividade sem depender do texto do servidor. Se chegou
+   * uma entrega depois da abertura do diálogo, ele fica aberto e bloqueado, com o que foi digitado
+   * (RN21), e o detalhe recarrega para a reabertura partir da entrega nova. Devolve `false` para
+   * seguir o tratamento comum do 409.
+   */
+  const keptOpenForNewSubmission = async (error: unknown): Promise<boolean> => {
+    if (
+      !(error instanceof ApiError) ||
+      error.status !== 409 ||
+      id === null ||
+      openedAs === null
+    ) {
+      return false;
+    }
+    let reread: ActivityDetail;
+    try {
+      reread = await getActivity(id);
+    } catch {
+      // Sem a releitura não dá para saber se há entrega nova: vale o tratamento comum do 409,
+      // que também recarrega o detalhe.
+      return false;
+    }
+    if (!hasNewSubmission(openedAs, reread)) return false;
+    setNewSubmissionOnConflict(true);
+    refresh();
+    return true;
+  };
+
   const [confirmingAccept, setConfirmingAccept] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const confirmAccept = async () => {
-    if (id === null || accepting) return;
+    if (id === null || openedAs === null || accepting) return;
     setAccepting(true);
     try {
-      await acceptActivity(id);
+      await acceptActivity(id, latestSubmissionId(openedAs));
       setConfirmingAccept(false);
       notify('Atividade concluída', 'success');
       refresh();
     } catch (error) {
+      if (await keptOpenForNewSubmission(error)) return;
       setConfirmingAccept(false);
       if (isStateChangedError(error)) {
         refreshAfter(error);
@@ -318,20 +363,29 @@ export function ActivityDetailPage() {
         />
       )}
       <UnsavedChangesDialog blocker={unsavedComment} />
-      {refuseDialog.slot && id !== null && (
+      {refuseDialog.slot && id !== null && openedAs && (
         <RefuseReviewDialog
           key={refuseDialog.slot.openCount}
           open={refuseDialog.slot.open}
           {...noticeProps('refuse', refuseDialog.slot.open)}
           send={(justification, files, onProgress) =>
-            refuseActivity(id, justification, files, onProgress)
+            refuseActivity(
+              id,
+              latestSubmissionId(openedAs),
+              justification,
+              files,
+              onProgress,
+            )
           }
           onSaved={() => {
             refuseDialog.hide();
             notify('Atividade devolvida ao aluno', 'success');
             refresh();
           }}
-          onStateChanged={refreshAfter}
+          onStateChanged={async (error) => {
+            if (await keptOpenForNewSubmission(error)) return;
+            refreshAfter(error);
+          }}
           onClose={refuseDialog.hide}
           onExited={refuseDialog.unmount}
         />

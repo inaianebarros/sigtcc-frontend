@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { ActivityDetail } from '../services/activityService';
 import {
   ACTIVITY_GONE_MESSAGE,
+  latestSubmissionId,
+  NEW_SUBMISSION_MESSAGE,
   noticeForActivityDialog,
 } from './activityFreshness';
 import type { ActivityDialogAction } from './activityFreshness';
@@ -150,7 +152,7 @@ describe('noticeForActivityDialog', () => {
   });
 
   it.each(['accept', 'refuse'] as ActivityDialogAction[])(
-    'avisa em %s, sem bloquear, a entrega que chegou desde a abertura',
+    'bloqueia %s quando chegou uma entrega desde a abertura, antes do aviso de descrição',
     (action) => {
       const second = {
         id: 2,
@@ -160,15 +162,36 @@ describe('noticeForActivityDialog', () => {
       expect(
         noticeForActivityDialog(action, IN_REVIEW, {
           ...IN_REVIEW,
+          description: 'Outra descrição',
+          deadline: '2026-12-20',
+          title: 'Outro título',
           submissions: [...IN_REVIEW.submissions, second],
         }),
       ).toEqual({
-        message:
-          'Esta atividade recebeu a 2ª entrega. A decisão vale para essa entrega, que está na linha do tempo.',
-        blocksAction: false,
+        message: NEW_SUBMISSION_MESSAGE,
+        blocksAction: true,
       });
     },
   );
+
+  it('a mesma entrega não bloqueia a decisão', () => {
+    expect(
+      noticeForActivityDialog('accept', IN_REVIEW, { ...IN_REVIEW }),
+    ).toBeNull();
+  });
+
+  it('a entrega mais recente é a última da lista', () => {
+    expect(
+      latestSubmissionId({
+        ...IN_REVIEW,
+        submissions: [
+          ...IN_REVIEW.submissions,
+          { id: 8, submittedAt: '2026-11-05T09:00:00Z', files: [] },
+        ],
+      }),
+    ).toBe(8);
+    expect(latestSubmissionId({ ...IN_REVIEW, submissions: [] })).toBeNull();
+  });
 
   it('não fala de entrega nova nos diálogos do aluno', () => {
     expect(

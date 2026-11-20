@@ -18,6 +18,8 @@ import { renderApp } from '../test/renderApp';
 import { DESKTOP_WIDTH, setViewportWidth } from '../test/viewport';
 
 const LIST = 'GET /api/atividades';
+const NEW_SUBMISSION_TEXT =
+  'Esta atividade recebeu uma nova entrega depois que você abriu esta janela. Feche e abra de novo para decidir sobre ela.';
 const DETAIL = 'GET /api/atividades/5';
 const TIMELINE = 'GET /api/atividades/5/linha-do-tempo';
 
@@ -453,7 +455,7 @@ describe('Detalhe da atividade: os diálogos abertos na releitura', () => {
     ).toBeDisabled();
   });
 
-  it('aceitar volta a ficar habilitado, avisando a nova entrega, quando a recusa em outra aba é seguida de um reenvio', async () => {
+  it('aceitar continua desabilitado, avisando a nova entrega, quando a recusa em outra aba é seguida de um reenvio', async () => {
     const { server, events } = setup('/professor/atividades/5', 'teacher', [
       makeActivity(5, { status: 'in_review', submissions: DELIVERED }),
     ]);
@@ -477,9 +479,10 @@ describe('Detalhe da atividade: os diálogos abertos na releitura', () => {
     ).toBeVisible();
     expect(accept).toBeDisabled();
 
-    // O aluno entrega de novo e envia para revisão: a decisão passa a valer para a nova entrega.
+    // O aluno entrega de novo e envia para revisão: a decisão seria sobre uma entrega não vista.
     changeOnServer(server, 5, {
       status: 'in_review',
+      description: 'Descrição mudada em outra aba',
       submissions: [
         ...DELIVERED,
         { id: 2, submitted_at: '2026-11-06T09:00:00Z', files: [] },
@@ -487,15 +490,15 @@ describe('Detalhe da atividade: os diálogos abertos na releitura', () => {
     });
     await nextCycle();
 
+    expect(await within(dialog).findByText(NEW_SUBMISSION_TEXT)).toBeVisible();
     expect(
-      await within(dialog).findByText(
-        'Esta atividade recebeu a 2ª entrega. A decisão vale para essa entrega, que está na linha do tempo.',
-      ),
-    ).toBeVisible();
-    expect(accept).toBeEnabled();
+      within(dialog).queryByText('A descrição desta atividade mudou.'),
+    ).not.toBeInTheDocument();
+    expect(accept).toBeDisabled();
+    expect(accept).toHaveTextContent('Aceitar atividade');
   });
 
-  it('a recusa avisa a nova entrega e continua habilitada', async () => {
+  it('a recusa fica aberta e desabilitada com a nova entrega, com a justificativa e os anexos, antes do aviso de descrição', async () => {
     const { server, events } = setup('/professor/atividades/5', 'teacher', [
       makeActivity(5, { status: 'in_review', submissions: DELIVERED }),
     ]);
@@ -509,8 +512,20 @@ describe('Detalhe da atividade: os diálogos abertos na releitura', () => {
       within(dialog).getByLabelText(/Justificativa/),
       'Falta a conclusão',
     );
+    await events.upload(
+      within(dialog).getByLabelText(/Escolher arquivos/),
+      new File(['x'], 'correcoes.pdf', { type: 'application/pdf' }),
+    );
+    const refuse = within(dialog).getByRole('button', {
+      name: 'Recusar atividade',
+    });
+    expect(refuse).toBeEnabled();
+    expect(
+      within(dialog).getByText(/Você tem alterações não salvas/),
+    ).toBeVisible();
 
     changeOnServer(server, 5, {
+      description: 'Descrição mudada em outra aba',
       submissions: [
         ...DELIVERED,
         { id: 2, submitted_at: '2026-11-06T09:00:00Z', files: [] },
@@ -518,14 +533,19 @@ describe('Detalhe da atividade: os diálogos abertos na releitura', () => {
     });
     await nextCycle();
 
+    expect(await within(dialog).findByText(NEW_SUBMISSION_TEXT)).toBeVisible();
     expect(
-      await within(dialog).findByText(
-        'Esta atividade recebeu a 2ª entrega. A decisão vale para essa entrega, que está na linha do tempo.',
-      ),
-    ).toBeVisible();
+      within(dialog).queryByText('A descrição desta atividade mudou.'),
+    ).not.toBeInTheDocument();
+    expect(refuse).toBeDisabled();
+    expect(refuse).toHaveTextContent('Recusar atividade');
+    expect(within(dialog).getByLabelText(/Justificativa/)).toHaveValue(
+      'Falta a conclusão',
+    );
+    expect(within(dialog).getByText('correcoes.pdf')).toBeVisible();
     expect(
-      within(dialog).getByRole('button', { name: 'Recusar atividade' }),
-    ).toBeEnabled();
+      within(dialog).queryByText(/Você tem alterações não salvas/),
+    ).not.toBeInTheDocument();
   });
 
   it('a edição salva só o que o professor alterou, sem desfazer o título mudado em outra aba', async () => {

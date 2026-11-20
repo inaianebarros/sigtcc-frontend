@@ -47,8 +47,11 @@ interface RefuseReviewDialogProps {
   /** A atividade mudou e a recusa já não cabe: o botão fica desabilitado, e o aviso diz por quê. */
   actionBlocked?: boolean;
   onSaved: () => void;
-  /** 404 ou 409: a orientação encerrou ou a atividade deixou de estar em revisão. */
-  onStateChanged: (error: ApiError) => void;
+  /**
+   * 404 ou 409: a orientação encerrou, a atividade deixou de estar em revisão ou recebeu uma nova
+   * entrega. O botão fica ocupado até a promessa terminar, enquanto quem usa relê a atividade.
+   */
+  onStateChanged: (error: ApiError) => void | Promise<void>;
   onClose: () => void;
   onExited: () => void;
 }
@@ -109,7 +112,7 @@ export function RefuseReviewDialog({
       onSaved();
     } catch (error) {
       if (isStateChangedError(error)) {
-        onStateChanged(error);
+        await onStateChanged(error);
         return;
       }
       const handled =

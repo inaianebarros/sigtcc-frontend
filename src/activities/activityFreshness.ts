@@ -83,8 +83,31 @@ function blockedMessage(
   }
 }
 
-/** Se chegou uma entrega que não existia quando o diálogo abriu. */
-function hasNewSubmission(
+/**
+ * Aceitar ou recusar com uma entrega que chegou depois da abertura do diálogo (RN21): a decisão
+ * seria sobre uma entrega que a pessoa não viu, então o botão fica desabilitado até reabrir.
+ */
+export const NEW_SUBMISSION_MESSAGE =
+  'Esta atividade recebeu uma nova entrega depois que você abriu esta janela. Feche e abra de novo para decidir sobre ela.';
+
+/** O aviso, que bloqueia a decisão, de uma entrega que chegou depois da abertura do diálogo. */
+export const NEW_SUBMISSION_NOTICE: ActivityNotice = {
+  message: NEW_SUBMISSION_MESSAGE,
+  blocksAction: true,
+};
+
+/** Aceitar e recusar decidem sobre uma entrega: a mais recente quando o diálogo abriu. */
+export function isDecision(action: ActivityDialogAction): boolean {
+  return action === 'accept' || action === 'refuse';
+}
+
+/** O id da entrega mais recente: o servidor as devolve da mais antiga para a mais nova. */
+export function latestSubmissionId(activity: ActivityDetail): number | null {
+  return activity.submissions.at(-1)?.id ?? null;
+}
+
+/** Se `latest` tem uma entrega que não existia em `opened`, quando o diálogo abriu. */
+export function hasNewSubmission(
   opened: ActivityDetail,
   latest: ActivityDetail,
 ): boolean {
@@ -94,7 +117,6 @@ function hasNewSubmission(
 
 /** O que mudou numa atividade em que a ação ainda cabe; `null` se nada que a tela mostra mudou. */
 function changedMessage(
-  action: ActivityDialogAction,
   opened: ActivityDetail,
   latest: ActivityDetail,
 ): string | null {
@@ -109,14 +131,6 @@ function changedMessage(
   }
   if (opened.description !== latest.description) {
     return 'A descrição desta atividade mudou.';
-  }
-  // A revisão foi recusada em outra aba e o aluno entregou de novo: a decisão passa a valer para a
-  // nova entrega. As entregas não são apagadas, então a mais recente é a de número igual ao total.
-  if (
-    (action === 'accept' || action === 'refuse') &&
-    hasNewSubmission(opened, latest)
-  ) {
-    return `Esta atividade recebeu a ${latest.submissions.length}ª entrega. A decisão vale para essa entrega, que está na linha do tempo.`;
   }
   return null;
 }
@@ -138,6 +152,9 @@ export function noticeForActivityDialog(
   if (!allows(action, latest)) {
     return { message: blockedMessage(action, latest), blocksAction: true };
   }
-  const message = changedMessage(action, opened, latest);
+  if (isDecision(action) && hasNewSubmission(opened, latest)) {
+    return NEW_SUBMISSION_NOTICE;
+  }
+  const message = changedMessage(opened, latest);
   return message === null ? null : { message, blocksAction: false };
 }
