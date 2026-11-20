@@ -13,6 +13,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useId, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { applyApiFieldErrors } from '../forms/applyApiFieldErrors';
 import { useDiscardGuard } from '../hooks/useDiscardGuard';
@@ -30,6 +31,10 @@ interface MeetingReasonDialogProps {
   /** O botão que confirma, com o nome da ação; o outro se chama "Voltar". */
   confirmLabel: string;
   sendingLabel: string;
+  /** Um aviso no topo, como o de que a reunião mudou na releitura do calendário. */
+  notice?: ReactNode;
+  /** A reunião mudou e a ação já não cabe: o botão de confirmar fica desabilitado, e o aviso diz por quê. */
+  actionBlocked?: boolean;
   send: (reason: string) => Promise<void>;
   onSaved: () => void;
   /** 404 ou 409: a reunião mudou, expirou ou a orientação encerrou; quem usa avisa e atualiza a lista. */
@@ -50,6 +55,8 @@ export function MeetingReasonDialog({
   noun,
   confirmLabel,
   sendingLabel,
+  notice,
+  actionBlocked = false,
   send,
   onSaved,
   onStateChanged,
@@ -82,6 +89,7 @@ export function MeetingReasonDialog({
   });
 
   const submit = handleSubmit(async (form) => {
+    if (actionBlocked) return;
     setFailure(null);
     try {
       // Já vem aparada: o resolver entrega o valor depois do `trim` do esquema.
@@ -111,9 +119,11 @@ export function MeetingReasonDialog({
           <DialogTitle id={`${id}-title`}>{title}</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
+              {notice}
               <DialogContentText>{intro}</DialogContentText>
+              {/* Com a ação bloqueada, mandar clicar no botão desabilitado contradiria o aviso. */}
               <PendingChangesNotice
-                visible={pending}
+                visible={pending && !actionBlocked}
                 actionLabel={confirmLabel}
               />
               <TextField
@@ -144,7 +154,7 @@ export function MeetingReasonDialog({
               type="submit"
               variant="contained"
               color="error"
-              disabled={!valid || isSubmitting}
+              disabled={!valid || isSubmitting || actionBlocked}
             >
               {isSubmitting ? sendingLabel : confirmLabel}
             </Button>

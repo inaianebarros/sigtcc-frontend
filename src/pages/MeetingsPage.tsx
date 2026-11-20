@@ -10,7 +10,7 @@ import { useRef, useState } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
-import { useLoad } from '../hooks/useLoad';
+import { useRefreshedLoad } from '../hooks/useRefreshedLoad';
 import { VisuallyHidden } from '../components/VisuallyHidden';
 import { useSession } from '../hooks/useSession';
 import { CalendarFiltersPanel } from '../meetings/calendar/CalendarFiltersPanel';
@@ -27,6 +27,15 @@ import {
 } from '../meetings/calendar/viewPreference';
 import type { CalendarView } from '../meetings/calendar/viewPreference';
 import { MeetingActions } from '../meetings/MeetingActions';
+import { MeetingChangedNotice } from '../meetings/MeetingChangedNotice';
+import {
+  MEETING_GONE_DETAILS_MESSAGE,
+  noticeForForm,
+} from '../meetings/meetingFreshness';
+import type {
+  MeetingFormAction,
+  MeetingNotice,
+} from '../meetings/meetingFreshness';
 import { REASON_ACTIONS } from '../meetings/reasonActions';
 import { MeetingReasonDialog } from '../meetings/MeetingReasonDialog';
 import { MeetingDetailsDialog } from '../meetings/MeetingDetailsDialog';
@@ -58,7 +67,9 @@ const NO_ADVISING_REASON =
 /**
  * As reuniões do aluno e do professor (RF19): o calendário do período exibido, o modal de cada
  * reunião e o diálogo de solicitar (RF17 e RF18). As reuniões vêm da leitura por período, buscada a
- * cada mudança de mês (RNF26).
+ * cada mudança de mês (RNF26) e relida a cada 30 s com a aba visível (ADR frontend 0006), para as
+ * ações da outra parte aparecerem sem recarregar. A releitura troca só os eventos: o período, a
+ * visão, os filtros e os diálogos abertos ficam como estão.
  */
 export function MeetingsPage() {
   const { user, refreshUser } = useSession();
@@ -89,7 +100,6 @@ export function MeetingsPage() {
   );
   // O período exibido só se conhece depois que o calendário monta; até lá a carga espera.
   const [period, setPeriod] = useState<CalendarPeriod | null>(null);
-  const [reload, setReload] = useState(0);
   // A reunião com um pedido em curso: as ações esperam por ele.
   const [acting, setActing] = useState<number | null>(null);
   // Sem orientação ativa o calendário continua, como histórico, mas não há como solicitar (RN29).
@@ -117,7 +127,7 @@ export function MeetingsPage() {
     ? []
     : MEETING_SITUATIONS.filter((situation) => situations.has(situation));
   const hiddenParam = [...hiddenStudentIds].sort((a, b) => a - b);
-  const list = useLoad(
+  const { state: list, retry: refresh } = useRefreshedLoad(
     () =>
       listMeetingsInPeriod(period?.from ?? '', period?.to ?? '', {
         situations: situationParam,
@@ -126,7 +136,7 @@ export function MeetingsPage() {
     // Sem nenhuma situação ligada não há o que ler: o servidor entenderia "todas".
     period === null || noSituation || !entryApplied
       ? null
-      : `${period.from}|${period.to}|${situationParam.join(',')}|${hiddenParam.join(',')}|${reload}`,
+      : `${period.from}|${period.to}|${situationParam.join(',')}|${hiddenParam.join(',')}`,
   );
   const chooseSituation = (situation: MeetingSituation, on: boolean) =>
     setSituations((current) => {
@@ -157,7 +167,6 @@ export function MeetingsPage() {
     setView(next);
     saveViewPreference(userId, next);
   };
-  const refresh = () => setReload((current) => current + 1);
   // 404 ou 409: a reunião mudou, expirou ou a orientação encerrou. Mostra a mensagem do servidor e
   // lê de novo o calendário e a sessão, para o menu refletir o fim da orientação.
   const handleStateChanged = (message: string) => {
@@ -261,6 +270,35 @@ export function MeetingsPage() {
     noSituation || list.status === 'error' ? NO_MEETINGS : meetings;
   const noMeetingsInPeriod =
     noSituation || (list.status === 'ready' && list.data.length === 0);
+  // Um diálogo aberto acompanha a reunião na última leitura: o de detalhe a mostra como está, e os
+  // de formulário mantêm o que foi digitado, avisam o que mudou e desabilitam a confirmação quando
+  // a ação já não cabe. Fechando, o diálogo não reage mais à releitura.
+  const latestOf = (item: MeetingItem) =>
+    meetings.find((meeting) => meeting.id === item.id);
+  const noticeFor = (
+    action: MeetingFormAction,
+    item: MeetingItem,
+    open: boolean,
+  ): MeetingNotice | null =>
+    open ? noticeForForm(action, item, latestOf(item)) : null;
+  const noticeProps = (found: MeetingNotice | null) => ({
+    notice: <MeetingChangedNotice message={found?.message ?? null} />,
+    actionBlocked: found?.blocksAction ?? false,
+  });
+  const detailsLatest = detailsSlot && latestOf(detailsSlot.payload);
+  // Se a reunião sai do calendário, o modal a mostra como foi lida por último, não como foi aberta.
+  const [detailsLastSeen, setDetailsLastSeen] = useState<MeetingItem | null>(
+    null,
+  );
+  if (detailsLatest && detailsLatest !== detailsLastSeen) {
+    setDetailsLastSeen(detailsLatest);
+  }
+  const detailsItem =
+    detailsLatest ??
+    (detailsLastSeen?.id === detailsSlot?.payload.id
+      ? detailsLastSeen
+      : detailsSlot?.payload);
+  const editedMeeting = dialog.slot?.payload?.meeting;
 
   return (
     <Stack spacing={3}>
@@ -339,13 +377,23 @@ export function MeetingsPage() {
           />
         </Stack>
       </Stack>
-      {detailsSlot && (
+      {detailsSlot && detailsItem && (
         <MeetingDetailsDialog
           key={`details-${detailsSlot.openCount}`}
           open={detailsSlot.open}
-          item={detailsSlot.payload}
+          item={detailsItem}
           userId={userId}
-          actions={renderActions(detailsSlot.payload)}
+          // Fora do calendário, a reunião fica como foi lida por último, sem ações.
+          actions={detailsLatest ? renderActions(detailsLatest) : null}
+          notice={
+            <MeetingChangedNotice
+              message={
+                detailsSlot.open && !detailsLatest
+                  ? MEETING_GONE_DETAILS_MESSAGE
+                  : null
+              }
+            />
+          }
           onClose={detailsDialog.hide}
           onExited={detailsDialog.unmount}
         />
@@ -355,6 +403,9 @@ export function MeetingsPage() {
           key={`notes-${notesSlot.openCount}`}
           open={notesSlot.open}
           meeting={notesSlot.payload}
+          {...noticeProps(
+            noticeFor('notes', notesSlot.payload, notesSlot.open),
+          )}
           onSaved={(removed) => {
             notesDialog.hide();
             notify(
@@ -396,6 +447,13 @@ export function MeetingsPage() {
           noun={reasonAction.noun}
           confirmLabel={reasonAction.confirmLabel}
           sendingLabel={reasonAction.sendingLabel}
+          {...noticeProps(
+            noticeFor(
+              reasonSlot.payload.kind,
+              reasonSlot.payload.item,
+              reasonSlot.open,
+            ),
+          )}
           send={(reason) =>
             reasonAction.send(reasonSlot.payload.item.id, reason)
           }
@@ -418,7 +476,10 @@ export function MeetingsPage() {
           open={dialog.slot.open}
           isTeacher={isTeacher}
           preselectedStudent={null}
-          meeting={dialog.slot.payload?.meeting}
+          meeting={editedMeeting}
+          {...(editedMeeting &&
+            noticeProps(noticeFor('edit', editedMeeting, dialog.slot.open)))}
+          latestSituation={editedMeeting && latestOf(editedMeeting)?.situation}
           prefill={dialog.slot.payload?.prefill}
           onSaved={() => {
             dialog.hide();

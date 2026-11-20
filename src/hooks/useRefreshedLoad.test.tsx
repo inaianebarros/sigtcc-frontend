@@ -71,6 +71,29 @@ afterEach(() => {
 });
 
 describe('useRefreshedLoad', () => {
+  it('com a key nula fica parado, sem ler nem reler', async () => {
+    const load = vi.fn(async () => 1);
+    const { result, rerender } = renderHook(
+      ({ key }: { key: string | null }) => useRefreshedLoad(load, key),
+      {
+        wrapper: sessionWrapper('authenticated'),
+        initialProps: { key: null as string | null },
+      },
+    );
+    await advance(REFRESH_INTERVAL_MS * 2);
+    expect(result.current.state).toEqual({ status: 'idle' });
+    expect(load).not.toHaveBeenCalled();
+
+    rerender({ key: 'a' });
+    await flush();
+    expect(result.current.state).toEqual({ status: 'ready', data: 1 });
+
+    rerender({ key: null });
+    expect(result.current.state).toEqual({ status: 'idle' });
+    await advance(REFRESH_INTERVAL_MS * 2);
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
   it('relê a cada 30 s com a aba visível, sem voltar a carregar', async () => {
     let value = 0;
     const load = vi.fn(async () => ++value);

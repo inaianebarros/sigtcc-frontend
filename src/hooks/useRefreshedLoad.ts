@@ -20,10 +20,12 @@ export const REFRESH_INTERVAL_MS = 30_000;
  *
  * Os dados novos chegam como um objeto novo; a tela os renderiza com as mesmas `key`s de lista,
  * e o React troca só o que mudou: foco, rolagem, itens abertos e formulários ficam como estão.
+ *
+ * Com `key` nula não há o que ler, como em `useLoad`: o estado é `idle` e o ciclo não roda.
  */
 export function useRefreshedLoad<T>(
   load: () => Promise<T>,
-  key: string | number = '',
+  key: string | number | null = '',
 ): {
   state: LoadState<T>;
   retry: () => void;
@@ -31,10 +33,11 @@ export function useRefreshedLoad<T>(
   const { status } = useSession();
   const [reads, setReads] = useState(0);
   const [backgroundRead, setBackgroundRead] = useState<string | null>(null);
-  const readKey = `${key}|${reads}`;
+  const readKey = key === null ? null : `${key}|${reads}`;
   const result = useLoad(load, readKey);
   const kept = useLastReady(result);
-  const inBackground = backgroundRead === readKey && kept !== null;
+  const inBackground =
+    readKey !== null && backgroundRead === readKey && kept !== null;
 
   usePolling(
     () => {
@@ -50,7 +53,7 @@ export function useRefreshedLoad<T>(
     },
     {
       intervalMs: REFRESH_INTERVAL_MS,
-      enabled: status === 'authenticated',
+      enabled: status === 'authenticated' && key !== null,
       pollOnStart: false,
     },
   );

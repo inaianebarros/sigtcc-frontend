@@ -12,6 +12,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useId, useState } from 'react';
+import type { ReactNode } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useDiscardGuard } from '../hooks/useDiscardGuard';
 import { PendingChangesNotice } from '../profile/PendingChangesNotice';
@@ -28,6 +29,10 @@ export const NOTES_TOO_LONG_MESSAGE = `Os apontamentos devem ter no máximo ${NO
 interface MeetingNotesDialogProps {
   open: boolean;
   meeting: MeetingItem;
+  /** Um aviso no topo, como o de que a reunião mudou na releitura do calendário. */
+  notice?: ReactNode;
+  /** A reunião mudou e a ação já não cabe: o botão de confirmar fica desabilitado, e o aviso diz por quê. */
+  actionBlocked?: boolean;
   /** `removed` é verdadeiro quando o texto ficou vazio e os apontamentos foram apagados. */
   onSaved: (removed: boolean) => void;
   /** 404 ou 409: a reunião mudou ou a orientação encerrou; quem usa avisa e atualiza a lista. */
@@ -45,6 +50,8 @@ interface MeetingNotesDialogProps {
 export function MeetingNotesDialog({
   open,
   meeting,
+  notice,
+  actionBlocked = false,
   onSaved,
   onStateChanged,
   onClose,
@@ -70,7 +77,7 @@ export function MeetingNotesDialog({
   });
 
   const send = async () => {
-    if (submitting) return;
+    if (submitting || actionBlocked) return;
     setSubmitting(true);
     setFailure(null);
     try {
@@ -106,7 +113,7 @@ export function MeetingNotesDialog({
           noValidate
           onSubmit={(event) => {
             event.preventDefault();
-            if (!pending || tooLong || submitting) return;
+            if (!pending || tooLong || submitting || actionBlocked) return;
             if (removing) setConfirmingRemoval(true);
             else void send();
           }}
@@ -114,12 +121,17 @@ export function MeetingNotesDialog({
           <DialogTitle id={`${id}-title`}>Apontamentos da reunião</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
+              {notice}
               <DialogContentText>
                 Registre o que foi tratado na reunião. O aluno orientando lê os
                 apontamentos, e eles ficam congelados quando a orientação for
                 encerrada.
               </DialogContentText>
-              <PendingChangesNotice visible={pending} actionLabel="Salvar" />
+              {/* Com a ação bloqueada, mandar clicar no botão desabilitado contradiria o aviso. */}
+              <PendingChangesNotice
+                visible={pending && !actionBlocked}
+                actionLabel="Salvar"
+              />
               <TextField
                 id={`${id}-field`}
                 label="Apontamentos"
@@ -157,7 +169,7 @@ export function MeetingNotesDialog({
             <Button
               type="submit"
               variant="contained"
-              disabled={!pending || tooLong || submitting}
+              disabled={!pending || tooLong || submitting || actionBlocked}
             >
               {submitting ? 'Salvando…' : removing ? 'Remover' : 'Salvar'}
             </Button>
@@ -165,7 +177,8 @@ export function MeetingNotesDialog({
         </Box>
       </Dialog>
       <ConfirmDialog
-        open={confirmingRemoval}
+        // Se os apontamentos deixam de poder ser alterados, a confirmação sai e o aviso fica no diálogo.
+        open={confirmingRemoval && !actionBlocked}
         title="Remover os apontamentos?"
         message="O texto ficará vazio e os apontamentos serão apagados. Esta ação não pode ser desfeita."
         confirmLabel="Remover apontamentos"
