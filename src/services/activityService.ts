@@ -52,7 +52,14 @@ export interface Review {
   files: SubmissionFile[];
 }
 
-export interface ActivityDetail extends ActivityItem {
+/**
+ * A situação no detalhe: a atividade lida pelo relatório de uma orientação encerrada também pode
+ * estar arquivada (RN07, RF61); nas telas da orientação ativa ela nunca chega arquivada.
+ */
+export type ActivityDetailStatus = ActivityStatus | 'archived';
+
+export interface ActivityDetail extends Omit<ActivityItem, 'status'> {
+  status: ActivityDetailStatus;
   description: string;
   createdAt: string;
   /** O orientador da atividade, quando o servidor o informa (#111). */
@@ -86,7 +93,8 @@ interface ApiItem {
   student: { id: number; full_name: string };
 }
 
-interface ApiDetail extends ApiItem {
+interface ApiDetail extends Omit<ApiItem, 'status'> {
+  status: ActivityDetailStatus;
   description: string;
   created_at: string;
   teacher?: { id: number; full_name: string } | null;
@@ -121,20 +129,24 @@ export function fileFrom(file: ApiFile): SubmissionFile {
   };
 }
 
-function itemFrom(item: ApiItem): ActivityItem {
+function baseFrom(item: Omit<ApiItem, 'status'>): Omit<ActivityItem, 'status'> {
   return {
     id: item.id,
     title: item.title,
     deadline: item.deadline,
-    status: item.status,
     overdue: item.overdue,
     student: { id: item.student.id, fullName: item.student.full_name },
   };
 }
 
+function itemFrom(item: ApiItem): ActivityItem {
+  return { ...baseFrom(item), status: item.status };
+}
+
 function detailFrom(detail: ApiDetail): ActivityDetail {
   return {
-    ...itemFrom(detail),
+    ...baseFrom(detail),
+    status: detail.status,
     description: detail.description,
     createdAt: detail.created_at,
     teacher: detail.teacher
@@ -185,8 +197,26 @@ export function getActivitySummary(): Promise<ActivitySummary> {
   return httpClient.get<ActivitySummary>('/atividades/resumo');
 }
 
-export async function getActivity(id: number): Promise<ActivityDetail> {
-  return detailFrom(await httpClient.get<ApiDetail>(`/atividades/${id}`));
+/**
+ * A atividade lida pelo relatório de uma orientação encerrada (RF61): só leitura, pelos endpoints
+ * do relatório, que respondem 404 a quem não é parte dela (RN47).
+ */
+export interface ReportScope {
+  advisingId: number;
+}
+
+/** O endereço de uma atividade: o da orientação ativa ou, com `report`, o do relatório. */
+export function activityUrl(activityId: number, report?: ReportScope): string {
+  return report
+    ? `/orientacao/historico/${report.advisingId}/atividades/${activityId}`
+    : `/atividades/${activityId}`;
+}
+
+export async function getActivity(
+  id: number,
+  report?: ReportScope,
+): Promise<ActivityDetail> {
+  return detailFrom(await httpClient.get<ApiDetail>(activityUrl(id, report)));
 }
 
 /** O professor cria a atividade para um orientando (RF25); o servidor valida e decide. */
@@ -209,8 +239,11 @@ export async function updateActivity(
 export function downloadSubmissionFile(
   activityId: number,
   fileId: number,
+  report?: ReportScope,
 ): Promise<Blob> {
-  return httpClient.download(`/atividades/${activityId}/arquivos/${fileId}`);
+  return httpClient.download(
+    `${activityUrl(activityId, report)}/arquivos/${fileId}`,
+  );
 }
 
 /** O conteúdo de um anexo de uma recusa, por requisição autenticada (RN48). */
@@ -218,9 +251,10 @@ export function downloadReviewFile(
   activityId: number,
   reviewId: number,
   fileId: number,
+  report?: ReportScope,
 ): Promise<Blob> {
   return httpClient.download(
-    `/atividades/${activityId}/revisoes/${reviewId}/arquivos/${fileId}`,
+    `${activityUrl(activityId, report)}/revisoes/${reviewId}/arquivos/${fileId}`,
   );
 }
 

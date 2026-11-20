@@ -1,6 +1,6 @@
 import { formatDeadline } from '../formatters/dateTime';
 import type { ActivityDetail } from '../services/activityService';
-import { STATUS_LABELS } from './activityStatus';
+import { DETAIL_STATUS_LABELS } from './activityStatus';
 
 /** O diálogo aberto sobre uma atividade no Detalhe da atividade. */
 export type ActivityDialogAction =
@@ -121,7 +121,7 @@ function changedMessage(
   latest: ActivityDetail,
 ): string | null {
   if (opened.status !== latest.status) {
-    return `A situação desta atividade mudou para ${STATUS_LABELS[latest.status]}.`;
+    return `A situação desta atividade mudou para ${DETAIL_STATUS_LABELS[latest.status]}.`;
   }
   if (opened.deadline !== latest.deadline) {
     return `O prazo desta atividade mudou para ${formatDeadline(latest.deadline)}.`;

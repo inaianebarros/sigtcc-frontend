@@ -11,12 +11,15 @@ import {
 import { useId, useState } from 'react';
 import { VisuallyHidden } from '../components/VisuallyHidden';
 import {
-  formatDeadline,
   formatDeadlineShort,
   formatDateTimeRange,
 } from '../formatters/dateTime';
+import { useSession } from '../hooks/useSession';
+import { OriginLink } from '../navigation/OriginLink';
+import { reportActivityPath } from '../navigation/paths';
 import type {
   AdvisingRecord,
+  MeetingRecord,
   RecordActivityStatus,
 } from '../services/advisingRecordsService';
 
@@ -24,9 +27,6 @@ const ACTIVITY_STATUS_LABELS: Record<RecordActivityStatus, string> = {
   completed: 'Concluída',
   archived: 'Arquivada',
 };
-
-/** No detalhe, a atividade arquivada diz por quê: só o encerramento da orientação a arquiva (RN07). */
-const ARCHIVED_DETAIL_LABEL = 'Arquivada ao encerrar a orientação';
 
 function recordTitle(record: AdvisingRecord): string {
   return record.type === 'meeting'
@@ -52,38 +52,63 @@ function Detail({ label, children }: { label: string; children: string }) {
   );
 }
 
-/** O que o cartão aberto acrescenta ao fechado: a reunião, o horário e os apontamentos. */
-function RecordDetails({ record }: { record: AdvisingRecord }) {
-  if (record.type === 'meeting') {
-    return (
-      <Stack spacing={1.5}>
-        <Detail label="Horário">
-          {formatDateTimeRange(record.startsAt, record.endsAt)}
-        </Detail>
-        <Detail label="Apontamentos">
-          {record.notes || 'Sem apontamentos registrados.'}
-        </Detail>
-      </Stack>
-    );
-  }
+/** O que o cartão aberto da reunião acrescenta ao fechado: o horário e os apontamentos. */
+function MeetingDetails({ record }: { record: MeetingRecord }) {
   return (
     <Stack spacing={1.5}>
-      <Detail label="Prazo">{formatDeadline(record.deadline)}</Detail>
-      <Detail label="Situação">
-        {record.status === 'archived'
-          ? ARCHIVED_DETAIL_LABEL
-          : ACTIVITY_STATUS_LABELS[record.status]}
+      <Detail label="Horário">
+        {formatDateTimeRange(record.startsAt, record.endsAt)}
+      </Detail>
+      <Detail label="Apontamentos">
+        {record.notes || 'Sem apontamentos registrados.'}
       </Detail>
     </Stack>
   );
 }
 
+/** "Ver atividade →", que abre a atividade só para leitura, com o relatório como origem (RNF30). */
+function ActivityLink({
+  advisingId,
+  record,
+}: {
+  advisingId: number;
+  record: AdvisingRecord;
+}) {
+  const { user } = useSession();
+  const to = reportActivityPath(
+    user?.type === 'teacher' ? 'teacher' : 'student',
+    advisingId,
+    record.id,
+  );
+  return (
+    <OriginLink
+      to={to}
+      sx={{
+        alignSelf: 'flex-end',
+        display: 'inline-flex',
+        alignItems: 'center',
+        minHeight: { xs: 44, sm: 24 },
+      }}
+    >
+      Ver atividade <span aria-hidden>→</span>{' '}
+      <VisuallyHidden>{recordTitle(record)}</VisuallyHidden>
+    </OriginLink>
+  );
+}
+
 /**
- * Um registro do relatório (RF61), só para leitura: fechado, o tipo, a data, o título e duas linhas
- * da descrição; aberto no próprio lugar, a descrição completa e os detalhes de cada tipo. A reunião
- * não tem título próprio, por isso o título é "Reunião de" e a data.
+ * Um registro do relatório (RF61), só para leitura: o tipo, a data, o título e duas linhas da
+ * descrição. A atividade abre na sua própria tela, por "Ver atividade"; a reunião abre no próprio
+ * lugar, com o horário e os apontamentos. A reunião não tem título próprio, por isso o título é
+ * "Reunião de" e a data.
  */
-export function RecordCard({ record }: { record: AdvisingRecord }) {
+export function RecordCard({
+  advisingId,
+  record,
+}: {
+  advisingId: number;
+  record: AdvisingRecord;
+}) {
   const titleId = useId();
   const detailsId = useId();
   const [open, setOpen] = useState(false);
@@ -117,7 +142,7 @@ export function RecordCard({ record }: { record: AdvisingRecord }) {
           >
             {recordTitle(record)}
           </Typography>
-          {record.type === 'activity' && !open && (
+          {record.type === 'activity' && (
             <Typography color="text.secondary">
               {ACTIVITY_STATUS_LABELS[record.status]}
             </Typography>
@@ -136,27 +161,33 @@ export function RecordCard({ record }: { record: AdvisingRecord }) {
           >
             {record.description}
           </Typography>
-          <Collapse in={open} unmountOnExit id={detailsId}>
-            <RecordDetails record={record} />
-          </Collapse>
-          <Button
-            size="small"
-            aria-expanded={open}
-            aria-controls={detailsId}
-            endIcon={
-              <ExpandMoreIcon
-                sx={{
-                  transform: open ? 'rotate(180deg)' : 'none',
-                  transition: 'transform 150ms',
-                }}
-              />
-            }
-            onClick={() => setOpen((current) => !current)}
-            sx={{ alignSelf: 'flex-end' }}
-          >
-            {open ? 'Ocultar detalhes' : 'Ver detalhes'}
-            <VisuallyHidden> de {recordTitle(record)}</VisuallyHidden>
-          </Button>
+          {record.type === 'activity' ? (
+            <ActivityLink advisingId={advisingId} record={record} />
+          ) : (
+            <>
+              <Collapse in={open} unmountOnExit id={detailsId}>
+                <MeetingDetails record={record} />
+              </Collapse>
+              <Button
+                size="small"
+                aria-expanded={open}
+                aria-controls={detailsId}
+                endIcon={
+                  <ExpandMoreIcon
+                    sx={{
+                      transform: open ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 150ms',
+                    }}
+                  />
+                }
+                onClick={() => setOpen((current) => !current)}
+                sx={{ alignSelf: 'flex-end' }}
+              >
+                {open ? 'Ocultar detalhes' : 'Ver detalhes'}
+                <VisuallyHidden> de {recordTitle(record)}</VisuallyHidden>
+              </Button>
+            </>
+          )}
         </Stack>
       </CardContent>
     </Card>

@@ -1,4 +1,7 @@
-import type { ActivityStatus } from '../services/activityService';
+import type {
+  ActivityDetailStatus,
+  ActivityStatus,
+} from '../services/activityService';
 import { ACTIVITY_STATUSES } from '../services/activityService';
 
 export const STATUS_LABELS: Record<ActivityStatus, string> = {
@@ -6,6 +9,12 @@ export const STATUS_LABELS: Record<ActivityStatus, string> = {
   in_progress: 'Em andamento',
   in_review: 'Em revisão',
   completed: 'Concluída',
+};
+
+/** No detalhe, a atividade arquivada diz por quê: só o encerramento da orientação a arquiva (RN07). */
+export const DETAIL_STATUS_LABELS: Record<ActivityDetailStatus, string> = {
+  ...STATUS_LABELS,
+  archived: 'Arquivada ao encerrar a orientação',
 };
 
 /**

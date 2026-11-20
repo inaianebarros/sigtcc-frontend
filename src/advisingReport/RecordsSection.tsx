@@ -157,7 +157,11 @@ export function RecordsSection({ advisingId }: { advisingId: number }) {
       {list.status === 'ready' && list.data.items.length > 0 && (
         <Stack spacing={2}>
           {list.data.items.map((record) => (
-            <RecordCard key={`${record.type}-${record.id}`} record={record} />
+            <RecordCard
+              key={`${record.type}-${record.id}`}
+              advisingId={advisingId}
+              record={record}
+            />
           ))}
         </Stack>
       )}

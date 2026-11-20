@@ -1,4 +1,7 @@
 import { historyRoutes, type FakeEndedAdvising } from './advisingHistoryApi';
+import type { FakeActivity } from './activitiesApi';
+import type { FakeComment } from './commentsApi';
+import { buildTimeline, timelinePage } from './timelineApi';
 import type { MockResponse } from './mockApi';
 
 export interface FakeAdvisingReport {
@@ -133,5 +136,65 @@ export function recordsRoutes(
           },
         };
       }),
+  };
+}
+
+type ParamsHandler = (
+  body: unknown,
+  url: URL,
+  params: Record<string, string>,
+) => MockResponse;
+
+/**
+ * As atividades de uma orientação encerrada lidas pelo relatório (RF61): o detalhe, a linha do
+ * tempo e os downloads, como o servidor real. Uma atividade fora da lista responde 404 (RN47).
+ */
+export function reportActivityRoutes(
+  advisingId: number,
+  activities: FakeActivity[],
+  comments: FakeComment[] = [],
+): Record<string, ParamsHandler> {
+  const base = `/api/orientacao/historico/${advisingId}/atividades/:id`;
+  const find = (params: Record<string, string>) =>
+    activities.find((item) => item.id === Number(params.id));
+  const notFound = {
+    status: 404,
+    body: { detail: 'Atividade não encontrada.' },
+  };
+  const fileNotFound = {
+    status: 404,
+    body: { detail: 'Arquivo não encontrado.' },
+  };
+  const download = (file: { file_name: string; content_type: string }) => ({
+    rawBody: `conteúdo de ${file.file_name}`,
+    headers: { 'Content-Type': file.content_type },
+  });
+  return {
+    [`GET ${base}`]: (_body, _url, params) => {
+      const found = find(params);
+      return found ? { body: found } : notFound;
+    },
+    [`GET ${base}/linha-do-tempo`]: (_body, url, params) => {
+      const found = find(params);
+      return found
+        ? { body: timelinePage(buildTimeline(found, comments), url) }
+        : notFound;
+    },
+    [`GET ${base}/arquivos/:fileId`]: (_body, _url, params) => {
+      const file = find(params)
+        ?.submissions.flatMap((submission) => submission.files)
+        .find((item) => item.id === Number(params.fileId));
+      return file ? download(file) : fileNotFound;
+    },
+    [`GET ${base}/revisoes/:reviewId/arquivos/:fileId`]: (
+      _body,
+      _url,
+      params,
+    ) => {
+      const file = find(params)
+        ?.reviews.find((item) => item.id === Number(params.reviewId))
+        ?.files?.find((item) => item.id === Number(params.fileId));
+      return file ? download(file) : fileNotFound;
+    },
   };
 }

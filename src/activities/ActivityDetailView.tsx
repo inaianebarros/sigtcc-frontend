@@ -5,8 +5,10 @@ import { formatDate, formatDeadline } from '../formatters/dateTime';
 import { ReadOnlyFacts } from '../profile/ReadOnlyFacts';
 import type {
   ActivityDetail,
+  ReportScope,
   StudentSettableStatus,
 } from '../services/activityService';
+import { DETAIL_STATUS_LABELS } from './activityStatus';
 import { ActivityTimeline } from './ActivityTimeline';
 import { Section } from './Section';
 import { StatusAndDelivery } from './StatusAndDelivery';
@@ -94,43 +96,60 @@ function ReviewPanel({ onAccept, onRefuse }: ReviewActions) {
   );
 }
 
+/** O texto ainda não enviado do novo comentário, que vive na tela (RNF28). */
 export interface CommentsBinding {
-  currentUserId: number | null;
   text: string;
   onTextChange: (text: string) => void;
 }
 
-interface ActivityDetailViewProps {
-  activity: ActivityDetail;
-  student?: StudentActions;
-  /** Só o professor orientador revisa, e só enquanto a atividade está em revisão. */
-  review?: ReviewActions;
-  /** O que a seção de comentários recebe da tela: quem lê e o texto ainda não enviado (RNF28). */
-  comments: CommentsBinding;
-  /** O professor orientador pode editar e excluir; o aluno só lê. */
-  canManage: boolean;
+/** Editar e excluir, que só o professor orientador faz. */
+export interface ManageActions {
   onEdit: () => void;
   onDelete: () => void;
 }
 
+interface ActivityDetailViewProps {
+  activity: ActivityDetail;
+  /** Quem lê, para a linha do tempo marcar os próprios eventos com "Você". */
+  currentUserId: number | null;
+  student?: StudentActions;
+  /** Só o professor orientador revisa, e só enquanto a atividade está em revisão. */
+  review?: ReviewActions;
+  /** O professor orientador pode editar e excluir; o aluno só lê. */
+  manage?: ManageActions;
+  /** O novo comentário; sem ele, a linha do tempo não aceita comentário. */
+  comments?: CommentsBinding;
+  /** A atividade lida pelo relatório de uma orientação encerrada, só para leitura (RF61). */
+  report?: ReportScope;
+}
+
+/**
+ * O detalhe de uma atividade (RF30): o resumo, a descrição, as ações de quem pode agir e a linha
+ * do tempo. Sem ações e sem comentário, é a leitura da atividade pelo relatório (RF61).
+ */
 export function ActivityDetailView({
   activity,
+  currentUserId,
   student,
   review,
+  manage,
   comments,
-  canManage,
-  onEdit,
-  onDelete,
+  report,
 }: ActivityDetailViewProps) {
+  const { status } = activity;
   const facts: (readonly [string, ReactNode])[] = [
     [
       'Situação',
-      <StatusWithBadge
-        key="status"
-        status={activity.status}
-        overdue={activity.overdue}
-        pill
-      />,
+      status === 'archived' ? (
+        DETAIL_STATUS_LABELS.archived
+      ) : (
+        <StatusWithBadge
+          key="status"
+          status={status}
+          overdue={activity.overdue}
+          pill
+        />
+      ),
     ],
     ['Prazo', formatDeadline(activity.deadline)],
     ['Aluno', activity.student.fullName],
@@ -159,36 +178,41 @@ export function ActivityDetailView({
           {activity.description}
         </Typography>
       </Section>
-      <Section title="Ações">
-        {canManage && (
-          <ActivityActions
-            completed={activity.status === 'completed'}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        )}
-        {student && (
-          <Section title="Situação e entrega" nested>
-            <StatusAndDelivery
-              status={activity.status}
-              statusBusy={student.statusBusy}
-              hasDelivery={activity.submissions.length > 0}
-              onChangeStatus={student.onChangeStatus}
-              onDeliver={student.onDeliver}
-              onSendForReview={student.onSendForReview}
+      {(manage || student || review) && (
+        <Section title="Ações">
+          {manage && (
+            <ActivityActions
+              completed={status === 'completed'}
+              onEdit={manage.onEdit}
+              onDelete={manage.onDelete}
             />
-          </Section>
-        )}
-        {review && activity.status === 'in_review' && (
-          <ReviewPanel {...review} />
-        )}
-      </Section>
+          )}
+          {student && status !== 'archived' && (
+            <Section title="Situação e entrega" nested>
+              <StatusAndDelivery
+                status={status}
+                statusBusy={student.statusBusy}
+                hasDelivery={activity.submissions.length > 0}
+                onChangeStatus={student.onChangeStatus}
+                onDeliver={student.onDeliver}
+                onSendForReview={student.onSendForReview}
+              />
+            </Section>
+          )}
+          {review && status === 'in_review' && <ReviewPanel {...review} />}
+        </Section>
+      )}
       <ActivityTimeline
         activityId={activity.id}
-        currentUserId={comments.currentUserId}
-        completed={activity.status === 'completed'}
-        commentText={comments.text}
-        onCommentTextChange={comments.onTextChange}
+        currentUserId={currentUserId}
+        report={report}
+        comment={
+          comments && {
+            completed: status === 'completed',
+            text: comments.text,
+            onTextChange: comments.onTextChange,
+          }
+        }
       />
     </>
   );
