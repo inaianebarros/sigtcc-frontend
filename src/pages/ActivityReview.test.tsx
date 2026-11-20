@@ -245,7 +245,9 @@ describe('Revisão: aceitar (RN15, RNF21)', () => {
     );
 
     expect(await screen.findByText('Atividade concluída')).toBeVisible();
-    expect(reviewBodies(fetchMock)).toEqual([{ decision: 'accepted' }]);
+    expect(reviewBodies(fetchMock)).toEqual([
+      { decision: 'accepted', submission_id: 1 },
+    ]);
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
@@ -354,6 +356,7 @@ describe('Revisão: recusar (RN40)', () => {
     expect(refusals[0]!.body.get('justification')).toBe(
       'Faltou a conclusão.\nRefaça o capítulo.',
     );
+    expect(refusals[0]!.body.get('submission_id')).toBe('1');
     expect(refusals[0]!.files).toEqual([]);
     expect(reviewBodies(fetchMock)).toEqual([]);
     await waitFor(() =>
@@ -780,6 +783,111 @@ describe('Revisão: as avaliações na linha do tempo (RN40)', () => {
       expect(refused).toHaveTextContent(/6 de novembro de 2026/);
     },
   );
+});
+
+const NEW_SUBMISSION_TEXT =
+  'Esta atividade recebeu uma nova entrega depois que você abriu esta janela. Feche e abra de novo para decidir sobre ela.';
+
+const SECOND_DELIVERY = {
+  id: 3,
+  submitted_at: '2026-11-07T12:00:00Z',
+  files: [],
+};
+
+describe('Revisão: a entrega decidida (RN21)', () => {
+  it('aceitar envia em JSON o id da entrega mais recente da abertura', async () => {
+    const { fetchMock, events } = setup({
+      submissions: [DELIVERED, SECOND_DELIVERY],
+    });
+    const dialog = await openAcceptance(events);
+
+    await events.click(
+      within(dialog).getByRole('button', { name: 'Aceitar atividade' }),
+    );
+
+    await screen.findByText('Atividade concluída');
+    expect(reviewBodies(fetchMock)).toEqual([
+      { decision: 'accepted', submission_id: 3 },
+    ]);
+  });
+
+  it('recusar envia no multipart o id da entrega mais recente da abertura', async () => {
+    const { events, refusals } = setup({
+      submissions: [DELIVERED, SECOND_DELIVERY],
+    });
+    const dialog = await openRefusal(events);
+    await writeJustification(events, dialog, 'Refazer.');
+
+    await events.click(refuseButton(dialog));
+
+    await screen.findByText('Atividade devolvida ao aluno');
+    expect(refusals).toHaveLength(1);
+    expect(refusals[0]!.body.get('submission_id')).toBe('3');
+    expect(refusals[0]!.body.get('justification')).toBe('Refazer.');
+  });
+
+  it('um 409 ao aceitar com uma entrega nova mantém a confirmação aberta, avisa e desabilita o botão', async () => {
+    let server: ReturnType<typeof activitiesServer> | null = null;
+    const {
+      fetchMock,
+      events,
+      server: created,
+    } = setup({}, 'teacher', {
+      [REVIEW]: () => {
+        server?.activities()[0]!.submissions.push(SECOND_DELIVERY);
+        return { status: 409, body: { detail: 'Texto qualquer do servidor.' } };
+      },
+    });
+    server = created;
+    const dialog = await openAcceptance(events);
+
+    await events.click(
+      within(dialog).getByRole('button', { name: 'Aceitar atividade' }),
+    );
+
+    expect(await within(dialog).findByText(NEW_SUBMISSION_TEXT)).toBeVisible();
+    const accept = within(dialog).getByRole('button', {
+      name: 'Aceitar atividade',
+    });
+    expect(accept).toBeDisabled();
+    expect(screen.getByRole('dialog', { name: 'Aceitar a atividade?' })).toBe(
+      dialog,
+    );
+    expect(
+      screen.queryByText('Texto qualquer do servidor.'),
+    ).not.toBeInTheDocument();
+    // O detalhe recarrega, para a reabertura partir da entrega nova; o bloqueio continua.
+    expect(await screen.findByText('2ª entrega')).toBeInTheDocument();
+    expect(within(dialog).getByText(NEW_SUBMISSION_TEXT)).toBeVisible();
+    expect(accept).toBeDisabled();
+    expect(reviewBodies(fetchMock)).toHaveLength(1);
+  });
+
+  it('um 409 ao recusar com uma entrega nova mantém o diálogo aberto com a justificativa e os anexos', async () => {
+    const { events, refusals } = setup({}, 'teacher', {}, (server) => () => {
+      server.activities()[0]!.submissions.push(SECOND_DELIVERY);
+      return { status: 409, body: { detail: 'Texto qualquer do servidor.' } };
+    });
+    const dialog = await openRefusal(events);
+    await writeJustification(events, dialog, 'Refazer.');
+    await choose(events, dialog, file('correcoes.pdf'));
+
+    await events.click(refuseButton(dialog));
+
+    expect(await within(dialog).findByText(NEW_SUBMISSION_TEXT)).toBeVisible();
+    expect(refuseButton(dialog)).toBeDisabled();
+    expect(within(dialog).getByLabelText(/Justificativa/)).toHaveValue(
+      'Refazer.',
+    );
+    expect(within(dialog).getByText('correcoes.pdf')).toBeVisible();
+    expect(
+      within(dialog).queryByText(/Você tem alterações não salvas/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Texto qualquer do servidor.'),
+    ).not.toBeInTheDocument();
+    expect(refusals).toHaveLength(1);
+  });
 });
 
 describe('Revisão: erros', () => {

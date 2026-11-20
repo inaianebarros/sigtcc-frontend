@@ -13,7 +13,7 @@ import {
   TextField,
 } from '@mui/material';
 import { useId, useMemo, useState } from 'react';
-import type { HTMLAttributes } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { applyApiFieldErrors } from '../forms/applyApiFieldErrors';
 import { useDiscardGuard } from '../hooks/useDiscardGuard';
@@ -40,6 +40,10 @@ interface ActivityFormDialogProps {
   preselectedStudent?: AdviseeOption | null;
   /** Grava. Uma falha de campo do servidor volta ao formulário; 404 e 409 vão a `onStateChanged`. */
   onSave: (values: ActivityFormValues) => Promise<void>;
+  /** Um aviso no topo, como o de que a atividade mudou na releitura do detalhe (só na edição). */
+  notice?: ReactNode;
+  /** A atividade mudou e a edição já não cabe: "Salvar" fica desabilitado, e o aviso diz por quê. */
+  actionBlocked?: boolean;
   /** A situação mudou desde que a tela a leu (orientação encerrada, atividade concluída). */
   onStateChanged: (error: { status: number; message: string }) => void;
   onClose: () => void;
@@ -82,6 +86,8 @@ export function ActivityFormDialog({
   initial,
   preselectedStudent = null,
   onSave,
+  notice,
+  actionBlocked = false,
   onStateChanged,
   onClose,
   onExited,
@@ -113,6 +119,7 @@ export function ActivityFormDialog({
   );
 
   const submit = handleSubmit(async (values) => {
+    if (actionBlocked) return;
     setFailure(null);
     try {
       await onSave(values);
@@ -142,7 +149,9 @@ export function ActivityFormDialog({
           </DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
-              <PendingChangesNotice visible={isDirty} />
+              {notice}
+              {/* Com a ação bloqueada, mandar salvar contradiria o aviso. */}
+              <PendingChangesNotice visible={isDirty && !actionBlocked} />
               {isCreate && (
                 <Controller
                   name="studentId"
@@ -234,7 +243,11 @@ export function ActivityFormDialog({
             <Button onClick={requestClose} disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button type="submit" variant="contained" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={isSubmitting || actionBlocked}
+            >
               {isCreate
                 ? isSubmitting
                   ? 'Criando…'

@@ -252,23 +252,37 @@ export async function changeActivityStatus(
   await httpClient.patch(`/atividades/${id}/status`, { status });
 }
 
-/** O orientador aceita a atividade em revisão: conclui, de forma definitiva (RF46, RN15). */
-export async function acceptActivity(id: number): Promise<void> {
-  await httpClient.post(`/atividades/${id}/revisar`, { decision: 'accepted' });
+/**
+ * O orientador aceita a atividade em revisão: conclui, de forma definitiva (RF46, RN15). A decisão
+ * vale para `submissionId`, a entrega mais recente que ele viu (RN21); o servidor responde 409 se
+ * ela já não for a mais recente.
+ */
+export async function acceptActivity(
+  id: number,
+  submissionId: number | null,
+): Promise<void> {
+  await httpClient.post(`/atividades/${id}/revisar`, {
+    decision: 'accepted',
+    ...(submissionId === null ? {} : { submission_id: submissionId }),
+  });
 }
 
 /**
  * O orientador recusa a atividade em revisão e a devolve ao aluno (RF46). A justificativa tem de 1
  * a 500 caracteres (RN40) e a recusa leva de 0 a 5 anexos; vai sempre em multipart, com o
- * progresso do envio de 0 a 100.
+ * progresso do envio de 0 a 100. Como no aceite, a decisão vale para `submissionId` (RN21).
  */
 export async function refuseActivity(
   id: number,
+  submissionId: number | null,
   justification: string,
   files: File[],
   onProgress: (percent: number) => void,
 ): Promise<void> {
   const form = new FormData();
+  if (submissionId !== null) {
+    form.append('submission_id', String(submissionId));
+  }
   form.append('justification', justification);
   for (const file of files) form.append('files', file);
   await httpClient.upload(`/atividades/${id}/recusar`, form, onProgress);

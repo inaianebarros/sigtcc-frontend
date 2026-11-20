@@ -5,8 +5,10 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Stack,
 } from '@mui/material';
 import { useId } from 'react';
+import type { ReactNode } from 'react';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -18,6 +20,10 @@ interface ConfirmDialogProps {
   busy?: boolean;
   busyLabel?: string;
   confirmColor?: 'primary' | 'error';
+  /** Um aviso no topo, como o de que o que o diálogo confirma mudou na releitura da tela. */
+  notice?: ReactNode;
+  /** A ação já não cabe: o botão de confirmar fica desabilitado, com o mesmo rótulo, e o aviso diz por quê. */
+  actionBlocked?: boolean;
   /** Chamado quando a animação de saída termina: o momento seguro de mover o foco. */
   onExited?: () => void;
   onConfirm: () => void;
@@ -33,6 +39,8 @@ export function ConfirmDialog({
   busy = false,
   busyLabel = 'Enviando…',
   confirmColor = 'error',
+  notice,
+  actionBlocked = false,
   onExited,
   onConfirm,
   onCancel,
@@ -48,7 +56,10 @@ export function ConfirmDialog({
     >
       <DialogTitle id={`${id}-title`}>{title}</DialogTitle>
       <DialogContent>
-        <DialogContentText id={`${id}-message`}>{message}</DialogContentText>
+        <Stack spacing={2}>
+          {notice}
+          <DialogContentText id={`${id}-message`}>{message}</DialogContentText>
+        </Stack>
       </DialogContent>
       <DialogActions>
         <Button onClick={onCancel} disabled={busy}>
@@ -58,7 +69,7 @@ export function ConfirmDialog({
           onClick={onConfirm}
           variant="contained"
           color={confirmColor}
-          disabled={busy}
+          disabled={busy || actionBlocked}
         >
           {busy ? busyLabel : confirmLabel}
         </Button>

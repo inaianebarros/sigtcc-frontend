@@ -12,6 +12,7 @@ import { PagePagination } from '../components/PagePagination';
 import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
 import { useLoad } from '../hooks/useLoad';
+import { useRefreshedLoad } from '../hooks/useRefreshedLoad';
 import { usePageBounds } from '../hooks/usePageBounds';
 import { useSession } from '../hooks/useSession';
 import { useReturnToLastPage, useUrlPage } from '../hooks/useUrlPage';
@@ -27,6 +28,12 @@ function foundText(count: number): string {
   return `${count} ${count === 1 ? 'atividade encontrada' : 'atividades encontradas'}`;
 }
 
+/**
+ * A lista de atividades do aluno e do professor (RF29), com os totais, os filtros e a página na URL
+ * (RNF30). A lista e os totais são relidos a cada 30 s com a aba visível (ADR frontend 0006): o que
+ * a outra parte criou, editou, excluiu, revisou ou mudou de situação aparece sem esqueleto, e a
+ * página, os filtros e a busca ficam como estão.
+ */
 export function ActivitiesPage() {
   const { user } = useSession();
   const { notify } = useFeedback();
@@ -35,10 +42,8 @@ export function ActivitiesPage() {
   const userType = isTeacher ? 'teacher' : 'student';
   const filters = useActivityFilters(isTeacher);
   const [page, setPage] = useUrlPage();
-  const [reload, setReload] = useState(0);
-  const [summaryReload, setSummaryReload] = useState(0);
   const listTop = useRef<HTMLDivElement>(null);
-  const list = useLoad(
+  const { state: list, retry: retryList } = useRefreshedLoad(
     () =>
       listActivities({
         page,
@@ -47,11 +52,16 @@ export function ActivitiesPage() {
         studentId: filters.studentId,
         search: filters.search,
       }),
-    `${page}|${filters.status}|${filters.overdueOnly}|${filters.studentId}|${filters.search}|${reload}`,
+    `${page}|${filters.status}|${filters.overdueOnly}|${filters.studentId}|${filters.search}`,
   );
-  // Os totais não dependem de filtro nem de página: só se relêem quando uma atividade muda
-  // (criar, ou um conflito de estado) ou quando o usuário pede de novo.
-  const summary = useLoad(getActivitySummary, `${reload}|${summaryReload}`);
+  // Os totais não dependem de filtro nem de página: além do ciclo de 30 s, só se relêem quando uma
+  // atividade muda aqui (criar, ou um conflito de estado) ou quando o usuário pede de novo.
+  const { state: summary, retry: retrySummary } =
+    useRefreshedLoad(getActivitySummary);
+  const reload = () => {
+    retryList();
+    retrySummary();
+  };
   const { knownCount, lastPage, fallbackPage } = usePageBounds(
     list,
     ACTIVITIES_PAGE_SIZE,
@@ -100,13 +110,13 @@ export function ActivitiesPage() {
     });
     dialog.hide();
     notify('Atividade criada.', 'success');
-    setReload((current) => current + 1);
+    reload();
   };
 
   const onStateChanged = (error: { status: number; message: string }) => {
     dialog.hide();
     notifyStateChanged(error);
-    setReload((current) => current + 1);
+    reload();
   };
 
   return (
@@ -124,10 +134,7 @@ export function ActivitiesPage() {
           </Button>
         )}
       </Stack>
-      <ActivityTotals
-        summary={summary}
-        onRetry={() => setSummaryReload((current) => current + 1)}
-      />
+      <ActivityTotals summary={summary} onRetry={retrySummary} />
       <ActivityFiltersBar
         status={filters.status}
         overdueOnly={filters.overdueOnly}
@@ -158,10 +165,7 @@ export function ActivitiesPage() {
         {list.status === 'error' && (
           <Stack spacing={2}>
             <Alert severity="error">{list.message}</Alert>
-            <Button
-              onClick={() => setReload((current) => current + 1)}
-              sx={{ alignSelf: 'flex-start' }}
-            >
+            <Button onClick={reload} sx={{ alignSelf: 'flex-start' }}>
               Tentar novamente
             </Button>
           </Stack>

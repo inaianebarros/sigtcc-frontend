@@ -14,6 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useId, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { applyApiFieldErrors } from '../forms/applyApiFieldErrors';
 import { useDiscardGuard } from '../hooks/useDiscardGuard';
@@ -41,9 +42,16 @@ interface RefuseReviewDialogProps {
     files: File[],
     onProgress: (percent: number) => void,
   ) => Promise<void>;
+  /** Um aviso no topo, como o de que a atividade mudou na releitura do detalhe. */
+  notice?: ReactNode;
+  /** A atividade mudou e a recusa já não cabe: o botão fica desabilitado, e o aviso diz por quê. */
+  actionBlocked?: boolean;
   onSaved: () => void;
-  /** 404 ou 409: a orientação encerrou ou a atividade deixou de estar em revisão. */
-  onStateChanged: (error: ApiError) => void;
+  /**
+   * 404 ou 409: a orientação encerrou, a atividade deixou de estar em revisão ou recebeu uma nova
+   * entrega. O botão fica ocupado até a promessa terminar, enquanto quem usa relê a atividade.
+   */
+  onStateChanged: (error: ApiError) => void | Promise<void>;
   onClose: () => void;
   onExited: () => void;
 }
@@ -56,6 +64,8 @@ interface RefuseReviewDialogProps {
 export function RefuseReviewDialog({
   open,
   send,
+  notice,
+  actionBlocked = false,
   onSaved,
   onStateChanged,
   onClose,
@@ -92,6 +102,7 @@ export function RefuseReviewDialog({
   });
 
   const submit = handleSubmit(async (form) => {
+    if (actionBlocked) return;
     setFailure(null);
     setServerErrors({});
     setProgress(0);
@@ -101,7 +112,7 @@ export function RefuseReviewDialog({
       onSaved();
     } catch (error) {
       if (isStateChangedError(error)) {
-        onStateChanged(error);
+        await onStateChanged(error);
         return;
       }
       const handled =
@@ -132,14 +143,16 @@ export function RefuseReviewDialog({
           <DialogTitle id={`${id}-title`}>Recusar a atividade</DialogTitle>
           <DialogContent>
             <Stack spacing={2} sx={{ pt: 1 }}>
+              {notice}
               <DialogContentText>
                 A atividade volta para Pendente e o aluno poderá entregar de
                 novo. As entregas anteriores continuam. Explique o que precisa
                 ser refeito: você e o aluno verão a justificativa na linha do
                 tempo.
               </DialogContentText>
+              {/* Com a ação bloqueada, mandar clicar no botão desabilitado contradiria o aviso. */}
               <PendingChangesNotice
-                visible={pending}
+                visible={pending && !actionBlocked}
                 actionLabel="Recusar atividade"
               />
               <TextField
@@ -185,7 +198,7 @@ export function RefuseReviewDialog({
               type="submit"
               variant="contained"
               color="error"
-              disabled={!valid || isSubmitting}
+              disabled={!valid || isSubmitting || actionBlocked}
             >
               {isSubmitting ? 'Recusando…' : 'Recusar atividade'}
             </Button>
