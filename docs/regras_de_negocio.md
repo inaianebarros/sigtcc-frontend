@@ -40,7 +40,7 @@ RN19 - **Exclusão de Usuário:** A exclusão de um usuário é lógica (desativ
 
 RN20 - **Prazo de Resposta de Solicitação de Orientação:** O professor tem 7 dias corridos para responder uma solicitação de orientação. Após esse prazo sem resposta, o sistema marca automaticamente a solicitação como "Não respondida", notifica o aluno e o libera para enviar uma nova solicitação. Enquanto essa marcação não for gravada, o sistema já trata como "Não respondida" a solicitação pendente com mais de 7 dias, em todas as consultas e validações.
 
-RN21 - **Revisão de Atividade:** Somente o orientador ativo do aluno pode revisar uma atividade. A revisão só é possível quando a atividade estiver com status em revisão.
+RN21 - **Revisão de Atividade:** Somente o orientador ativo do aluno pode revisar uma atividade. A revisão só é possível quando a atividade estiver com status em revisão. A decisão vale para a entrega mais recente que o orientador tinha à vista ao decidir: se o aluno fez uma nova entrega depois disso, o sistema não registra a decisão e pede que ele confira a linha do tempo antes de decidir.
 
 RN22 - **Áreas de Interesse Obrigatórias:** Todo aluno e todo professor deve ter ao menos uma área de interesse cadastrada, informada no cadastro e mantida ao editar o perfil (não é possível remover a última). O cálculo de compatibilidade depende das áreas cadastradas no perfil de ambos.
 
