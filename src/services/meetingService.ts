@@ -122,6 +122,21 @@ export async function listMeetingsInPeriod(
 }
 
 /**
+ * Uma reunião realizada de uma orientação encerrada, lida pelo relatório (RF61): o mesmo item do
+ * calendário, com todas as ações falsas. Quem não é parte dela recebe 404 (RN47).
+ */
+export async function getReportMeeting(
+  advisingId: number,
+  meetingId: number,
+): Promise<MeetingItem> {
+  return meetingFrom(
+    await httpClient.get<ApiMeeting>(
+      `/orientacao/historico/${advisingId}/reunioes/${meetingId}`,
+    ),
+  );
+}
+
+/**
  * O aluno solicita ao seu orientador (RF17) e o professor a um orientando (RF18, com o
  * `studentId`). O servidor valida o horário e a orientação e decide.
  */

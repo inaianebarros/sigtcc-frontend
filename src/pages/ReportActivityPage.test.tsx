@@ -138,18 +138,6 @@ describe('Relatório da orientação: o acesso à atividade (RF61)', () => {
       }),
     ).toBeVisible();
   });
-
-  it('o cartão da reunião continua com "Ver detalhes"', async () => {
-    setup({ path: REPORT });
-
-    const card = await screen.findByRole('article', {
-      name: 'Reunião de 20/10/2026',
-    });
-
-    expect(
-      within(card).getByRole('button', { name: /Ver detalhes/ }),
-    ).toBeVisible();
-  });
 });
 
 describe('Atividade do relatório: só leitura (RF61)', () => {

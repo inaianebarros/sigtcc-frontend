@@ -2,6 +2,7 @@ import { historyRoutes, type FakeEndedAdvising } from './advisingHistoryApi';
 import type { FakeActivity } from './activitiesApi';
 import type { FakeComment } from './commentsApi';
 import { buildTimeline, timelinePage } from './timelineApi';
+import type { FakeMeeting } from './meetingsApi';
 import type { MockResponse } from './mockApi';
 
 export interface FakeAdvisingReport {
@@ -195,6 +196,28 @@ export function reportActivityRoutes(
         ?.reviews.find((item) => item.id === Number(params.reviewId))
         ?.files?.find((item) => item.id === Number(params.fileId));
       return file ? download(file) : fileNotFound;
+    },
+  };
+}
+
+/**
+ * As reuniões realizadas de uma orientação encerrada lidas pelo relatório (RF61), no formato do
+ * item do calendário. Uma reunião fora da lista responde 404 (RN47).
+ */
+export function reportMeetingRoutes(
+  advisingId: number,
+  meetings: FakeMeeting[],
+): Record<string, ParamsHandler> {
+  return {
+    [`GET /api/orientacao/historico/${advisingId}/reunioes/:id`]: (
+      _body,
+      _url,
+      params,
+    ) => {
+      const found = meetings.find((item) => item.id === Number(params.id));
+      return found
+        ? { body: found }
+        : { status: 404, body: { detail: 'Reunião não encontrada.' } };
     },
   };
 }
