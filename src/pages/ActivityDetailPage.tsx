@@ -8,12 +8,21 @@ import { ActivityFormDialog } from '../activities/ActivityFormDialog';
 import { DeliveryDialog } from '../activities/DeliveryDialog';
 import { RefuseReviewDialog } from '../activities/RefuseReviewDialog';
 import { changesOf } from '../activities/activityForm';
+import {
+  ACTIVITY_GONE_MESSAGE,
+  noticeForActivityDialog,
+} from '../activities/activityFreshness';
+import type {
+  ActivityDialogAction,
+  ActivityNotice,
+} from '../activities/activityFreshness';
+import { ChangedNotice } from '../components/ChangedNotice';
 import { STATUS_LABELS } from '../activities/activityStatus';
 import type { ActivityFormValues } from '../activities/activityForm';
 import { useStateChangedNotice } from '../hooks/useStateChangedNotice';
 import { useDialogSlot } from '../hooks/useDialogSlot';
 import { useFeedback } from '../hooks/useFeedback';
-import { useLoad } from '../hooks/useLoad';
+import { useRefreshedLoad } from '../hooks/useRefreshedLoad';
 import { useSession } from '../hooks/useSession';
 import { originPath } from '../navigation/origin';
 import type { OriginArea } from '../navigation/origin';
@@ -39,10 +48,12 @@ import {
   nullOnNotFound,
 } from '../services/apiError';
 
-const DELETE_NOT_FOUND_MESSAGE =
-  'A atividade não está mais disponível. A orientação pode ter sido encerrada.';
-
-/** O detalhe de uma atividade (RF30): o aluno lê, e o professor orientador também edita e exclui. */
+/**
+ * O detalhe de uma atividade (RF30): o aluno lê, e o professor orientador também edita e exclui.
+ * A atividade é relida a cada 30 s com a aba visível (ADR frontend 0006): o resumo e as ações
+ * acompanham o que a outra parte fez, os diálogos abertos ficam abertos com o que foi digitado e
+ * avisam o que mudou, e a atividade que sumiu mostra "Atividade não encontrada".
+ */
 export function ActivityDetailPage() {
   const { activityId } = useParams();
   const { user } = useSession();
@@ -58,14 +69,13 @@ export function ActivityDetailPage() {
   const origin = originPath(useLocation().state, area);
   const backPath = origin?.split('?')[0] === listPath ? origin : listPath;
   const id = positiveIntFrom(activityId);
-  const [reload, setReload] = useState(0);
-  const refresh = () => setReload((current) => current + 1);
-  const activity = useLoad(
+  const { state: activity, retry: refresh } = useRefreshedLoad(
     () =>
       id === null ? Promise.resolve(null) : nullOnNotFound(getActivity(id)),
-    id === null ? null : `${id}|${reload}`,
+    id,
   );
-  // A última leitura completa: o diálogo de edição parte dela, e ela sobrevive à recarga.
+  // A última leitura completa, que sobrevive à recarga: a edição grava só o que mudou em relação a
+  // ela, e a confirmação de excluir cita o título dela.
   const [lastLoaded, setLastLoaded] = useState<ActivityDetail | null>(null);
   if (
     activity.status === 'ready' &&
@@ -81,6 +91,26 @@ export function ActivityDetailPage() {
   const dialog = useDialogSlot();
   const deliveryDialog = useDialogSlot();
   const refuseDialog = useDialogSlot();
+  // A atividade como estava quando o diálogo aberto abriu (só um abre por vez), comparada com a
+  // última leitura para avisar o que mudou. `null` na leitura é a atividade que sumiu (404).
+  const [openedAs, setOpenedAs] = useState<ActivityDetail | null>(null);
+  const latest = activity.status === 'ready' ? activity.data : undefined;
+  const openWith = (data: ActivityDetail, show: () => void) => {
+    setOpenedAs(data);
+    show();
+  };
+  const noticeFor = (
+    action: ActivityDialogAction,
+    open: boolean,
+  ): ActivityNotice | null =>
+    open && openedAs ? noticeForActivityDialog(action, openedAs, latest) : null;
+  const noticeProps = (action: ActivityDialogAction, open: boolean) => {
+    const found = noticeFor(action, open);
+    return {
+      notice: <ChangedNotice message={found?.message ?? null} />,
+      actionBlocked: found?.blocksAction ?? false,
+    };
+  };
 
   const saveEdit = async (values: ActivityFormValues) => {
     if (id === null || lastLoaded === null) return;
@@ -185,7 +215,7 @@ export function ActivityDetailPage() {
       setConfirmingDelete(false);
       if (isStateChangedError(error)) {
         // Um 404 aqui também pode ser uma atividade que já foi removida.
-        refreshAfter(error, DELETE_NOT_FOUND_MESSAGE);
+        refreshAfter(error, ACTIVITY_GONE_MESSAGE);
       } else {
         notify(messageOf(error), 'error');
       }
@@ -217,15 +247,18 @@ export function ActivityDetailPage() {
                 : {
                     statusBusy: changingStatus,
                     onChangeStatus: (next) => void changeStatus(next),
-                    onDeliver: () => deliveryDialog.show(),
-                    onSendForReview: () => setConfirmingReview(true),
+                    onDeliver: () =>
+                      openWith(data, () => deliveryDialog.show()),
+                    onSendForReview: () =>
+                      openWith(data, () => setConfirmingReview(true)),
                   }
             }
             review={
               isTeacher
                 ? {
-                    onAccept: () => setConfirmingAccept(true),
-                    onRefuse: () => refuseDialog.show(),
+                    onAccept: () =>
+                      openWith(data, () => setConfirmingAccept(true)),
+                    onRefuse: () => openWith(data, () => refuseDialog.show()),
                   }
                 : undefined
             }
@@ -235,22 +268,25 @@ export function ActivityDetailPage() {
               onTextChange: setCommentText,
             }}
             canManage={isTeacher}
-            onEdit={() => dialog.show()}
-            onDelete={() => setConfirmingDelete(true)}
+            onEdit={() => openWith(data, () => dialog.show())}
+            onDelete={() => openWith(data, () => setConfirmingDelete(true))}
           />
         )}
       </ProfileView>
-      {dialog.slot && lastLoaded && (
+      {dialog.slot && openedAs && (
         <ActivityFormDialog
           key={dialog.slot.openCount}
           mode="edit"
           open={dialog.slot.open}
+          // O formulário parte da atividade como estava ao abrir e guarda o que foi digitado; a
+          // gravação compara com a última leitura e envia só o que mudou.
           initial={{
             studentId: '',
-            title: lastLoaded.title,
-            description: lastLoaded.description,
-            deadline: lastLoaded.deadline,
+            title: openedAs.title,
+            description: openedAs.description,
+            deadline: openedAs.deadline,
           }}
+          {...noticeProps('edit', dialog.slot.open)}
           onSave={saveEdit}
           onStateChanged={refreshAfter}
           onClose={dialog.hide}
@@ -261,6 +297,7 @@ export function ActivityDetailPage() {
         <DeliveryDialog
           key={deliveryDialog.slot.openCount}
           open={deliveryDialog.slot.open}
+          {...noticeProps('deliver', deliveryDialog.slot.open)}
           send={(files, onProgress) => submitDelivery(id, files, onProgress)}
           onSaved={() => {
             deliveryDialog.hide();
@@ -284,6 +321,7 @@ export function ActivityDetailPage() {
         <RefuseReviewDialog
           key={refuseDialog.slot.openCount}
           open={refuseDialog.slot.open}
+          {...noticeProps('refuse', refuseDialog.slot.open)}
           send={(justification, files, onProgress) =>
             refuseActivity(id, justification, files, onProgress)
           }
@@ -303,6 +341,7 @@ export function ActivityDetailPage() {
         message="Ao aceitar, a atividade é concluída de forma definitiva. Depois disso, ela não poderá mais ser editada, excluída nem receber comentários. Esta ação não pode ser desfeita."
         confirmLabel="Aceitar atividade"
         confirmColor="primary"
+        {...noticeProps('accept', confirmingAccept)}
         busy={accepting}
         busyLabel="Aceitando…"
         onCancel={() => setConfirmingAccept(false)}
@@ -314,6 +353,7 @@ export function ActivityDetailPage() {
         message="Enquanto o orientador revisa, você não poderá entregar arquivos nem mudar a situação da atividade. Se a revisão for recusada, a atividade volta para Pendente e você poderá entregar de novo."
         confirmLabel="Enviar para revisão"
         confirmColor="primary"
+        {...noticeProps('sendForReview', confirmingReview)}
         busy={sendingReview}
         busyLabel="Enviando…"
         onCancel={() => setConfirmingReview(false)}
@@ -325,6 +365,7 @@ export function ActivityDetailPage() {
           title="Excluir a atividade?"
           message={`A atividade "${lastLoaded.title}" deixará de aparecer para você e para o aluno, junto com as entregas e os comentários dela. Não será possível recuperá-la.`}
           confirmLabel="Excluir atividade"
+          {...noticeProps('delete', confirmingDelete)}
           busy={deleting}
           busyLabel="Excluindo…"
           onCancel={() => setConfirmingDelete(false)}
