@@ -43,6 +43,11 @@ export function makeRequest(
 
 type Answer = MockResponse | ((body: unknown) => MockResponse);
 
+type Routes = Record<
+  string,
+  MockResponse | ((body: unknown, url: URL) => MockResponse)
+>;
+
 /**
  * Um servidor simulado com estado: filtra por situação, pagina como a API real, e uma resposta
  * muda a solicitação, então a leitura seguinte já a reflete.
@@ -50,12 +55,20 @@ type Answer = MockResponse | ((body: unknown) => MockResponse);
 export function requestRoutes(
   items: FakeRequest[],
   answers: Record<number, Answer> = {},
-): Record<string, MockResponse | ((body: unknown, url: URL) => MockResponse)> {
+): Routes {
+  return requestServer(items, answers).routes;
+}
+
+/**
+ * O mesmo servidor, com as solicitações dele à vista: o teste muda `requests` para simular o que
+ * acontece fora da tela, como uma nova solicitação ou o prazo de 7 dias passando (RN20).
+ */
+export function requestServer(
+  items: FakeRequest[],
+  answers: Record<number, Answer> = {},
+): { routes: Routes; requests: FakeRequest[] } {
   const state = items.map((item) => ({ ...item }));
-  const routes: Record<
-    string,
-    MockResponse | ((body: unknown, url: URL) => MockResponse)
-  > = {
+  const routes: Routes = {
     'POST /api/auth/refresh': { body: { access_token: 't' } },
     'GET /api/auth/me': {
       body: {
@@ -111,5 +124,5 @@ export function requestRoutes(
       };
     };
   }
-  return routes;
+  return { routes, requests: state };
 }
