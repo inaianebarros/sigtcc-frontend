@@ -19,7 +19,11 @@ import { useDiscardGuard } from '../hooks/useDiscardGuard';
 import { PendingChangesNotice } from '../profile/PendingChangesNotice';
 import { ApiError, isStateChangedError } from '../services/apiError';
 import { createMeeting, updateMeeting } from '../services/meetingService';
-import type { MeetingInput, MeetingItem } from '../services/meetingService';
+import type {
+  MeetingInput,
+  MeetingItem,
+  MeetingSituation,
+} from '../services/meetingService';
 import { AdviseeSearchField } from './AdviseeSearchField';
 import type { SlotPrefill } from './calendar/clickedSlot';
 import {
@@ -52,6 +56,8 @@ interface MeetingRequestDialogProps {
   notice?: ReactNode;
   /** A reunião mudou e a ação já não cabe: o botão de confirmar fica desabilitado, e o aviso diz por quê. */
   actionBlocked?: boolean;
+  /** Na edição, a situação da reunião na última leitura do calendário; sem ela, vale a da reunião aberta. */
+  latestSituation?: MeetingSituation;
   onSaved: () => void;
   /** Editar sem mudar nada: quem usa avisa e fecha, sem chamar o servidor. */
   onNoChanges: () => void;
@@ -78,6 +84,7 @@ export function MeetingRequestDialog({
   prefill,
   notice,
   actionBlocked = false,
+  latestSituation = meeting?.situation,
   onSaved,
   onNoChanges,
   onStateChanged,
@@ -147,9 +154,13 @@ export function MeetingRequestDialog({
     current.endTime !== initial.endTime ||
     current.description.trim() !== initialDescription ||
     current.student?.id !== initial.student?.id;
-  // RN39: uma reunião aceita volta a pendente se a data, o início ou o término mudarem.
+  // RN39: uma reunião aceita volta a pendente se a data, o início ou o término mudarem. Vale a
+  // situação relida; se a reunião foi aberta pendente e aceita depois, o aviso da releitura já diz
+  // isso, e este não se repete. Com a ação bloqueada, não há o que avisar.
   const returnsToPending =
+    !actionBlocked &&
     meeting?.situation === 'accepted' &&
+    latestSituation === 'accepted' &&
     (current.date !== initial.date ||
       current.time !== initial.time ||
       current.endTime !== initial.endTime);
@@ -228,7 +239,8 @@ export function MeetingRequestDialog({
             <Stack spacing={2} sx={{ pt: 1 }}>
               {notice}
               <PendingChangesNotice
-                visible={pending && !ended}
+                // Com a ação bloqueada, mandar clicar no botão desabilitado contradiria o aviso.
+                visible={pending && !ended && !actionBlocked}
                 actionLabel={editing ? 'Salvar' : 'Solicitar'}
               />
               {/* A região fica sempre montada, para o leitor de tela anunciar o aviso quando entra. */}

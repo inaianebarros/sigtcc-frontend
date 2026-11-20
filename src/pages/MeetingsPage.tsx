@@ -479,6 +479,7 @@ export function MeetingsPage() {
           meeting={editedMeeting}
           {...(editedMeeting &&
             noticeProps(noticeFor('edit', editedMeeting, dialog.slot.open)))}
+          latestSituation={editedMeeting && latestOf(editedMeeting)?.situation}
           prefill={dialog.slot.payload?.prefill}
           onSaved={() => {
             dialog.hide();

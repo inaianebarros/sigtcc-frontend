@@ -127,7 +127,11 @@ export function MeetingNotesDialog({
                 apontamentos, e eles ficam congelados quando a orientação for
                 encerrada.
               </DialogContentText>
-              <PendingChangesNotice visible={pending} actionLabel="Salvar" />
+              {/* Com a ação bloqueada, mandar clicar no botão desabilitado contradiria o aviso. */}
+              <PendingChangesNotice
+                visible={pending && !actionBlocked}
+                actionLabel="Salvar"
+              />
               <TextField
                 id={`${id}-field`}
                 label="Apontamentos"

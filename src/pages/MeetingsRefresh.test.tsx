@@ -1,4 +1,10 @@
-import { act, screen, waitFor, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { REFRESH_INTERVAL_MS } from '../hooks/useRefreshedLoad';
@@ -612,6 +618,179 @@ describe('Reuniões: a ação não cabe mais (b)', () => {
     expect(field).toHaveValue('Revisar o sumário');
     expect(field).toHaveFocus();
     expect(save).toBeDisabled();
+  });
+});
+
+const PENDING_CHANGES = /Você tem alterações não salvas/;
+const RETURNS_TO_PENDING = /voltará a ficar pendente/;
+const ACCEPTED_NOW =
+  'Esta reunião foi aceita. Se você mudar a data ou o horário, ela volta a pendente e precisa ser aceita de novo.';
+
+// A reunião aceita que o próprio aluno solicitou: ele pode editá-la, e mudar o horário a devolve a
+// pendente (RN39).
+const OWN_ACCEPTED = makeMeeting(5, {
+  scheduled_at: '2026-11-19T10:00:00-03:00',
+  description: 'Pauta da metodologia',
+  status: 'accepted',
+  situation: 'accepted',
+});
+
+async function expectDiscardOnClose(
+  events: ReturnType<typeof userEvent.setup>,
+) {
+  await events.keyboard('{Escape}');
+  expect(
+    await screen.findByRole('dialog', { name: 'Descartar alterações?' }),
+  ).toBeVisible();
+}
+
+describe('Reuniões: a ação bloqueada não pede para gravar', () => {
+  it('no cancelamento bloqueado, esconde o aviso de alterações não salvas e ainda pergunta antes de descartar', async () => {
+    const { server, events } = setup([OWN]);
+    const { dialog, confirm } = await openReasonDialog(
+      events,
+      'Revisão da introdução',
+      'cancel',
+      'Viagem a congresso',
+    );
+    expect(within(dialog).getByText(PENDING_CHANGES)).toBeVisible();
+
+    changeOnServer(server, OWN.id, {
+      status: 'rejected',
+      situation: 'rejected',
+      can_edit: false,
+      can_cancel: false,
+    });
+    await nextCycle();
+
+    expect(
+      await within(dialog).findByText(
+        'Esta reunião foi recusada e não pode mais ser cancelada.',
+      ),
+    ).toBeVisible();
+    expect(confirm).toBeDisabled();
+    expect(within(dialog).queryByText(PENDING_CHANGES)).toBeNull();
+    await expectDiscardOnClose(events);
+  });
+
+  it('nos apontamentos bloqueados, esconde o aviso de alterações não salvas e ainda pergunta antes de descartar', async () => {
+    const { server, events } = setup([HELD], 'teacher');
+    await openMeeting(events, 'Conversa sobre o sumário');
+    await events.click(
+      screen.getByRole('button', { name: /^Adicionar apontamentos/ }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Apontamentos da reunião',
+    });
+    await events.type(
+      within(dialog).getByLabelText(/Apontamentos/),
+      'Revisar o sumário',
+    );
+    expect(within(dialog).getByText(PENDING_CHANGES)).toBeVisible();
+
+    server.endAdvising();
+    changeOnServer(server, HELD.id, { can_edit_notes: false });
+    await nextCycle();
+
+    expect(
+      await within(dialog).findByText(ADVISING_ENDED_NOTES_MESSAGE),
+    ).toBeVisible();
+    expect(within(dialog).queryByText(PENDING_CHANGES)).toBeNull();
+    await expectDiscardOnClose(events);
+  });
+});
+
+describe('Reuniões: o aviso da RN39 na edição durante a releitura', () => {
+  async function openAcceptedEdit(events: ReturnType<typeof userEvent.setup>) {
+    await openMeeting(events, 'Pauta da metodologia');
+    await events.click(
+      screen.getByRole('button', { name: /^Editar a reunião/ }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Editar reunião',
+    });
+    fireEvent.change(within(dialog).getByLabelText(/Hora de início/), {
+      target: { value: '10:30' },
+    });
+    return dialog;
+  }
+
+  it('esconde o aviso da RN39 e o de alterações não salvas quando a reunião é cancelada, e ainda pergunta antes de descartar', async () => {
+    const { server, events } = setup([OWN_ACCEPTED]);
+    const dialog = await openAcceptedEdit(events);
+    expect(within(dialog).getByText(RETURNS_TO_PENDING)).toBeVisible();
+    expect(within(dialog).getByText(PENDING_CHANGES)).toBeVisible();
+
+    changeOnServer(server, OWN_ACCEPTED.id, {
+      status: 'cancelled',
+      situation: 'cancelled',
+      cancellation_reason: 'Imprevisto',
+      can_edit: false,
+      can_cancel: false,
+    });
+    await nextCycle();
+
+    expect(
+      await within(dialog).findByText(
+        'Esta reunião foi cancelada e não pode mais ser editada.',
+      ),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole('button', { name: 'Salvar' }),
+    ).toBeDisabled();
+    expect(within(dialog).queryByText(RETURNS_TO_PENDING)).toBeNull();
+    expect(within(dialog).queryByText(PENDING_CHANGES)).toBeNull();
+    expect(within(dialog).getByLabelText(/Hora de início/)).toHaveValue(
+      '10:30',
+    );
+    await expectDiscardOnClose(events);
+  });
+
+  it('usa a situação relida: a aceita que voltou a pendente não mostra o aviso da RN39', async () => {
+    const { server, events } = setup([OWN_ACCEPTED]);
+    const dialog = await openAcceptedEdit(events);
+    expect(within(dialog).getByText(RETURNS_TO_PENDING)).toBeVisible();
+
+    changeOnServer(server, OWN_ACCEPTED.id, {
+      status: 'pending',
+      situation: 'pending',
+      scheduled_at: '2026-11-20T10:00:00-03:00',
+      ends_at: '2026-11-20T11:00:00-03:00',
+    });
+    await nextCycle();
+
+    await waitFor(() =>
+      expect(within(dialog).queryByText(RETURNS_TO_PENDING)).toBeNull(),
+    );
+    expect(
+      within(dialog).getByRole('button', { name: 'Salvar' }),
+    ).toBeEnabled();
+  });
+
+  it('na pendente aceita depois de aberta, mostra só o aviso de que foi aceita, sem repetir o da RN39', async () => {
+    const { server, events } = setup([OWN]);
+    await openMeeting(events, 'Revisão da introdução');
+    await events.click(
+      screen.getByRole('button', { name: /^Editar a reunião/ }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Editar reunião',
+    });
+    fireEvent.change(within(dialog).getByLabelText(/Hora de início/), {
+      target: { value: '09:30' },
+    });
+
+    changeOnServer(server, OWN.id, {
+      status: 'accepted',
+      situation: 'accepted',
+    });
+    await nextCycle();
+
+    expect(await within(dialog).findByText(ACCEPTED_NOW)).toBeVisible();
+    expect(within(dialog).queryByText(RETURNS_TO_PENDING)).toBeNull();
+    expect(
+      within(dialog).getByRole('button', { name: 'Salvar' }),
+    ).toBeEnabled();
   });
 });
 

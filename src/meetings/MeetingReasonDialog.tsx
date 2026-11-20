@@ -121,8 +121,9 @@ export function MeetingReasonDialog({
             <Stack spacing={2} sx={{ pt: 1 }}>
               {notice}
               <DialogContentText>{intro}</DialogContentText>
+              {/* Com a ação bloqueada, mandar clicar no botão desabilitado contradiria o aviso. */}
               <PendingChangesNotice
-                visible={pending}
+                visible={pending && !actionBlocked}
                 actionLabel={confirmLabel}
               />
               <TextField
