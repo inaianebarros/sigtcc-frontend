@@ -27,7 +27,7 @@ import {
 } from '../meetings/calendar/viewPreference';
 import type { CalendarView } from '../meetings/calendar/viewPreference';
 import { MeetingActions } from '../meetings/MeetingActions';
-import { MeetingChangedNotice } from '../meetings/MeetingChangedNotice';
+import { ChangedNotice } from '../components/ChangedNotice';
 import {
   MEETING_GONE_DETAILS_MESSAGE,
   noticeForForm,
@@ -282,7 +282,7 @@ export function MeetingsPage() {
   ): MeetingNotice | null =>
     open ? noticeForForm(action, item, latestOf(item)) : null;
   const noticeProps = (found: MeetingNotice | null) => ({
-    notice: <MeetingChangedNotice message={found?.message ?? null} />,
+    notice: <ChangedNotice message={found?.message ?? null} />,
     actionBlocked: found?.blocksAction ?? false,
   });
   const detailsLatest = detailsSlot && latestOf(detailsSlot.payload);
@@ -386,7 +386,7 @@ export function MeetingsPage() {
           // Fora do calendário, a reunião fica como foi lida por último, sem ações.
           actions={detailsLatest ? renderActions(detailsLatest) : null}
           notice={
-            <MeetingChangedNotice
+            <ChangedNotice
               message={
                 detailsSlot.open && !detailsLatest
                   ? MEETING_GONE_DETAILS_MESSAGE
