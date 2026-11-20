@@ -9,7 +9,7 @@ import type {
  * se a resposta cabe, então o botão fica desabilitado, como nas Reuniões (ficha 18, caso c).
  */
 export const REQUEST_GONE_MESSAGE =
-  'Esta solicitação não aparece mais nesta página da lista. Ela pode ter sido respondida em outra aba, ter ficado sem resposta no prazo ou ter passado para outra página. Feche e procure-a na lista.';
+  'Esta solicitação mudou de situação ou passou para outra página da lista. Feche e procure-a na lista para ver a situação atual.';
 
 const PARTICIPLES: Record<AnswerAction, string> = {
   accept: 'aceita',
@@ -26,7 +26,10 @@ function blockedMessage(
     case 'pending':
       return null;
     case 'unanswered':
-      return `O prazo desta solicitação foi encerrado sem resposta, e ela não pode mais ser ${participle}.`;
+      // No Aceitar, a frase final diz o que ainda é possível (RN05); no Recusar não há o que fazer.
+      return action === 'accept'
+        ? 'O prazo para responder a esta solicitação foi encerrado, e ela não pode mais ser aceita. O aluno pode enviar uma nova solicitação.'
+        : 'O prazo para responder a esta solicitação foi encerrado, e ela não pode mais ser recusada.';
     case 'accepted':
       return action === 'accept'
         ? 'Esta solicitação já foi aceita.'

@@ -232,7 +232,7 @@ describe('Solicitações do professor: o diálogo aberto quando a solicitação 
 
     expect(
       await within(dialog).findByText(
-        'O prazo desta solicitação foi encerrado sem resposta, e ela não pode mais ser aceita.',
+        'O prazo para responder a esta solicitação foi encerrado, e ela não pode mais ser aceita. O aluno pode enviar uma nova solicitação.',
       ),
     ).toBeVisible();
     expect(screen.getByRole('dialog')).toBe(dialog);
@@ -240,7 +240,7 @@ describe('Solicitações do professor: o diálogo aberto quando a solicitação 
       within(dialog).getByRole('button', { name: 'Aceitar' }),
     ).toBeDisabled();
     expect(within(dialog).getByRole('status')).toHaveTextContent(
-      /prazo desta solicitação foi encerrado/,
+      /prazo para responder a esta solicitação foi encerrado/,
     );
   });
 
@@ -256,7 +256,7 @@ describe('Solicitações do professor: o diálogo aberto quando a solicitação 
 
     expect(
       await within(dialog).findByText(
-        'O prazo desta solicitação foi encerrado sem resposta, e ela não pode mais ser recusada.',
+        'O prazo para responder a esta solicitação foi encerrado, e ela não pode mais ser recusada.',
       ),
     ).toBeVisible();
     expect(
@@ -296,7 +296,7 @@ describe('Solicitações do professor: o diálogo aberto quando a solicitação 
     },
   );
 
-  it('sumiu da página sem o prazo vencer: avisa que não aparece mais, bloqueia e, ao fechar, leva o foco ao título', async () => {
+  it('sumiu da página sem o prazo vencer: avisa que mudou de situação ou de página, bloqueia e, ao fechar, leva o foco ao título', async () => {
     const { user, requests } = setupTeacher([
       pending(1, 'Ana Souza'),
       pending(2, 'Bruno Alves'),
