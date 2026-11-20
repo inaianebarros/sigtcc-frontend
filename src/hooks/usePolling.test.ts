@@ -1,6 +1,6 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { usePolling } from './usePolling';
+import { RESUME_DEBOUNCE_MS, usePolling } from './usePolling';
 
 const INTERVAL = 30_000;
 
@@ -10,6 +10,10 @@ function setVisibility(state: 'visible' | 'hidden') {
     get: () => state,
   });
   document.dispatchEvent(new Event('visibilitychange'));
+}
+
+function focusWindow() {
+  window.dispatchEvent(new Event('focus'));
 }
 
 beforeEach(() => {
@@ -156,5 +160,126 @@ describe('usePolling', () => {
     act(() => setVisibility('hidden'));
     act(() => setVisibility('visible'));
     expect(poll).toHaveBeenCalledTimes(2);
+  });
+
+  it('ao a janela ganhar foco com a aba visível, consulta na hora e reinicia o ciclo', () => {
+    const poll = vi.fn();
+    renderHook(() =>
+      usePolling(poll, {
+        intervalMs: INTERVAL,
+        enabled: true,
+        pollOnStart: false,
+      }),
+    );
+    act(() => {
+      vi.advanceTimersByTime(INTERVAL / 2);
+    });
+    expect(poll).not.toHaveBeenCalled();
+
+    act(() => focusWindow());
+    expect(poll).toHaveBeenCalledTimes(1);
+
+    // O ciclo conta de novo a partir do foco.
+    act(() => {
+      vi.advanceTimersByTime(INTERVAL - 1);
+    });
+    expect(poll).toHaveBeenCalledTimes(1);
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(poll).toHaveBeenCalledTimes(2);
+  });
+
+  it('foco da janela e volta da aba juntos valem uma consulta só, nas duas ordens', () => {
+    const poll = vi.fn();
+    renderHook(() =>
+      usePolling(poll, {
+        intervalMs: INTERVAL,
+        enabled: true,
+        pollOnStart: false,
+      }),
+    );
+
+    act(() => setVisibility('hidden'));
+    act(() => {
+      setVisibility('visible');
+      focusWindow();
+    });
+    expect(poll).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      vi.advanceTimersByTime(RESUME_DEBOUNCE_MS);
+    });
+    act(() => setVisibility('hidden'));
+    act(() => {
+      focusWindow();
+      setVisibility('visible');
+    });
+    expect(poll).toHaveBeenCalledTimes(2);
+
+    // Pouco depois do par, ainda dentro da janela, também não repete.
+    act(() => {
+      vi.advanceTimersByTime(RESUME_DEBOUNCE_MS - 1);
+    });
+    act(() => focusWindow());
+    expect(poll).toHaveBeenCalledTimes(2);
+
+    // O ciclo segue rodando depois do par.
+    act(() => {
+      vi.advanceTimersByTime(INTERVAL);
+    });
+    expect(poll).toHaveBeenCalledTimes(3);
+  });
+
+  it('passada a janela de 1 s, um novo foco consulta de novo', () => {
+    const poll = vi.fn();
+    renderHook(() =>
+      usePolling(poll, {
+        intervalMs: INTERVAL,
+        enabled: true,
+        pollOnStart: false,
+      }),
+    );
+
+    act(() => focusWindow());
+    act(() => {
+      vi.advanceTimersByTime(RESUME_DEBOUNCE_MS);
+    });
+    act(() => focusWindow());
+
+    expect(poll).toHaveBeenCalledTimes(2);
+  });
+
+  it('foco da janela com a aba oculta não consulta nem retoma o ciclo', () => {
+    const poll = vi.fn();
+    renderHook(() => usePolling(poll, { intervalMs: INTERVAL, enabled: true }));
+    expect(poll).toHaveBeenCalledTimes(1);
+
+    act(() => setVisibility('hidden'));
+    act(() => focusWindow());
+    act(() => {
+      vi.advanceTimersByTime(INTERVAL * 3);
+    });
+
+    expect(poll).toHaveBeenCalledTimes(1);
+  });
+
+  it('desabilitado ou desmontado, o foco da janela não consulta', () => {
+    const poll = vi.fn();
+    const { rerender, unmount } = renderHook(
+      ({ enabled }) => usePolling(poll, { intervalMs: INTERVAL, enabled }),
+      { initialProps: { enabled: false } },
+    );
+    act(() => focusWindow());
+    expect(poll).not.toHaveBeenCalled();
+
+    rerender({ enabled: true });
+    expect(poll).toHaveBeenCalledTimes(1);
+    unmount();
+    act(() => {
+      vi.advanceTimersByTime(RESUME_DEBOUNCE_MS);
+    });
+    act(() => focusWindow());
+    expect(poll).toHaveBeenCalledTimes(1);
   });
 });

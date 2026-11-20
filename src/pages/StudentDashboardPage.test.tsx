@@ -528,6 +528,23 @@ describe('Dashboard do aluno: atualização automática', () => {
     expect(requestsTo(fetchMock, DASHBOARD).length).toBe(before + 1);
   });
 
+  it('um foco da janela e uma aba visível quase juntos fazem uma leitura só', async () => {
+    const { fetchMock } = setup();
+    await screen.findByRole('region', { name: 'Orientação' });
+    const before = requestsTo(fetchMock, DASHBOARD).length;
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    await waitFor(() =>
+      expect(requestsTo(fetchMock, DASHBOARD).length).toBeGreaterThan(before),
+    );
+    expect(requestsTo(fetchMock, DASHBOARD).length).toBe(before + 1);
+    expect(screen.queryByTestId('dashboard-skeleton')).not.toBeInTheDocument();
+  });
+
   it('uma falha ao reler não derruba os dados que já estão na tela', async () => {
     let failing = false;
     const { fetchMock } = setup(makeStudentDashboard(), {
