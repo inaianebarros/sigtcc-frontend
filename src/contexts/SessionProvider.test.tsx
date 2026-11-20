@@ -248,6 +248,24 @@ describe('SessionProvider: releitura periódica e ao voltar para a aba', () => {
     visibility.mockRestore();
   });
 
+  it('relê o usuário quando a janela ganha foco com a aba visível', async () => {
+    const fetchMock = mockApi({
+      'POST /api/auth/refresh': { body: { access_token: 't' } },
+      [ME]: { body: meBody({ has_active_advising: false }) },
+    });
+    renderProvider();
+    await signedIn();
+    expect(requestsTo(fetchMock, ME)).toHaveLength(1);
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+
+    await waitFor(() => expect(requestsTo(fetchMock, ME)).toHaveLength(2), {
+      timeout: 5000,
+    });
+  });
+
   it('não relê nada para quem não entrou', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {
@@ -261,6 +279,7 @@ describe('SessionProvider: releitura periódica e ao voltar para a aba', () => {
 
       act(() => {
         document.dispatchEvent(new Event('visibilitychange'));
+        window.dispatchEvent(new Event('focus'));
       });
       await act(async () => {
         vi.advanceTimersByTime(REFRESH_INTERVAL_MS * 3);

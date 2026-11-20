@@ -136,6 +136,41 @@ describe('useRefreshedLoad', () => {
     expect(load).toHaveBeenCalledTimes(3);
   });
 
+  it('relê na hora quando a janela ganha foco, e uma vez só com a volta da aba junto', async () => {
+    let value = 0;
+    const load = vi.fn(async () => ++value);
+    const { result } = renderHook(() => useRefreshedLoad(load), {
+      wrapper: sessionWrapper('authenticated'),
+    });
+    await flush();
+    expect(load).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+    // Sem carregamento: os dados ficam à vista enquanto relê.
+    expect(result.current.state).toEqual({ status: 'ready', data: 1 });
+    await flush();
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(result.current.state).toEqual({ status: 'ready', data: 2 });
+
+    await advance(REFRESH_INTERVAL_MS / 2);
+    act(() => setVisibility('hidden'));
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+    await advance(REFRESH_INTERVAL_MS * 2);
+    expect(load).toHaveBeenCalledTimes(2);
+
+    act(() => {
+      setVisibility('visible');
+      window.dispatchEvent(new Event('focus'));
+    });
+    await flush();
+    expect(load).toHaveBeenCalledTimes(3);
+    expect(result.current.state).toEqual({ status: 'ready', data: 3 });
+  });
+
   it('enquanto relê e quando a releitura falha, mantém os dados sem carregamento nem erro', async () => {
     const first = deferred<string>();
     const second = deferred<string>();
@@ -185,6 +220,12 @@ describe('useRefreshedLoad', () => {
     await advance(REFRESH_INTERVAL_MS * 3);
     act(() => setVisibility('hidden'));
     act(() => setVisibility('visible'));
+    await flush();
+    expect(load).toHaveBeenCalledTimes(2);
+    act(() => {
+      vi.advanceTimersByTime(REFRESH_INTERVAL_MS / 2);
+      window.dispatchEvent(new Event('focus'));
+    });
     await flush();
     expect(load).toHaveBeenCalledTimes(2);
 
