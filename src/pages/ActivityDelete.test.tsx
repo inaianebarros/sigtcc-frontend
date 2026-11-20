@@ -211,7 +211,7 @@ describe('Excluir atividade: falhas', () => {
 
     expect(
       await screen.findByText(
-        'A atividade não está mais disponível. A orientação pode ter sido encerrada.',
+        'Esta atividade não está mais disponível. Ela pode ter sido excluída, ou a orientação pode ter sido encerrada.',
       ),
     ).toBeVisible();
     await waitFor(() =>

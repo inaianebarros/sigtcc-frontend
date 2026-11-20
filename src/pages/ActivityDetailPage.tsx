@@ -74,8 +74,7 @@ export function ActivityDetailPage() {
       id === null ? Promise.resolve(null) : nullOnNotFound(getActivity(id)),
     id,
   );
-  // A última leitura completa, que sobrevive à recarga: a edição grava só o que mudou em relação a
-  // ela, e a confirmação de excluir cita o título dela.
+  // A última leitura completa, que sobrevive à recarga: a confirmação de excluir cita o título dela.
   const [lastLoaded, setLastLoaded] = useState<ActivityDetail | null>(null);
   if (
     activity.status === 'ready' &&
@@ -113,8 +112,10 @@ export function ActivityDetailPage() {
   };
 
   const saveEdit = async (values: ActivityFormValues) => {
-    if (id === null || lastLoaded === null) return;
-    const changes = changesOf(lastLoaded, values);
+    if (id === null || openedAs === null) return;
+    // Só os campos que o professor alterou no formulário: o que mudou em outra aba e ele não tocou
+    // fica como está no servidor, em vez de voltar ao valor de quando o diálogo abriu.
+    const changes = changesOf(openedAs, values);
     if (Object.keys(changes).length === 0) {
       dialog.hide();
       notify('Nenhuma alteração para salvar.', 'info');
@@ -279,7 +280,7 @@ export function ActivityDetailPage() {
           mode="edit"
           open={dialog.slot.open}
           // O formulário parte da atividade como estava ao abrir e guarda o que foi digitado; a
-          // gravação compara com a última leitura e envia só o que mudou.
+          // gravação envia só os campos alterados em relação a ela.
           initial={{
             studentId: '',
             title: openedAs.title,

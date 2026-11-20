@@ -418,7 +418,7 @@ describe('Detalhe da atividade: os diálogos abertos na releitura', () => {
 
     expect(
       await within(dialog).findByText(
-        'Esta atividade já foi aceita e está concluída.',
+        'Esta atividade já foi aceita e não pode mais ser recusada.',
       ),
     ).toBeVisible();
     expect(
@@ -451,6 +451,117 @@ describe('Detalhe da atividade: os diálogos abertos na releitura', () => {
     expect(
       within(dialog).getByRole('button', { name: 'Aceitar atividade' }),
     ).toBeDisabled();
+  });
+
+  it('aceitar volta a ficar habilitado, avisando a nova entrega, quando a recusa em outra aba é seguida de um reenvio', async () => {
+    const { server, events } = setup('/professor/atividades/5', 'teacher', [
+      makeActivity(5, { status: 'in_review', submissions: DELIVERED }),
+    ]);
+    await events.click(
+      await screen.findByRole('button', { name: 'Aceitar atividade' }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Aceitar a atividade?',
+    });
+    const accept = within(dialog).getByRole('button', {
+      name: 'Aceitar atividade',
+    });
+
+    // Recusada em outra aba: o diálogo bloqueia.
+    changeOnServer(server, 5, { status: 'pending' });
+    await nextCycle();
+    expect(
+      await within(dialog).findByText(
+        'Esta atividade já foi recusada e devolvida ao aluno.',
+      ),
+    ).toBeVisible();
+    expect(accept).toBeDisabled();
+
+    // O aluno entrega de novo e envia para revisão: a decisão passa a valer para a nova entrega.
+    changeOnServer(server, 5, {
+      status: 'in_review',
+      submissions: [
+        ...DELIVERED,
+        { id: 2, submitted_at: '2026-11-06T09:00:00Z', files: [] },
+      ],
+    });
+    await nextCycle();
+
+    expect(
+      await within(dialog).findByText(
+        'Esta atividade recebeu a 2ª entrega. A decisão vale para essa entrega, que está na linha do tempo.',
+      ),
+    ).toBeVisible();
+    expect(accept).toBeEnabled();
+  });
+
+  it('a recusa avisa a nova entrega e continua habilitada', async () => {
+    const { server, events } = setup('/professor/atividades/5', 'teacher', [
+      makeActivity(5, { status: 'in_review', submissions: DELIVERED }),
+    ]);
+    await events.click(
+      await screen.findByRole('button', { name: 'Recusar atividade' }),
+    );
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Recusar a atividade',
+    });
+    await events.type(
+      within(dialog).getByLabelText(/Justificativa/),
+      'Falta a conclusão',
+    );
+
+    changeOnServer(server, 5, {
+      submissions: [
+        ...DELIVERED,
+        { id: 2, submitted_at: '2026-11-06T09:00:00Z', files: [] },
+      ],
+    });
+    await nextCycle();
+
+    expect(
+      await within(dialog).findByText(
+        'Esta atividade recebeu a 2ª entrega. A decisão vale para essa entrega, que está na linha do tempo.',
+      ),
+    ).toBeVisible();
+    expect(
+      within(dialog).getByRole('button', { name: 'Recusar atividade' }),
+    ).toBeEnabled();
+  });
+
+  it('a edição salva só o que o professor alterou, sem desfazer o título mudado em outra aba', async () => {
+    const { server, fetchMock, events } = setup(
+      '/professor/atividades/5',
+      'teacher',
+      [makeActivity(5)],
+    );
+    await events.click(await screen.findByRole('button', { name: 'Editar' }));
+    const dialog = await screen.findByRole('dialog', {
+      name: 'Editar atividade',
+    });
+
+    changeOnServer(server, 5, { title: 'Título da outra aba' });
+    await nextCycle();
+    expect(
+      await within(dialog).findByText(
+        'O título desta atividade mudou para "Título da outra aba".',
+      ),
+    ).toBeVisible();
+
+    const deadline = within(dialog).getByLabelText(/Prazo/);
+    await events.clear(deadline);
+    await events.type(deadline, '2100-01-15');
+    await events.click(within(dialog).getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() =>
+      expect(
+        requestsTo(fetchMock, 'PATCH /api/atividades/5').map(([, init]) =>
+          JSON.parse(String(init?.body)),
+        ),
+      ).toEqual([{ deadline: '2100-01-15' }]),
+    );
+    expect(server.activities().find((item) => item.id === 5)?.title).toBe(
+      'Título da outra aba',
+    );
   });
 
   it('a edição avisa que a atividade foi enviada para revisão e continua com o que foi digitado', async () => {

@@ -54,13 +54,13 @@ describe('noticeForActivityDialog', () => {
       'deliver',
       OPENED,
       IN_REVIEW,
-      'Esta atividade foi enviada para revisão e não aceita novas entregas enquanto é revisada.',
+      'Esta atividade foi enviada para revisão. Enquanto ela é revisada, não é possível entregar arquivos.',
     ],
     [
       'deliver',
       OPENED,
       COMPLETED,
-      'Esta atividade foi concluída e não aceita mais entregas.',
+      'Esta atividade foi concluída e não pode mais receber entregas.',
     ],
     [
       'sendForReview',
@@ -74,11 +74,12 @@ describe('noticeForActivityDialog', () => {
       COMPLETED,
       'Esta atividade foi concluída e não pode mais ser enviada para revisão.',
     ],
+    ['accept', IN_REVIEW, COMPLETED, 'Esta atividade já foi aceita.'],
     [
-      'accept',
+      'refuse',
       IN_REVIEW,
       COMPLETED,
-      'Esta atividade já foi aceita e está concluída.',
+      'Esta atividade já foi aceita e não pode mais ser recusada.',
     ],
     [
       'refuse',
@@ -137,5 +138,47 @@ describe('noticeForActivityDialog', () => {
         deadline: '2026-12-15',
       })?.message,
     ).toMatch(/^O prazo desta atividade mudou para .*15.*\.$/);
+  });
+
+  it('não diz "já foi enviada para revisão" a uma atividade pendente sem entregas', () => {
+    expect(
+      noticeForActivityDialog('sendForReview', OPENED, {
+        ...OPENED,
+        submissions: [],
+      }),
+    ).toBeNull();
+  });
+
+  it.each(['accept', 'refuse'] as ActivityDialogAction[])(
+    'avisa em %s, sem bloquear, a entrega que chegou desde a abertura',
+    (action) => {
+      const second = {
+        id: 2,
+        submittedAt: '2026-11-05T09:00:00Z',
+        files: [],
+      };
+      expect(
+        noticeForActivityDialog(action, IN_REVIEW, {
+          ...IN_REVIEW,
+          submissions: [...IN_REVIEW.submissions, second],
+        }),
+      ).toEqual({
+        message:
+          'Esta atividade recebeu a 2ª entrega. A decisão vale para essa entrega, que está na linha do tempo.',
+        blocksAction: false,
+      });
+    },
+  );
+
+  it('não fala de entrega nova nos diálogos do aluno', () => {
+    expect(
+      noticeForActivityDialog('sendForReview', OPENED, {
+        ...OPENED,
+        submissions: [
+          ...OPENED.submissions,
+          { id: 2, submittedAt: '2026-11-05T09:00:00Z', files: [] },
+        ],
+      }),
+    ).toBeNull();
   });
 });

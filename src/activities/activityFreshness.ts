@@ -18,10 +18,10 @@ export interface ActivityNotice {
 
 /**
  * A atividade sumiu: foi excluída ou a orientação foi encerrada, e o servidor responde o mesmo 404
- * para os dois casos (RN14). Texto já aprovado na ficha 17 de `docs/telas.md`.
+ * para os dois casos (RN14). Vale nos diálogos e no erro de excluir (ficha 17 de `docs/telas.md`).
  */
 export const ACTIVITY_GONE_MESSAGE =
-  'A atividade não está mais disponível. A orientação pode ter sido encerrada.';
+  'Esta atividade não está mais disponível. Ela pode ter sido excluída, ou a orientação pode ter sido encerrada.';
 
 /** O aluno entrega e envia para revisão só com a atividade pendente ou em andamento (RN15, RN16). */
 function studentControls(activity: ActivityDetail): boolean {
@@ -34,10 +34,12 @@ function studentControls(activity: ActivityDetail): boolean {
  */
 function allows(action: ActivityDialogAction, latest: ActivityDetail): boolean {
   switch (action) {
+    // O envio para revisão não exige entrega aqui: o diálogo só abre com ao menos uma, e as
+    // entregas não são apagadas. O servidor recusa o envio se faltar, e o aviso não cai num texto
+    // que não cabe ao caso.
     case 'deliver':
-      return studentControls(latest);
     case 'sendForReview':
-      return studentControls(latest) && latest.submissions.length > 0;
+      return studentControls(latest);
     case 'accept':
     case 'refuse':
       return latest.status === 'in_review';
@@ -58,16 +60,19 @@ function blockedMessage(
   switch (action) {
     case 'deliver':
       return completed
-        ? 'Esta atividade foi concluída e não aceita mais entregas.'
-        : 'Esta atividade foi enviada para revisão e não aceita novas entregas enquanto é revisada.';
+        ? 'Esta atividade foi concluída e não pode mais receber entregas.'
+        : 'Esta atividade foi enviada para revisão. Enquanto ela é revisada, não é possível entregar arquivos.';
     case 'sendForReview':
       return completed
         ? 'Esta atividade foi concluída e não pode mais ser enviada para revisão.'
         : 'Esta atividade já foi enviada para revisão.';
     case 'accept':
+      return completed
+        ? 'Esta atividade já foi aceita.'
+        : 'Esta atividade já foi recusada e devolvida ao aluno.';
     case 'refuse':
       return completed
-        ? 'Esta atividade já foi aceita e está concluída.'
+        ? 'Esta atividade já foi aceita e não pode mais ser recusada.'
         : 'Esta atividade já foi recusada e devolvida ao aluno.';
     case 'edit':
       return 'Esta atividade foi concluída e não pode mais ser editada.';
@@ -78,8 +83,18 @@ function blockedMessage(
   }
 }
 
+/** Se chegou uma entrega que não existia quando o diálogo abriu. */
+function hasNewSubmission(
+  opened: ActivityDetail,
+  latest: ActivityDetail,
+): boolean {
+  const openedIds = new Set(opened.submissions.map(({ id }) => id));
+  return latest.submissions.some(({ id }) => !openedIds.has(id));
+}
+
 /** O que mudou numa atividade em que a ação ainda cabe; `null` se nada que a tela mostra mudou. */
 function changedMessage(
+  action: ActivityDialogAction,
   opened: ActivityDetail,
   latest: ActivityDetail,
 ): string | null {
@@ -94,6 +109,14 @@ function changedMessage(
   }
   if (opened.description !== latest.description) {
     return 'A descrição desta atividade mudou.';
+  }
+  // A revisão foi recusada em outra aba e o aluno entregou de novo: a decisão passa a valer para a
+  // nova entrega. As entregas não são apagadas, então a mais recente é a de número igual ao total.
+  if (
+    (action === 'accept' || action === 'refuse') &&
+    hasNewSubmission(opened, latest)
+  ) {
+    return `Esta atividade recebeu a ${latest.submissions.length}ª entrega. A decisão vale para essa entrega, que está na linha do tempo.`;
   }
   return null;
 }
@@ -115,6 +138,6 @@ export function noticeForActivityDialog(
   if (!allows(action, latest)) {
     return { message: blockedMessage(action, latest), blocksAction: true };
   }
-  const message = changedMessage(opened, latest);
+  const message = changedMessage(action, opened, latest);
   return message === null ? null : { message, blocksAction: false };
 }
