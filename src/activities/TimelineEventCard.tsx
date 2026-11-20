@@ -5,7 +5,7 @@ import {
   downloadReviewFile,
   downloadSubmissionFile,
 } from '../services/activityService';
-import type { SubmissionFile } from '../services/activityService';
+import type { ReportScope, SubmissionFile } from '../services/activityService';
 import type { TimelineEvent } from '../services/activityTimelineService';
 import { AttachedFileItem } from './AttachedFileItem';
 import { STATUS_LABELS } from './activityStatus';
@@ -83,9 +83,11 @@ function Badge({ event }: { event: TimelineEvent }) {
 function Body({
   event,
   activityId,
+  report,
 }: {
   event: TimelineEvent;
   activityId: number;
+  report?: ReportScope;
 }) {
   switch (event.type) {
     case 'comment':
@@ -99,7 +101,7 @@ function Body({
         <Files
           files={event.files}
           label={`Arquivos da ${event.version}ª entrega`}
-          load={(file) => downloadSubmissionFile(activityId, file.id)}
+          load={(file) => downloadSubmissionFile(activityId, file.id, report)}
         />
       );
     case 'review':
@@ -115,7 +117,9 @@ function Body({
           <Files
             files={event.files}
             label={`Anexos da revisão da ${event.version}ª entrega`}
-            load={(file) => downloadReviewFile(activityId, event.id, file.id)}
+            load={(file) =>
+              downloadReviewFile(activityId, event.id, file.id, report)
+            }
           />
         </>
       );
@@ -127,6 +131,8 @@ function Body({
 interface TimelineEventCardProps {
   event: TimelineEvent;
   activityId: number;
+  /** A atividade lida pelo relatório: os arquivos baixam pelos endpoints dele (RF61). */
+  report?: ReportScope;
   /** O evento é do usuário que lê a tela. */
   own: boolean;
   /** Telas a partir de 600 px: o professor à esquerda, o aluno à direita e os números no centro. */
@@ -171,6 +177,7 @@ function Marker({
 function Details({
   event,
   activityId,
+  report,
   own,
 }: Omit<TimelineEventCardProps, 'split'>) {
   return (
@@ -207,7 +214,7 @@ function Details({
           {formatDateTime(event.occurredAt)}
         </Typography>
       </Stack>
-      <Body event={event} activityId={activityId} />
+      <Body event={event} activityId={activityId} report={report} />
     </Stack>
   );
 }
@@ -221,6 +228,7 @@ function Details({
 export function TimelineEventCard({
   event,
   activityId,
+  report,
   own,
   split,
 }: TimelineEventCardProps) {
@@ -230,7 +238,12 @@ export function TimelineEventCard({
         <Paper variant="outlined" data-card sx={{ p: 2 }}>
           <Stack direction="row" spacing={2} sx={{ alignItems: 'flex-start' }}>
             <Marker event={event} color="primary" />
-            <Details event={event} activityId={activityId} own={own} />
+            <Details
+              event={event}
+              activityId={activityId}
+              report={report}
+              own={own}
+            />
           </Stack>
         </Paper>
       </Box>
@@ -285,7 +298,12 @@ export function TimelineEventCard({
           borderColor: `${color}.main`,
         }}
       >
-        <Details event={event} activityId={activityId} own={own} />
+        <Details
+          event={event}
+          activityId={activityId}
+          report={report}
+          own={own}
+        />
       </Paper>
     </Box>
   );

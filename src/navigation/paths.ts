@@ -29,6 +29,10 @@ export const paths = {
   studentAdvisor: '/aluno/orientadores/:teacherId',
   studentAdvisingReport: '/aluno/historico/:advisingId/relatorio',
   teacherAdvisingReport: '/professor/historico/:advisingId/relatorio',
+  studentReportActivity:
+    '/aluno/historico/:advisingId/relatorio/atividades/:activityId',
+  teacherReportActivity:
+    '/professor/historico/:advisingId/relatorio/atividades/:activityId',
   studentActivities: '/aluno/atividades',
   studentThesis: '/aluno/perfil#tema',
   studentMeetings: '/aluno/reunioes',
@@ -67,6 +71,21 @@ export function advisingReportPath(
       ? paths.studentAdvisingReport
       : paths.teacherAdvisingReport;
   return pattern.replace(':advisingId', String(advisingId));
+}
+
+/** Uma atividade lida pelo relatório de uma orientação encerrada (RF61). */
+export function reportActivityPath(
+  userType: 'student' | 'teacher',
+  advisingId: number,
+  activityId: number,
+): string {
+  const pattern =
+    userType === 'student'
+      ? paths.studentReportActivity
+      : paths.teacherReportActivity;
+  return pattern
+    .replace(':advisingId', String(advisingId))
+    .replace(':activityId', String(activityId));
 }
 
 export function studentAdvisorPath(teacherId: number): string {

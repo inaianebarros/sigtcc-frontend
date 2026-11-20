@@ -24,6 +24,7 @@ import { StudentProfileViewPage } from './pages/StudentProfileViewPage';
 import { StudentRequestPage } from './pages/StudentRequestPage';
 import { TeacherProfilePage } from './pages/TeacherProfilePage';
 import { TeacherRequestsPage } from './pages/TeacherRequestsPage';
+import { ReportActivityPage } from './pages/ReportActivityPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { StudentRegistrationPage } from './pages/StudentRegistrationPage';
 import { TeacherRegistrationPage } from './pages/TeacherRegistrationPage';
@@ -60,6 +61,8 @@ const subScreens: Record<string, ReactElement> = {
   [paths.teacherActivity]: <ActivityDetailPage />,
   [paths.studentAdvisingReport]: <AdvisingReportPage />,
   [paths.teacherAdvisingReport]: <AdvisingReportPage />,
+  [paths.studentReportActivity]: <ReportActivityPage />,
+  [paths.teacherReportActivity]: <ReportActivityPage />,
   [paths.teacherStudent]: <StudentProfileViewPage />,
   [paths.studentAdvisor]: <AdvisorProfilePage />,
   [paths.studentNotifications]: <NotificationsPage />,

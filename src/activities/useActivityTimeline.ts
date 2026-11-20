@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePolling } from '../hooks/usePolling';
 import { REFRESH_INTERVAL_MS } from '../hooks/useRefreshedLoad';
 import { useSession } from '../hooks/useSession';
@@ -11,6 +11,7 @@ import type {
   TimelineEvent,
   TimelinePage,
 } from '../services/activityTimelineService';
+import type { ReportScope } from '../services/activityService';
 
 // O maior `limit` que a API aceita, para trazer de uma vez os eventos entre o trecho novo e os
 // que já estavam na tela.
@@ -55,8 +56,9 @@ interface FreshPart {
 async function readNewest(
   activityId: number,
   newestLoaded: number | undefined,
+  report?: ReportScope,
 ): Promise<FreshPart> {
-  const first = await listTimeline(activityId);
+  const first = await listTimeline(activityId, {}, report);
   let coveredFrom = Math.max(1, first.count - TIMELINE_PAGE_SIZE + 1);
   if (newestLoaded === undefined) return { page: first, coveredFrom };
   const items = [...first.items];
@@ -66,10 +68,11 @@ async function readNewest(
       return { page: { items, count: first.count, hasMore }, coveredFrom };
     }
     const limit = Math.min(MAX_LIMIT, coveredFrom - newestLoaded - 1);
-    const bridge = await listTimeline(activityId, {
-      before: coveredFrom,
-      limit,
-    });
+    const bridge = await listTimeline(
+      activityId,
+      { before: coveredFrom, limit },
+      report,
+    );
     items.push(...bridge.items);
     hasMore = bridge.hasMore;
     coveredFrom = Math.max(1, coveredFrom - limit);
@@ -111,9 +114,17 @@ function merged(now: TimelineState, fresh: FreshPart): TimelineState {
  * A janela da linha do tempo de uma atividade (RF30): abre nos eventos mais recentes e cresce para
  * trás, de 10 em 10. `reload` relê o primeiro trecho e mantém os eventos mais antigos já
  * carregados, para o evento novo aparecer no topo sem perder o que foi rolado; a mesma releitura
- * roda sozinha a cada 30 s com a aba visível (ADR frontend 0006).
+ * roda sozinha a cada 30 s com a aba visível (ADR frontend 0006). Com `report`, a atividade é a do
+ * relatório de uma orientação encerrada (RF61): lida pelos endpoints dele e sem a releitura, porque
+ * nada nela muda mais.
  */
-export function useActivityTimeline(activityId: number) {
+export function useActivityTimeline(activityId: number, report?: ReportScope) {
+  // O escopo pelo id da orientação: um objeto novo a cada renderização não relê a linha do tempo.
+  const reportId = report?.advisingId;
+  const scope = useMemo(
+    () => (reportId === undefined ? undefined : { advisingId: reportId }),
+    [reportId],
+  );
   const [state, setState] = useState<TimelineState>({ status: 'loading' });
   const [loadingMore, setLoadingMore] = useState(false);
   const [moreFailed, setMoreFailed] = useState(false);
@@ -129,16 +140,16 @@ export function useActivityTimeline(activityId: number) {
     setState({ status: 'loading' });
     setMoreFailed(false);
     try {
-      const first = await listTimeline(activityId);
+      const first = await listTimeline(activityId, {}, scope);
       setState({ status: 'ready', ...first });
     } catch (error) {
       setState(errorState(error));
     }
-  }, [activityId]);
+  }, [activityId, scope]);
 
   useEffect(() => {
     let active = true;
-    listTimeline(activityId).then(
+    listTimeline(activityId, {}, scope).then(
       (first) => {
         if (active) setState({ status: 'ready', ...first });
       },
@@ -149,7 +160,7 @@ export function useActivityTimeline(activityId: number) {
     return () => {
       active = false;
     };
-  }, [activityId]);
+  }, [activityId, scope]);
 
   // Os eventos já na tela, para a releitura saber até onde preencher o que faltar.
   const loaded = useRef<TimelineEvent[]>([]);
@@ -161,14 +172,18 @@ export function useActivityTimeline(activityId: number) {
   const reload = useCallback(async () => {
     setReloadFailed(false);
     try {
-      const fresh = await readNewest(activityId, loaded.current[0]?.index);
+      const fresh = await readNewest(
+        activityId,
+        loaded.current[0]?.index,
+        scope,
+      );
       if (current.current !== activityId) return;
       setState((now) => merged(now, fresh));
     } catch {
       // O que já está na tela continua; o aviso deixa tentar de novo.
       if (current.current === activityId) setReloadFailed(true);
     }
-  }, [activityId]);
+  }, [activityId, scope]);
 
   // A releitura a cada 30 s com a aba visível (ADR frontend 0006): traz os comentários, entregas e
   // revisões da outra parte sem esqueleto. Uma falha aqui não é avisada; o ciclo seguinte tenta de
@@ -179,7 +194,7 @@ export function useActivityTimeline(activityId: number) {
     () => {
       if (polling.current) return;
       polling.current = true;
-      readNewest(activityId, loaded.current[0]?.index)
+      readNewest(activityId, loaded.current[0]?.index, scope)
         .then(
           (fresh) => {
             if (current.current === activityId) {
@@ -196,7 +211,8 @@ export function useActivityTimeline(activityId: number) {
     },
     {
       intervalMs: REFRESH_INTERVAL_MS,
-      enabled: sessionStatus === 'authenticated' && state.status === 'ready',
+      enabled:
+        !scope && sessionStatus === 'authenticated' && state.status === 'ready',
       pollOnStart: false,
     },
   );
@@ -210,7 +226,7 @@ export function useActivityTimeline(activityId: number) {
     setLoadingMore(true);
     setMoreFailed(false);
     try {
-      const older = await listTimeline(activityId, { before });
+      const older = await listTimeline(activityId, { before }, scope);
       if (current.current !== activityId) return;
       setState((now) => {
         if (now.status !== 'ready') return now;
@@ -231,7 +247,7 @@ export function useActivityTimeline(activityId: number) {
       busy.current = false;
       setLoadingMore(false);
     }
-  }, [activityId, state]);
+  }, [activityId, scope, state]);
 
   return {
     state,

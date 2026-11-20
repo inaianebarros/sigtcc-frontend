@@ -1,7 +1,8 @@
-import { fileFrom } from './activityService';
+import { activityUrl, fileFrom } from './activityService';
 import type {
   ActivityStatus,
   ApiFile,
+  ReportScope,
   ReviewDecision,
   SubmissionFile,
 } from './activityService';
@@ -128,6 +129,7 @@ export async function listTimeline(
     before,
     limit = TIMELINE_PAGE_SIZE,
   }: { before?: number; limit?: number } = {},
+  report?: ReportScope,
 ): Promise<TimelinePage> {
   const params = new URLSearchParams({ limit: String(limit) });
   if (before !== undefined) params.set('before', String(before));
@@ -135,7 +137,7 @@ export async function listTimeline(
     items: ApiTimelineEvent[];
     count: number;
     has_more: boolean;
-  }>(`/atividades/${activityId}/linha-do-tempo?${params}`);
+  }>(`${activityUrl(activityId, report)}/linha-do-tempo?${params}`);
   return {
     items: response.items
       .map(eventFrom)

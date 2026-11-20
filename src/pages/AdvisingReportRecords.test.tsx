@@ -255,7 +255,7 @@ describe('AdvisingReportPage: o filtro "Mostrar" e a URL (RNF30)', () => {
   });
 });
 
-describe('AdvisingReportPage: abrir um item da lista no próprio lugar', () => {
+describe('AdvisingReportPage: abrir uma reunião no próprio lugar', () => {
   const meeting = makeMeetingRecord(1, {
     date: '2026-10-20',
     starts_at: '2026-10-20T10:00:00-03:00',
@@ -325,27 +325,6 @@ describe('AdvisingReportPage: abrir um item da lista no próprio lugar', () => {
     ).toBeVisible();
   });
 
-  it('abre a atividade com a descrição completa, o prazo e a situação', async () => {
-    setup([activity]);
-    const user = userEvent.setup();
-    const card = await screen.findByRole('article', {
-      name: 'Revisar capítulo de resultados',
-    });
-
-    await user.click(detailsButton(card));
-
-    expect(within(card).getByText('Prazo')).toBeVisible();
-    expect(within(card).getByText('5 de novembro de 2026')).toBeVisible();
-    expect(within(card).getByText('Situação')).toBeVisible();
-    expect(
-      within(card).getByText('Arquivada ao encerrar a orientação'),
-    ).toBeVisible();
-    expect(within(card).queryByText('Arquivada')).not.toBeInTheDocument();
-    expect(
-      within(card).getByText('Atividade entregue pelo orientando.'),
-    ).toBeVisible();
-  });
-
   it('fecha o cartão aberto, voltando à lista compacta', async () => {
     setup([meeting]);
     const user = userEvent.setup();
@@ -381,13 +360,13 @@ describe('AdvisingReportPage: abrir um item da lista no próprio lugar', () => {
   });
 
   it('abrir um cartão não fecha os outros', async () => {
-    setup([meeting, activity]);
+    setup([meeting, makeMeetingRecord(3, { date: '2026-10-13' })]);
     const user = userEvent.setup();
     const first = await screen.findByRole('article', {
       name: 'Reunião de 20/10/2026',
     });
     const second = screen.getByRole('article', {
-      name: 'Revisar capítulo de resultados',
+      name: 'Reunião de 13/10/2026',
     });
 
     await user.click(detailsButton(first));
@@ -534,7 +513,9 @@ describe('AdvisingReportPage: a paginação e a URL (RNF30)', () => {
       ).getByRole('button', { name: /Ir para a página 2/ }),
     );
 
-    expect(await screen.findByText('Atividade 11')).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { name: 'Atividade 11' }),
+    ).toBeVisible();
     expect(screen.getByTestId('location')).toHaveTextContent(
       `${PATH}?pagina=2`,
     );
@@ -555,7 +536,7 @@ describe('AdvisingReportPage: a paginação e a URL (RNF30)', () => {
       ).getByRole('button', { name: /Ir para a página 2/ }),
     );
 
-    await screen.findByText('Atividade 11');
+    await screen.findByRole('heading', { name: 'Atividade 11' });
     expect(screen.getByTestId('location')).toHaveTextContent(
       `${PATH}?tipo=atividades&pagina=2`,
     );
@@ -564,7 +545,9 @@ describe('AdvisingReportPage: a paginação e a URL (RNF30)', () => {
   it('recarregar em ?pagina=3 volta à mesma página', async () => {
     const fetchMock = setup(many, { path: `${PATH}?pagina=3` });
 
-    expect(await screen.findByText('Atividade 21')).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { name: 'Atividade 21' }),
+    ).toBeVisible();
     expect(offsets(fetchMock)).toEqual([{ limit: '10', offset: '20' }]);
     expect(screen.getAllByRole('article')).toHaveLength(5);
   });
@@ -572,7 +555,9 @@ describe('AdvisingReportPage: a paginação e a URL (RNF30)', () => {
   it('uma página além da última volta para a última, sem entrar no histórico', async () => {
     setup(many, { path: `${PATH}?pagina=9` });
 
-    expect(await screen.findByText('Atividade 21')).toBeVisible();
+    expect(
+      await screen.findByRole('heading', { name: 'Atividade 21' }),
+    ).toBeVisible();
     await waitFor(() =>
       expect(screen.getByTestId('location')).toHaveTextContent(
         `${PATH}?pagina=3`,

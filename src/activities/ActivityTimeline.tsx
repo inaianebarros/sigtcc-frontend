@@ -9,20 +9,29 @@ import {
   useTheme,
 } from '@mui/material';
 import { useEffect, useRef } from 'react';
+import type { ReportScope } from '../services/activityService';
 import { NewComment } from './NewComment';
 import { Section } from './Section';
 import { TimelineEventCard } from './TimelineEventCard';
 import { useActivityTimeline } from './useActivityTimeline';
 
+/** O campo de novo comentário. */
+interface CommentField {
+  /** A atividade está concluída: a linha do tempo continua e o campo não aceita comentário. */
+  completed: boolean;
+  /** O comentário ainda não enviado vive na tela, que o guarda quando o detalhe recarrega (RNF28). */
+  text: string;
+  onTextChange: (text: string) => void;
+}
+
 interface ActivityTimelineProps {
   activityId: number;
   /** O usuário que lê, para marcar os próprios eventos com "Você". */
   currentUserId: number | null;
-  /** A atividade está concluída: a linha do tempo continua e o campo não aceita comentário. */
-  completed: boolean;
-  /** O comentário ainda não enviado vive na tela, que o guarda quando o detalhe recarrega (RNF28). */
-  commentText: string;
-  onCommentTextChange: (text: string) => void;
+  /** Sem ele, a linha do tempo é só leitura, sem o campo de comentário. */
+  comment?: CommentField;
+  /** A atividade lida pelo relatório de uma orientação encerrada: não relê sozinha (RF61). */
+  report?: ReportScope;
 }
 
 /**
@@ -33,11 +42,10 @@ interface ActivityTimelineProps {
 export function ActivityTimeline({
   activityId,
   currentUserId,
-  completed,
-  commentText,
-  onCommentTextChange,
+  comment,
+  report,
 }: ActivityTimelineProps) {
-  const timeline = useActivityTimeline(activityId);
+  const timeline = useActivityTimeline(activityId, report);
   // A partir de 600 px o professor fica à esquerda e o aluno à direita; abaixo, uma coluna só.
   // `noSsr` lê a largura já na primeira renderização: sem montar empilhado e remontar dividido.
   const split = useMediaQuery(useTheme().breakpoints.up('sm'), { noSsr: true });
@@ -63,13 +71,15 @@ export function ActivityTimeline({
 
   return (
     <Section title="Linha do tempo">
-      <NewComment
-        activityId={activityId}
-        completed={completed}
-        text={commentText}
-        onTextChange={onCommentTextChange}
-        onSent={() => void timeline.reload()}
-      />
+      {comment && (
+        <NewComment
+          activityId={activityId}
+          completed={comment.completed}
+          text={comment.text}
+          onTextChange={comment.onTextChange}
+          onSent={() => void timeline.reload()}
+        />
+      )}
       {state.status === 'loading' && (
         <Stack sx={{ alignItems: 'center', py: 2 }}>
           <CircularProgress aria-label="Carregando a linha do tempo" />
@@ -132,6 +142,7 @@ export function ActivityTimeline({
                 key={event.index}
                 event={event}
                 activityId={activityId}
+                report={report}
                 own={event.author.id === currentUserId}
                 split={split}
               />

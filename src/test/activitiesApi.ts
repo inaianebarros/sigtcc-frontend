@@ -10,7 +10,7 @@ export interface FakeActivity {
   title: string;
   description: string;
   deadline: string;
-  status: 'pending' | 'in_progress' | 'in_review' | 'completed';
+  status: 'pending' | 'in_progress' | 'in_review' | 'completed' | 'archived';
   overdue: boolean;
   student: { id: number; full_name: string };
   created_at: string;
@@ -235,7 +235,9 @@ export function activitiesServer(
       const found = state.find((item) => item.id === Number(params.id));
       if (!found)
         return { status: 404, body: { detail: 'Atividade não encontrada.' } };
-      const { status } = body as { status: FakeActivity['status'] };
+      const { status } = body as {
+        status: Exclude<FakeActivity['status'], 'archived'>;
+      };
       if (found.status === 'in_review' || found.status === 'completed') {
         return {
           status: 409,

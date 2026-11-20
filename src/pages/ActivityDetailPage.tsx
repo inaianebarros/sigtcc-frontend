@@ -308,14 +308,17 @@ export function ActivityDetailPage() {
                   }
                 : undefined
             }
-            comments={{
-              currentUserId: user?.id ?? null,
-              text: commentText,
-              onTextChange: setCommentText,
-            }}
-            canManage={isTeacher}
-            onEdit={() => openWith(data, () => dialog.show())}
-            onDelete={() => openWith(data, () => setConfirmingDelete(true))}
+            currentUserId={user?.id ?? null}
+            comments={{ text: commentText, onTextChange: setCommentText }}
+            manage={
+              isTeacher
+                ? {
+                    onEdit: () => openWith(data, () => dialog.show()),
+                    onDelete: () =>
+                      openWith(data, () => setConfirmingDelete(true)),
+                  }
+                : undefined
+            }
           />
         )}
       </ProfileView>
