@@ -3,19 +3,12 @@ import { useLocation, useParams } from 'react-router-dom';
 import { ActivityDetailView } from '../activities/ActivityDetailView';
 import { useLoad } from '../hooks/useLoad';
 import { useSession } from '../hooks/useSession';
+import { reportOriginPath } from '../navigation/origin';
 import { advisingReportPath } from '../navigation/paths';
 import { positiveIntFrom } from '../navigation/positiveInt';
 import { ProfileView } from '../profile/ProfileView';
 import { getActivity } from '../services/activityService';
 import { nullOnNotFound } from '../services/apiError';
-
-/** O relatório de onde a pessoa veio, com a página e o filtro, se for o desta orientação (RNF30). */
-function reportOrigin(state: unknown, reportPath: string): string | null {
-  if (typeof state !== 'object' || state === null) return null;
-  const { from } = state as { from?: unknown };
-  if (typeof from !== 'string') return null;
-  return from === reportPath || from.startsWith(`${reportPath}?`) ? from : null;
-}
 
 /**
  * Uma atividade de uma orientação encerrada, aberta pelo relatório (RF61): o mesmo conteúdo do
@@ -31,7 +24,8 @@ export function ReportActivityPage() {
     user?.type === 'teacher' ? 'teacher' : 'student',
     advisingId ?? 0,
   );
-  const backPath = reportOrigin(useLocation().state, reportPath) ?? reportPath;
+  const backPath =
+    reportOriginPath(useLocation().state, reportPath) ?? reportPath;
   const invalidId = advisingId === null || activityId === null;
   const [reload, setReload] = useState(0);
   const activity = useLoad(

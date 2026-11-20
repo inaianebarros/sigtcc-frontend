@@ -1,25 +1,12 @@
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import {
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Collapse,
-  Stack,
-  Typography,
-} from '@mui/material';
-import { useId, useState } from 'react';
+import { Card, CardContent, Chip, Stack, Typography } from '@mui/material';
+import { useId } from 'react';
 import { VisuallyHidden } from '../components/VisuallyHidden';
-import {
-  formatDeadlineShort,
-  formatDateTimeRange,
-} from '../formatters/dateTime';
+import { formatDeadlineShort } from '../formatters/dateTime';
 import { useSession } from '../hooks/useSession';
 import { OriginLink } from '../navigation/OriginLink';
-import { reportActivityPath } from '../navigation/paths';
+import { reportActivityPath, reportMeetingPath } from '../navigation/paths';
 import type {
   AdvisingRecord,
-  MeetingRecord,
   RecordActivityStatus,
 } from '../services/advisingRecordsService';
 
@@ -39,35 +26,11 @@ function recordDateText(record: AdvisingRecord): string {
   return record.type === 'meeting' ? `Realizada em ${date}` : `Prazo: ${date}`;
 }
 
-function Detail({ label, children }: { label: string; children: string }) {
-  return (
-    <div>
-      <Typography variant="body2" color="text.secondary">
-        {label}
-      </Typography>
-      <Typography sx={{ overflowWrap: 'anywhere', whiteSpace: 'pre-line' }}>
-        {children}
-      </Typography>
-    </div>
-  );
-}
-
-/** O que o cartão aberto da reunião acrescenta ao fechado: o horário e os apontamentos. */
-function MeetingDetails({ record }: { record: MeetingRecord }) {
-  return (
-    <Stack spacing={1.5}>
-      <Detail label="Horário">
-        {formatDateTimeRange(record.startsAt, record.endsAt)}
-      </Detail>
-      <Detail label="Apontamentos">
-        {record.notes || 'Sem apontamentos registrados.'}
-      </Detail>
-    </Stack>
-  );
-}
-
-/** "Ver atividade →", que abre a atividade só para leitura, com o relatório como origem (RNF30). */
-function ActivityLink({
+/**
+ * "Ver atividade →" ou "Ver reunião →", que abre o item só para leitura, com o relatório como
+ * origem (RNF30). O leitor de tela ouve o título do item, e não a seta.
+ */
+function RecordLink({
   advisingId,
   record,
 }: {
@@ -75,11 +38,11 @@ function ActivityLink({
   record: AdvisingRecord;
 }) {
   const { user } = useSession();
-  const to = reportActivityPath(
-    user?.type === 'teacher' ? 'teacher' : 'student',
-    advisingId,
-    record.id,
-  );
+  const userType = user?.type === 'teacher' ? 'teacher' : 'student';
+  const isMeeting = record.type === 'meeting';
+  const to = isMeeting
+    ? reportMeetingPath(userType, advisingId, record.id)
+    : reportActivityPath(userType, advisingId, record.id);
   return (
     <OriginLink
       to={to}
@@ -90,17 +53,16 @@ function ActivityLink({
         minHeight: { xs: 44, sm: 24 },
       }}
     >
-      Ver atividade <span aria-hidden>→</span>{' '}
+      {isMeeting ? 'Ver reunião' : 'Ver atividade'} <span aria-hidden>→</span>{' '}
       <VisuallyHidden>{recordTitle(record)}</VisuallyHidden>
     </OriginLink>
   );
 }
 
 /**
- * Um registro do relatório (RF61), só para leitura: o tipo, a data, o título e duas linhas da
- * descrição. A atividade abre na sua própria tela, por "Ver atividade"; a reunião abre no próprio
- * lugar, com o horário e os apontamentos. A reunião não tem título próprio, por isso o título é
- * "Reunião de" e a data.
+ * Um registro do relatório (RF61), só para leitura: o tipo, a data, o título, a situação da
+ * atividade e duas linhas da descrição. Cada item abre na sua própria tela de leitura. A reunião
+ * não tem título próprio, por isso o título é "Reunião de" e a data.
  */
 export function RecordCard({
   advisingId,
@@ -110,8 +72,6 @@ export function RecordCard({
   record: AdvisingRecord;
 }) {
   const titleId = useId();
-  const detailsId = useId();
-  const [open, setOpen] = useState(false);
   return (
     <Card component="article" aria-labelledby={titleId} variant="outlined">
       <CardContent>
@@ -149,45 +109,18 @@ export function RecordCard({
           )}
           <Typography
             color="text.secondary"
-            sx={[
-              { overflowWrap: 'anywhere', whiteSpace: 'pre-line' },
-              !open && {
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              },
-            ]}
+            sx={{
+              overflowWrap: 'anywhere',
+              whiteSpace: 'pre-line',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
           >
             {record.description}
           </Typography>
-          {record.type === 'activity' ? (
-            <ActivityLink advisingId={advisingId} record={record} />
-          ) : (
-            <>
-              <Collapse in={open} unmountOnExit id={detailsId}>
-                <MeetingDetails record={record} />
-              </Collapse>
-              <Button
-                size="small"
-                aria-expanded={open}
-                aria-controls={detailsId}
-                endIcon={
-                  <ExpandMoreIcon
-                    sx={{
-                      transform: open ? 'rotate(180deg)' : 'none',
-                      transition: 'transform 150ms',
-                    }}
-                  />
-                }
-                onClick={() => setOpen((current) => !current)}
-                sx={{ alignSelf: 'flex-end' }}
-              >
-                {open ? 'Ocultar detalhes' : 'Ver detalhes'}
-                <VisuallyHidden> de {recordTitle(record)}</VisuallyHidden>
-              </Button>
-            </>
-          )}
+          <RecordLink advisingId={advisingId} record={record} />
         </Stack>
       </CardContent>
     </Card>

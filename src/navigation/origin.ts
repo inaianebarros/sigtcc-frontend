@@ -51,3 +51,14 @@ export function backLabelFor(origin: string | null): string {
   const pathname = origin?.split('?')[0];
   return (pathname && BACK_LABELS[pathname]) || 'Voltar';
 }
+
+/** O relatório de onde a pessoa abriu um item, com a página e o filtro, se for `reportPath` (RNF30). */
+export function reportOriginPath(
+  state: unknown,
+  reportPath: string,
+): string | null {
+  if (typeof state !== 'object' || state === null) return null;
+  const { from } = state as { from?: unknown };
+  if (typeof from !== 'string') return null;
+  return from === reportPath || from.startsWith(`${reportPath}?`) ? from : null;
+}

@@ -5,44 +5,11 @@ import {
   DialogContent,
   DialogTitle,
   Stack,
-  Typography,
 } from '@mui/material';
 import { useId } from 'react';
 import type { ReactNode } from 'react';
-import { formatDateTimeRange } from '../formatters/dateTime';
 import type { MeetingItem } from '../services/meetingService';
-import { SituationChip } from './SituationChip';
-
-function requestedBy(item: MeetingItem, userId: number): string {
-  return item.author.id === userId ? 'Você' : item.author.fullName;
-}
-
-/** Os motivos e a marca do cancelamento pelo sistema, sob a situação (RF19, RN34). */
-function Reasons({ item }: { item: MeetingItem }) {
-  return (
-    <Stack spacing={0.5}>
-      {item.situation === 'rejected' && item.rejectionReason && (
-        <Typography variant="body2" color="text.secondary">
-          Motivo da recusa: {item.rejectionReason}
-        </Typography>
-      )}
-      {item.situation === 'cancelled' && (
-        <>
-          {item.cancelledBySystem && (
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-              Cancelada pelo sistema
-            </Typography>
-          )}
-          {item.cancellationReason && (
-            <Typography variant="body2" color="text.secondary">
-              Motivo do cancelamento: {item.cancellationReason}
-            </Typography>
-          )}
-        </>
-      )}
-    </Stack>
-  );
-}
+import { MeetingDetails } from './MeetingDetails';
 
 interface MeetingDetailsDialogProps {
   open: boolean;
@@ -84,36 +51,7 @@ export function MeetingDetailsDialog({
       <DialogContent>
         <Stack spacing={1.5} sx={{ pt: 1 }}>
           {notice}
-          <Typography>
-            {formatDateTimeRange(item.scheduledAt, item.endsAt)}
-          </Typography>
-          <Typography color="text.secondary">
-            Com: {item.counterpart.fullName}
-          </Typography>
-          <Typography sx={{ overflowWrap: 'anywhere' }}>
-            {item.description}
-          </Typography>
-          <Stack spacing={0.5} sx={{ alignItems: 'flex-start' }}>
-            <SituationChip situation={item.situation} />
-            <Reasons item={item} />
-          </Stack>
-          {item.notes && (
-            // Os apontamentos da reunião realizada (RF19, RN44): as quebras de linha são
-            // preservadas e o texto longo quebra em vez de estourar o modal.
-            <Stack spacing={0.5} component="section" aria-label="Apontamentos">
-              <Typography variant="subtitle2" component="h3">
-                Apontamentos
-              </Typography>
-              <Typography
-                sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}
-              >
-                {item.notes}
-              </Typography>
-            </Stack>
-          )}
-          <Typography variant="body2" color="text.secondary">
-            Solicitada por {requestedBy(item, userId)}
-          </Typography>
+          <MeetingDetails item={item} userId={userId} />
           {actions}
         </Stack>
       </DialogContent>
