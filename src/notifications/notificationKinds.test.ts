@@ -34,6 +34,7 @@ describe('groupOf', () => {
     ['meeting_requested', 'meeting'],
     ['meeting_answered', 'meeting'],
     ['report_export_ready', 'advising'],
+    ['report_export_failed', 'advising'],
     ['um_tipo_que_nao_existe', 'other'],
   ])('o tipo %s é do grupo %s', (type, group) => {
     expect(groupOf(type)).toBe(group);
@@ -57,6 +58,17 @@ describe('destinationOf', () => {
       ).toBe(path);
     },
   );
+
+  it('o PDF do relatório não gerado leva à tela do relatório, onde está o Tentar novamente', () => {
+    expect(
+      destinationOf(
+        notification('report_export_failed', {
+          reference: { type: 'advising_report', id: 7 },
+        }),
+        'teacher',
+      ),
+    ).toBe('/professor/historico/7/relatorio');
+  });
 
   it('o PDF do relatório pronto sem referência não leva a lugar nenhum', () => {
     expect(

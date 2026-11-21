@@ -1,4 +1,4 @@
-import { act, screen } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EXPORT_POLL_INTERVAL_MS } from '../advisingReport/ReportExport';
@@ -175,7 +175,9 @@ describe('AdvisingReportPage: exportar o relatório em PDF (RF62, RN50)', () => 
     expect(
       await screen.findByText('Não foi possível gerar o PDF.'),
     ).toBeVisible();
-    await user.click(screen.getByRole('button', { name: 'Tentar de novo' }));
+    await user.click(
+      exportBlock().getByRole('button', { name: 'Tentar novamente' }),
+    );
     expect(requestsTo(fetchMock, `POST ${EXPORT}`)).toHaveLength(1);
     expect(await screen.findByRole('progressbar', { name: BAR })).toBeVisible();
   });
@@ -183,6 +185,13 @@ describe('AdvisingReportPage: exportar o relatório em PDF (RF62, RN50)', () => 
 
 /** A região de anúncio própria do bloco (`role="status"`), só com as frases da ficha. */
 const announcement = () => screen.getByTestId('report-export-announcer');
+
+/** O bloco de exportação: a lista de registros da tela tem o seu próprio "Tentar novamente". */
+function exportBlock() {
+  const block = announcement().parentElement;
+  if (block === null) throw new Error('bloco de exportação fora da tela');
+  return within(block);
+}
 
 function processing(
   stage: FakeExport['stage'],
@@ -482,5 +491,64 @@ describe('AdvisingReportPage: a notificação do PDF pronto (RN50)', () => {
     expect(
       fetchMock.mock.calls.filter(([, init]) => init?.method === 'PATCH'),
     ).toHaveLength(0);
+  });
+});
+
+describe('AdvisingReportPage: a falha da exportação (RN50)', () => {
+  const FAILED = { status: 'failed' as const, notification_id: 41 };
+
+  it('ao abrir com a geração falha, diz o que houve e o que fazer, e marca a notificação como lida', async () => {
+    const { fetchMock } = exportServer(makeExport(FAILED));
+    renderApp('/aluno/historico/7/relatorio');
+
+    await screen.findByText('Não foi possível gerar o PDF.');
+    const alert = exportBlock().getByRole('alert');
+    expect(alert).toHaveTextContent('Não foi possível gerar o PDF.');
+    expect(alert).toHaveTextContent(
+      'Tente novamente. Se continuar falhando, tente mais tarde.',
+    );
+    expect(
+      exportBlock().getByRole('button', { name: 'Tentar novamente' }),
+    ).toBeVisible();
+    await act(async () => {});
+    expect(
+      requestsTo(fetchMock, 'PATCH /api/notificacoes/41/lida'),
+    ).toHaveLength(1);
+    expect(announcement()).toHaveTextContent(/^$/);
+  });
+
+  it('quando falha com a tela aberta, anuncia e leva o foco da etapa para Tentar novamente', async () => {
+    const { state } = exportServer(null);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp('/aluno/historico/7/relatorio');
+    await user.click(
+      await screen.findByRole('button', { name: 'Exportar PDF' }),
+    );
+    expect(await screen.findByText('Etapa 1 de 3: Na fila')).toHaveFocus();
+
+    state.current = makeExport(FAILED);
+    await nextPoll();
+
+    await screen.findByText('Não foi possível gerar o PDF.');
+    expect(
+      exportBlock().getByRole('button', { name: 'Tentar novamente' }),
+    ).toHaveFocus();
+    expect(announcement()).toHaveTextContent(
+      'Não foi possível gerar o PDF. Use o botão Tentar novamente.',
+    );
+  });
+
+  it('uma tentativa que volta à fila continua mostrando a geração', async () => {
+    const { state } = exportServer(
+      makeExport({ status: 'processing', stage: 'gathering', items_total: 4 }),
+    );
+    renderApp('/aluno/historico/7/relatorio');
+    await screen.findByText(/Etapa 2 de 3/);
+
+    state.current = makeExport();
+    await nextPoll();
+
+    expect(await screen.findByText('Etapa 1 de 3: Na fila')).toBeVisible();
+    expect(exportBlock().queryByRole('alert')).toBeNull();
   });
 });
