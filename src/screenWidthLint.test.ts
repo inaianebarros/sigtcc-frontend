@@ -18,6 +18,8 @@ const ALLOWED = new Set([
   '/src/pages/TeacherRegistrationPage.tsx',
   // Limita só a medida do texto dos temas propostos no cartão, não a largura da tela.
   '/src/advisors/AdvisorCard.tsx',
+  // Limita só o bloco de exportação do relatório (barra e frase legíveis), não a largura da tela.
+  '/src/advisingReport/ReportExport.tsx',
   // O popover do sino, que não é uma tela.
   '/src/notifications/NotificationBell.tsx',
 ]);

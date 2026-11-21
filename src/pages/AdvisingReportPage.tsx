@@ -71,11 +71,11 @@ export function AdvisingReportPage() {
       )}
       {report.status === 'ready' && report.data !== null && (
         <>
+          <ReportExport advisingId={report.data.id} />
           <ReportHeader
             report={report.data}
             counterpartLabel={isStudent ? 'Professor orientador' : 'Aluno'}
           />
-          <ReportExport advisingId={report.data.id} />
           <ReportSummary report={report.data} />
           <RecordsSection advisingId={report.data.id} />
         </>
