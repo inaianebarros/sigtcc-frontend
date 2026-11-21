@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { saveFile } from '../activities/saveFile';
+import { FOCUS_RING } from '../theme';
 import { VisuallyHidden } from '../components/VisuallyHidden';
 import { useFeedback } from '../hooks/useFeedback';
 import { usePolling } from '../hooks/usePolling';
@@ -93,6 +94,34 @@ function BusyButton({
   );
 }
 
+/**
+ * A barra de cada etapa (especificação de UI, D5): determinada só na etapa 2, quando há itens a
+ * contar; o valor em texto é sempre o da etapa.
+ */
+function StageBar({ item }: { item: Export }) {
+  const counted = item.stage === 'gathering' && item.itemsTotal > 0;
+  return (
+    <LinearProgress
+      variant={counted ? 'determinate' : 'indeterminate'}
+      value={
+        counted
+          ? Math.floor((item.itemsDone / item.itemsTotal) * 100)
+          : undefined
+      }
+      aria-label={BAR_LABEL}
+      aria-valuetext={stageText(item)}
+      sx={{
+        height: 8,
+        borderRadius: '4px',
+        bgcolor: 'divider',
+        '@media (prefers-reduced-motion: reduce)': {
+          '& .MuiLinearProgress-bar': { animation: 'none', width: '40%' },
+        },
+      }}
+    />
+  );
+}
+
 interface ReportExportProps {
   advisingId: number;
 }
@@ -106,8 +135,16 @@ export function ReportExport({ advisingId }: ReportExportProps) {
   const [current, setCurrent] = useState<Export | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [announcement, setAnnouncement] = useState('');
-  const stageLine = useRef<HTMLParagraphElement>(null);
-  const focusStage = useRef(false);
+  // Depois de pedir, o bloco mantém a altura da geração, para "Gerando → Pronta" não puxar a tela.
+  const [requested, setRequested] = useState(false);
+  // A linha da etapa recebe o foco ao aparecer logo depois do pedido (especificação de UI, seção 6).
+  const focusOnStage = useRef(false);
+  const stageLine = (node: HTMLParagraphElement | null) => {
+    if (node && focusOnStage.current) {
+      focusOnStage.current = false;
+      node.focus();
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -126,16 +163,10 @@ export function ReportExport({ advisingId }: ReportExportProps) {
 
   // Ao abrir a tela já num estado nada é anunciado; só as mudanças que acontecem com ela aberta.
   const follow = (next: Export | null) => {
-    setCurrent((previous) => {
-      if (
-        isRunning(next) &&
-        isRunning(previous) &&
-        next.stage !== previous.stage
-      ) {
-        setAnnouncement(STAGE_ANNOUNCEMENTS[next.stage]);
-      }
-      return next;
-    });
+    if (isRunning(next) && isRunning(current) && next.stage !== current.stage) {
+      setAnnouncement(STAGE_ANNOUNCEMENTS[next.stage]);
+    }
+    setCurrent(next);
   };
 
   usePolling(
@@ -152,13 +183,6 @@ export function ReportExport({ advisingId }: ReportExportProps) {
     },
   );
 
-  useEffect(() => {
-    if (focusStage.current && stageLine.current) {
-      focusStage.current = false;
-      stageLine.current.focus();
-    }
-  });
-
   const ask = async () => {
     setBusy(true);
     try {
@@ -166,7 +190,8 @@ export function ReportExport({ advisingId }: ReportExportProps) {
       setCurrent(item);
       if (isRunning(item)) {
         setAnnouncement(STAGE_ANNOUNCEMENTS[item.stage]);
-        focusStage.current = true;
+        setRequested(true);
+        focusOnStage.current = true;
       }
     } catch {
       notify(REQUEST_FAILED, 'error');
@@ -194,7 +219,7 @@ export function ReportExport({ advisingId }: ReportExportProps) {
   const readyFileName = current?.status === 'ready' ? current.fileName : null;
 
   return (
-    <Box sx={{ maxWidth: '40rem' }}>
+    <Box sx={{ maxWidth: '40rem', minHeight: requested ? 112 : undefined }}>
       <VisuallyHidden
         role="status"
         aria-live="polite"
@@ -217,25 +242,16 @@ export function ReportExport({ advisingId }: ReportExportProps) {
           <Typography
             ref={stageLine}
             tabIndex={-1}
-            sx={{ fontWeight: 600, overflowWrap: 'anywhere' }}
+            sx={{
+              fontWeight: 600,
+              fontSize: '0.9375rem',
+              overflowWrap: 'anywhere',
+              '&:focus-visible, &:focus': FOCUS_RING,
+            }}
           >
             {stageText(current)}
           </Typography>
-          {current.stage === 'gathering' && current.itemsTotal > 0 ? (
-            <LinearProgress
-              variant="determinate"
-              value={Math.floor((current.itemsDone / current.itemsTotal) * 100)}
-              aria-label={BAR_LABEL}
-              aria-valuetext={stageText(current)}
-              sx={{ height: 8, borderRadius: 1 }}
-            />
-          ) : (
-            <LinearProgress
-              aria-label={BAR_LABEL}
-              aria-valuetext={stageText(current)}
-              sx={{ height: 8, borderRadius: 1 }}
-            />
-          )}
+          <StageBar item={current} />
           <Typography variant="body2" color="text.secondary">
             {LEAVE}
           </Typography>

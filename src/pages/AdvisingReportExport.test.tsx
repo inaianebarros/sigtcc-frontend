@@ -63,6 +63,13 @@ function exportServer(
   return { state, fetchMock: mockApi(routes) };
 }
 
+/** A resposta do servidor simulado, para um teste mudar só uma das rotas. */
+function implementationOf(fetchMock: ReturnType<typeof mockApi>) {
+  const implementation = fetchMock.getMockImplementation();
+  if (implementation === undefined) throw new Error('fetch sem simulação');
+  return implementation;
+}
+
 async function nextPoll() {
   await act(async () => {});
   await act(async () => {
@@ -199,6 +206,7 @@ describe('AdvisingReportPage: o progresso da exportação por etapas (RF62, ADR 
     expect(announcement()).toHaveTextContent(
       'PDF do relatório pedido. Etapa 1 de 3: na fila.',
     );
+    expect(screen.getByText('Etapa 1 de 3: Na fila')).toHaveFocus();
 
     state.current = makeExport(processing('gathering', 3, 12));
     await nextPoll();
@@ -284,7 +292,7 @@ describe('AdvisingReportPage: o progresso da exportação por etapas (RF62, ADR 
     const pending = new Promise((resolve) => {
       answer = resolve;
     });
-    const original = fetchMock.getMockImplementation()!;
+    const original = implementationOf(fetchMock);
     fetchMock.mockImplementation(async (input, init) => {
       if (init?.method === 'POST') await pending;
       return original(input, init);
@@ -307,7 +315,7 @@ describe('AdvisingReportPage: o progresso da exportação por etapas (RF62, ADR 
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderApp('/aluno/historico/7/relatorio');
     const button = await screen.findByRole('button', { name: 'Exportar PDF' });
-    const original = fetchMock.getMockImplementation()!;
+    const original = implementationOf(fetchMock);
     fetchMock.mockImplementation(async (input, init) =>
       init?.method === 'POST'
         ? new Response(JSON.stringify({ detail: 'erro' }), { status: 500 })
@@ -326,7 +334,7 @@ describe('AdvisingReportPage: o progresso da exportação por etapas (RF62, ADR 
 
   it('enquanto a situação carrega, reserva o lugar do bloco', async () => {
     const { fetchMock } = exportServer(null);
-    const original = fetchMock.getMockImplementation()!;
+    const original = implementationOf(fetchMock);
     fetchMock.mockImplementation(async (input, init) =>
       String(input).endsWith('/exportacao')
         ? new Promise<Response>(() => undefined)

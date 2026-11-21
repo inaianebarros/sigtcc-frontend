@@ -6,7 +6,7 @@ import { createTheme } from '@mui/material/styles';
 const FONT_FAMILY = '"Raleway", "Roboto", "Helvetica", "Arial", sans-serif';
 
 // Anel de foco sobre fundo claro: 2 px em teal com halo branco (6,97:1 sobre branco).
-const FOCUS_RING = {
+export const FOCUS_RING = {
   outline: '2px solid #0f6460',
   outlineOffset: 2,
   boxShadow: '0 0 0 2px #ffffff',
