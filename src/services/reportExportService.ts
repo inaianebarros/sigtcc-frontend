@@ -2,10 +2,17 @@ import { httpClient } from './httpClient';
 
 export type ReportExportStatus = 'queued' | 'processing' | 'ready' | 'failed';
 
+/** Em que ponto está a geração do PDF (RF62): na fila, reunindo os itens ou gerando o arquivo. */
+export type ReportExportStage = 'queued' | 'gathering' | 'rendering';
+
 /** Uma Exportação do Relatório pedida pelo próprio usuário (RF62, RN50). */
 export interface ReportExport {
   id: number;
   status: ReportExportStatus;
+  stage: ReportExportStage;
+  /** Quantos itens (reuniões e atividades) já foram reunidos, de `itemsTotal`. */
+  itemsDone: number;
+  itemsTotal: number;
   createdAt: string;
   /** Quando o PDF ficou pronto; `null` antes disso. */
   readyAt: string | null;
@@ -16,6 +23,9 @@ export interface ReportExport {
 interface ApiReportExport {
   id: number;
   status: ReportExportStatus;
+  stage: ReportExportStage;
+  items_done: number;
+  items_total: number;
   created_at: string;
   ready_at: string | null;
   file_name: string | null;
@@ -28,6 +38,9 @@ function fromApi(item: ApiReportExport): ReportExport {
   return {
     id: item.id,
     status: item.status,
+    stage: item.stage,
+    itemsDone: item.items_done,
+    itemsTotal: item.items_total,
     createdAt: item.created_at,
     readyAt: item.ready_at,
     fileName: item.file_name,

@@ -1,17 +1,21 @@
-import DownloadIcon from '@mui/icons-material/Download';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import {
   Alert,
+  Box,
   Button,
+  CircularProgress,
   LinearProgress,
+  Skeleton,
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { saveFile } from '../activities/saveFile';
+import { VisuallyHidden } from '../components/VisuallyHidden';
 import { useFeedback } from '../hooks/useFeedback';
 import { usePolling } from '../hooks/usePolling';
-import { messageOf } from '../services/apiError';
+import { ApiError } from '../services/apiError';
 import {
   downloadReportExport,
   getCurrentReportExport,
@@ -22,10 +26,72 @@ import {
 /** A geração do PDF leva segundos: a tela a acompanha a cada 2 s (ADR frontend 0007). */
 export const EXPORT_POLL_INTERVAL_MS = 2_000;
 
-const GENERATING = 'Gerando o PDF';
+const BAR_LABEL = 'Progresso do PDF do relatório';
+const SUPPORT =
+  'O PDF traz o relatório completo: todas as reuniões realizadas e atividades concluídas ou arquivadas, sem o filtro e sem a página escolhidos na tela. Os arquivos entregues não vão no PDF, só os nomes deles.';
+const LEAVE =
+  'O PDF é montado aos poucos. Você pode sair desta tela: avisaremos por notificação quando ele ficar pronto.';
+const REQUEST_FAILED =
+  'Não foi possível pedir o PDF agora. Tente novamente em alguns instantes.';
+const DOWNLOAD_FAILED = 'Não foi possível baixar o PDF agora. Tente novamente.';
+const NOT_READY =
+  'O PDF ainda não está pronto. Aguarde o fim da geração nesta tela.';
 
-const isRunning = (item: Export | null) =>
-  item !== null && (item.status === 'queued' || item.status === 'processing');
+/** O anúncio de cada etapa: só a mudança de etapa, nunca a contagem (ficha 20). */
+const STAGE_ANNOUNCEMENTS: Record<Export['stage'], string> = {
+  queued: 'PDF do relatório pedido. Etapa 1 de 3: na fila.',
+  gathering: 'Etapa 2 de 3: reunindo reuniões e atividades.',
+  rendering: 'Etapa 3 de 3: gerando o PDF.',
+};
+
+const isRunning = (item: Export | null | undefined): item is Export =>
+  item != null && (item.status === 'queued' || item.status === 'processing');
+
+function stageText(item: Export): string {
+  switch (item.stage) {
+    case 'queued':
+      return 'Etapa 1 de 3: Na fila';
+    case 'gathering':
+      return `Etapa 2 de 3: Reunindo reuniões e atividades (${item.itemsDone} de ${item.itemsTotal})`;
+    case 'rendering':
+      return 'Etapa 3 de 3: Gerando o PDF';
+  }
+}
+
+interface BusyButtonProps {
+  busy: boolean;
+  icon: ReactNode;
+  variant: 'outlined' | 'contained';
+  onClick: () => void;
+  children: string;
+}
+
+/**
+ * Um botão que, ocupado, ignora cliques sem `disabled`, para quem usa teclado não perder o foco
+ * (especificação de UI, D7).
+ */
+function BusyButton({
+  busy,
+  icon,
+  variant,
+  onClick,
+  children,
+}: BusyButtonProps) {
+  return (
+    <Button
+      variant={variant}
+      startIcon={busy ? <CircularProgress size={20} color="inherit" /> : icon}
+      aria-busy={busy}
+      aria-disabled={busy}
+      onClick={() => {
+        if (!busy) onClick();
+      }}
+      sx={{ alignSelf: 'flex-start', minHeight: { xs: 44, sm: 40 } }}
+    >
+      {children}
+    </Button>
+  );
+}
 
 interface ReportExportProps {
   advisingId: number;
@@ -33,12 +99,15 @@ interface ReportExportProps {
 
 /**
  * A Exportação do Relatório da orientação encerrada (RF62, RN50): pede o PDF, acompanha a geração
- * enquanto a pessoa está na tela e oferece o download quando fica pronto.
+ * por etapas enquanto a pessoa está na tela e oferece o download quando fica pronto.
  */
 export function ReportExport({ advisingId }: ReportExportProps) {
   const { notify } = useFeedback();
   const [current, setCurrent] = useState<Export | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
+  const [announcement, setAnnouncement] = useState('');
+  const stageLine = useRef<HTMLParagraphElement>(null);
+  const focusStage = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -55,26 +124,52 @@ export function ReportExport({ advisingId }: ReportExportProps) {
     };
   }, [advisingId]);
 
+  // Ao abrir a tela já num estado nada é anunciado; só as mudanças que acontecem com ela aberta.
+  const follow = (next: Export | null) => {
+    setCurrent((previous) => {
+      if (
+        isRunning(next) &&
+        isRunning(previous) &&
+        next.stage !== previous.stage
+      ) {
+        setAnnouncement(STAGE_ANNOUNCEMENTS[next.stage]);
+      }
+      return next;
+    });
+  };
+
   usePolling(
     () => {
       getCurrentReportExport(advisingId)
-        .then(setCurrent)
+        .then(follow)
         // Uma consulta perdida não muda nada: a seguinte tenta de novo.
         .catch(() => undefined);
     },
     {
       intervalMs: EXPORT_POLL_INTERVAL_MS,
-      enabled: isRunning(current ?? null),
+      enabled: isRunning(current),
       pollOnStart: false,
     },
   );
 
+  useEffect(() => {
+    if (focusStage.current && stageLine.current) {
+      focusStage.current = false;
+      stageLine.current.focus();
+    }
+  });
+
   const ask = async () => {
     setBusy(true);
     try {
-      setCurrent(await requestReportExport(advisingId));
-    } catch (error) {
-      notify(messageOf(error), 'error');
+      const item = await requestReportExport(advisingId);
+      setCurrent(item);
+      if (isRunning(item)) {
+        setAnnouncement(STAGE_ANNOUNCEMENTS[item.stage]);
+        focusStage.current = true;
+      }
+    } catch {
+      notify(REQUEST_FAILED, 'error');
     } finally {
       setBusy(false);
     }
@@ -85,58 +180,105 @@ export function ReportExport({ advisingId }: ReportExportProps) {
     try {
       saveFile(await downloadReportExport(advisingId), fileName);
     } catch (error) {
-      notify(messageOf(error), 'error');
+      notify(
+        error instanceof ApiError && error.status === 409
+          ? NOT_READY
+          : DOWNLOAD_FAILED,
+        'error',
+      );
     } finally {
       setBusy(false);
     }
   };
 
-  if (current === undefined) return null;
   const readyFileName = current?.status === 'ready' ? current.fileName : null;
 
   return (
-    <Stack spacing={1} aria-live="polite">
+    <Box sx={{ maxWidth: '40rem' }}>
+      <VisuallyHidden
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-testid="report-export-announcer"
+      >
+        {announcement}
+      </VisuallyHidden>
+      {current === undefined && (
+        <Skeleton
+          variant="rounded"
+          width={140}
+          height={40}
+          aria-hidden
+          data-testid="report-export-skeleton"
+        />
+      )}
       {isRunning(current) && (
-        <>
-          <Typography>{GENERATING}…</Typography>
-          <LinearProgress aria-label={GENERATING} />
-        </>
+        <Stack spacing={1}>
+          <Typography
+            ref={stageLine}
+            tabIndex={-1}
+            sx={{ fontWeight: 600, overflowWrap: 'anywhere' }}
+          >
+            {stageText(current)}
+          </Typography>
+          {current.stage === 'gathering' && current.itemsTotal > 0 ? (
+            <LinearProgress
+              variant="determinate"
+              value={Math.floor((current.itemsDone / current.itemsTotal) * 100)}
+              aria-label={BAR_LABEL}
+              aria-valuetext={stageText(current)}
+              sx={{ height: 8, borderRadius: 1 }}
+            />
+          ) : (
+            <LinearProgress
+              aria-label={BAR_LABEL}
+              aria-valuetext={stageText(current)}
+              sx={{ height: 8, borderRadius: 1 }}
+            />
+          )}
+          <Typography variant="body2" color="text.secondary">
+            {LEAVE}
+          </Typography>
+        </Stack>
       )}
       {readyFileName !== null && (
-        <Button
+        <BusyButton
+          busy={busy}
           variant="contained"
-          startIcon={<DownloadIcon />}
-          disabled={busy}
+          icon={<FileDownloadOutlinedIcon />}
           onClick={() => void download(readyFileName)}
-          sx={{ alignSelf: 'flex-start' }}
         >
           Baixar PDF
-        </Button>
+        </BusyButton>
       )}
       {current?.status === 'failed' && (
-        <>
+        <Stack spacing={2}>
           <Alert severity="error">Não foi possível gerar o PDF.</Alert>
-          <Button
+          <BusyButton
+            busy={busy}
             variant="outlined"
-            disabled={busy}
+            icon={<PictureAsPdfOutlinedIcon />}
             onClick={() => void ask()}
-            sx={{ alignSelf: 'flex-start' }}
           >
             Tentar de novo
-          </Button>
-        </>
+          </BusyButton>
+        </Stack>
       )}
       {current === null && (
-        <Button
-          variant="outlined"
-          startIcon={<PictureAsPdfIcon />}
-          disabled={busy}
-          onClick={() => void ask()}
-          sx={{ alignSelf: 'flex-start' }}
-        >
-          Exportar PDF
-        </Button>
+        <Stack spacing={2}>
+          <Typography variant="body2" color="text.secondary">
+            {SUPPORT}
+          </Typography>
+          <BusyButton
+            busy={busy}
+            variant="outlined"
+            icon={<PictureAsPdfOutlinedIcon />}
+            onClick={() => void ask()}
+          >
+            Exportar PDF
+          </BusyButton>
+        </Stack>
       )}
-    </Stack>
+    </Box>
   );
 }
