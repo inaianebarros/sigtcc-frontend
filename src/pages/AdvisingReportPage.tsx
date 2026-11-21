@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { ReportNavigation } from '../advisingReport/ReportNavigation';
 import { RecordsSection } from '../advisingReport/RecordsSection';
+import { ReportExport } from '../advisingReport/ReportExport';
 import { ReportHeader } from '../advisingReport/ReportHeader';
 import { ReportSummary } from '../advisingReport/ReportSummary';
 import { useLoad } from '../hooks/useLoad';
@@ -74,6 +75,7 @@ export function AdvisingReportPage() {
             report={report.data}
             counterpartLabel={isStudent ? 'Professor orientador' : 'Aluno'}
           />
+          <ReportExport advisingId={report.data.id} />
           <ReportSummary report={report.data} />
           <RecordsSection advisingId={report.data.id} />
         </>
