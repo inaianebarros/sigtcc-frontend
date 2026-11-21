@@ -1,8 +1,10 @@
 import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
+import RefreshOutlinedIcon from '@mui/icons-material/RefreshOutlined';
 import {
   Alert,
+  AlertTitle,
   Box,
   Button,
   CircularProgress,
@@ -45,6 +47,8 @@ const REQUEST_FAILED =
   'Não foi possível pedir o PDF agora. Tente novamente em alguns instantes.';
 const DOWNLOAD_FAILED = 'Não foi possível baixar o PDF agora. Tente novamente.';
 const EXPIRED = 'Este PDF expirou. Gere um novo pelo botão Exportar PDF.';
+const FAILED_ANNOUNCEMENT =
+  'Não foi possível gerar o PDF. Use o botão Tentar novamente.';
 const EXPIRED_ANNOUNCEMENT =
   'Este PDF expirou. Use o botão Exportar PDF para gerar um novo.';
 const NOT_READY =
@@ -62,7 +66,7 @@ const availableUntil = (item: Export) =>
   formatDayMonthTime(item.availableUntil ?? '');
 
 /** O elemento que recebe o foco ao aparecer, quando o que o tinha sumiu. */
-type FocusTarget = 'stage' | 'download' | 'export';
+type FocusTarget = 'stage' | 'download' | 'export' | 'retry';
 
 const isRunning = (item: Export | null | undefined): item is Export =>
   item != null && (item.status === 'queued' || item.status === 'processing');
@@ -182,6 +186,10 @@ export function ReportExport({ advisingId }: ReportExportProps) {
     (node: HTMLButtonElement | null) => takeFocus('export', node),
     [],
   );
+  const retryButton = useCallback(
+    (node: HTMLButtonElement | null) => takeFocus('retry', node),
+    [],
+  );
 
   useEffect(() => {
     let active = true;
@@ -200,8 +208,20 @@ export function ReportExport({ advisingId }: ReportExportProps) {
 
   // Ao abrir a tela já num estado nada é anunciado; só as mudanças que acontecem com ela aberta.
   const follow = (next: Export | null) => {
-    if (isRunning(next) && isRunning(current) && next.stage !== current.stage) {
+    // Uma tentativa que falhou volta à fila sem anúncio (RN50): a tela só segue mostrando a etapa.
+    if (
+      isRunning(next) &&
+      isRunning(current) &&
+      next.stage !== current.stage &&
+      next.stage !== 'queued'
+    ) {
       setAnnouncement(STAGE_ANNOUNCEMENTS[next.stage]);
+    }
+    if (next?.status === 'failed' && isRunning(current)) {
+      setAnnouncement(FAILED_ANNOUNCEMENT);
+      if (stageNode.current?.contains(document.activeElement)) {
+        focusNext.current = 'retry';
+      }
     }
     if (next?.status === 'ready' && isRunning(current)) {
       setAnnouncement(
@@ -214,18 +234,20 @@ export function ReportExport({ advisingId }: ReportExportProps) {
     setCurrent(next);
   };
 
-  // Quem viu o PDF pronto na tela não precisa da notificação nem do e-mail dela (RN50): a tela a
-  // marca como lida uma vez, ao mostrar o resultado.
+  // Quem viu o resultado na tela (pronto ou falha) não precisa da notificação nem do e-mail dela
+  // (RN50): a tela a marca como lida uma vez, ao mostrá-lo.
   const markedRead = useRef(new Set<number>());
-  const readyNotification =
-    current?.status === 'ready' ? current.notificationId : null;
+  const resultNotification =
+    current?.status === 'ready' || current?.status === 'failed'
+      ? current.notificationId
+      : null;
   useEffect(() => {
-    if (readyNotification === null) return;
-    if (markedRead.current.has(readyNotification)) return;
-    markedRead.current.add(readyNotification);
+    if (resultNotification === null) return;
+    if (markedRead.current.has(resultNotification)) return;
+    markedRead.current.add(resultNotification);
     // Se falhar, a notificação continua não lida e o e-mail sai, o que só repete o aviso.
-    markNotificationRead(readyNotification).catch(() => undefined);
-  }, [readyNotification]);
+    markNotificationRead(resultNotification).catch(() => undefined);
+  }, [resultNotification]);
 
   usePolling(
     () => {
@@ -365,14 +387,18 @@ export function ReportExport({ advisingId }: ReportExportProps) {
       )}
       {current?.status === 'failed' && (
         <Stack spacing={2}>
-          <Alert severity="error">Não foi possível gerar o PDF.</Alert>
+          <Alert severity="error">
+            <AlertTitle>Não foi possível gerar o PDF.</AlertTitle>
+            Tente novamente. Se continuar falhando, tente mais tarde.
+          </Alert>
           <BusyButton
             busy={busy}
             variant="outlined"
-            icon={<PictureAsPdfOutlinedIcon />}
+            icon={<RefreshOutlinedIcon />}
             onClick={() => void ask()}
+            buttonRef={retryButton}
           >
-            Tentar de novo
+            Tentar novamente
           </BusyButton>
         </Stack>
       )}

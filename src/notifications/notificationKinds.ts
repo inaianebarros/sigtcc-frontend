@@ -19,12 +19,18 @@ const GROUPS: Record<string, NotificationGroup> = {
   meeting_requested: 'meeting',
   meeting_answered: 'meeting',
   report_export_ready: 'advising',
+  report_export_failed: 'advising',
 };
 
 /** O grupo do tipo, para o ícone; um tipo que esta versão da tela não conhece cai em "other". */
 export function groupOf(type: string): NotificationGroup {
   return GROUPS[type] ?? 'other';
 }
+
+const REPORT_EXPORT_RESULTS = new Set([
+  'report_export_ready',
+  'report_export_failed',
+]);
 
 const ACTIVITY_WITH_DESTINATION = new Set([
   'activity_created',
@@ -59,8 +65,9 @@ export function destinationOf(
       ? paths.studentMeetings
       : paths.teacherMeetings;
   }
-  // O PDF do relatório pronto (RN50): a tela do relatório, onde está o download.
-  if (type === 'report_export_ready' && reference !== null) {
+  // O PDF do relatório pronto ou não gerado (RN50): a tela do relatório, onde estão o download
+  // e o "Tentar novamente".
+  if (REPORT_EXPORT_RESULTS.has(type) && reference !== null) {
     return advisingReportPath(userType, reference.id);
   }
   if (ACTIVITY_WITH_DESTINATION.has(type) && reference !== null) {
