@@ -54,9 +54,9 @@ export function formatDateTime(iso: string): string {
 export function formatDayMonthTime(iso: string): string {
   const date = parse(iso);
   if (!date) return UNAVAILABLE;
+  const parts = dayMonthTimeFormat.formatToParts(date);
   const part = (type: Intl.DateTimeFormatPartTypes) =>
-    dayMonthTimeFormat.formatToParts(date).find((item) => item.type === type)
-      ?.value ?? '';
+    parts.find((item) => item.type === type)?.value ?? '';
   return `${part('day')}/${part('month')}, às ${part('hour')}h${part('minute')}`;
 }
 

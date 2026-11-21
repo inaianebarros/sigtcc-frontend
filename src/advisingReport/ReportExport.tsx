@@ -11,7 +11,13 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { saveFile } from '../activities/saveFile';
 import { FOCUS_RING } from '../theme';
 import { VisuallyHidden } from '../components/VisuallyHidden';
@@ -50,10 +56,12 @@ const STAGE_ANNOUNCEMENTS: Record<Export['stage'], string> = {
   rendering: 'Etapa 3 de 3: gerando o PDF.',
 };
 
+// Sem a data, o formatador já diz "data indisponível".
 const availableUntil = (item: Export) =>
-  item.availableUntil === null
-    ? 'data indisponível'
-    : formatDayMonthTime(item.availableUntil);
+  formatDayMonthTime(item.availableUntil ?? '');
+
+/** O elemento que recebe o foco ao aparecer, quando o que o tinha sumiu. */
+type FocusTarget = 'stage' | 'download' | 'export';
 
 const isRunning = (item: Export | null | undefined): item is Export =>
   item != null && (item.status === 'queued' || item.status === 'processing');
@@ -153,19 +161,26 @@ export function ReportExport({ advisingId }: ReportExportProps) {
   const [requested, setRequested] = useState(false);
   // O foco só se move quando o elemento que o tinha some (especificação de UI, seção 6): o que
   // aparece no lugar dele o recebe ao montar.
-  const focusNext = useRef<'stage' | 'download' | 'export' | null>(null);
+  const focusNext = useRef<FocusTarget | null>(null);
   const stageNode = useRef<HTMLParagraphElement | null>(null);
-  const takeFocus =
-    (target: 'stage' | 'download' | 'export') => (node: HTMLElement | null) => {
-      if (node && focusNext.current === target) {
-        focusNext.current = null;
-        node.focus();
-      }
-    };
-  const stageLine = (node: HTMLParagraphElement | null) => {
-    stageNode.current = node;
-    takeFocus('stage')(node);
+  const takeFocus = (target: FocusTarget, node: HTMLElement | null) => {
+    if (node && focusNext.current === target) {
+      focusNext.current = null;
+      node.focus();
+    }
   };
+  const stageLine = useCallback((node: HTMLParagraphElement | null) => {
+    stageNode.current = node;
+    takeFocus('stage', node);
+  }, []);
+  const downloadButton = useCallback(
+    (node: HTMLButtonElement | null) => takeFocus('download', node),
+    [],
+  );
+  const exportButton = useCallback(
+    (node: HTMLButtonElement | null) => takeFocus('export', node),
+    [],
+  );
 
   useEffect(() => {
     let active = true;
@@ -217,7 +232,10 @@ export function ReportExport({ advisingId }: ReportExportProps) {
     try {
       const item = await requestReportExport(advisingId);
       setCurrent(item);
-      if (isRunning(item)) {
+      if (item.status === 'ready') {
+        // Uma exportação pronta reaproveitada (RN50): o botão clicado some, e o foco vai para Baixar.
+        focusNext.current = 'download';
+      } else if (isRunning(item)) {
         setAnnouncement(STAGE_ANNOUNCEMENTS[item.stage]);
         setRequested(true);
         focusNext.current = 'stage';
@@ -311,7 +329,7 @@ export function ReportExport({ advisingId }: ReportExportProps) {
             variant="contained"
             icon={<FileDownloadOutlinedIcon />}
             onClick={() => void download(readyFileName)}
-            buttonRef={takeFocus('download')}
+            buttonRef={downloadButton}
           >
             Baixar PDF
           </BusyButton>
@@ -325,7 +343,7 @@ export function ReportExport({ advisingId }: ReportExportProps) {
             variant="outlined"
             icon={<PictureAsPdfOutlinedIcon />}
             onClick={() => void ask()}
-            buttonRef={takeFocus('export')}
+            buttonRef={exportButton}
           >
             Exportar PDF
           </BusyButton>
