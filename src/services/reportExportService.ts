@@ -21,6 +21,8 @@ export interface ReportExport {
   fileName: string | null;
   /** Até quando o PDF pronto baixa: 7 dias depois de ficar pronto (RN50); `null` antes disso. */
   availableUntil: string | null;
+  /** A notificação do PDF pronto, que a tela marca como lida ao mostrá-lo (RN50). */
+  notificationId: number | null;
 }
 
 interface ApiReportExport {
@@ -33,6 +35,7 @@ interface ApiReportExport {
   ready_at: string | null;
   file_name: string | null;
   available_until: string | null;
+  notification_id: number | null;
 }
 
 const exportPath = (advisingId: number) =>
@@ -49,6 +52,7 @@ function fromApi(item: ApiReportExport): ReportExport {
     readyAt: item.ready_at,
     fileName: item.file_name,
     availableUntil: item.available_until,
+    notificationId: item.notification_id,
   };
 }
 

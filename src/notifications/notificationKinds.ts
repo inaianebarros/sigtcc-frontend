@@ -1,5 +1,5 @@
 import { formatDeadline } from '../formatters/dateTime';
-import { activityPath, paths } from '../navigation/paths';
+import { activityPath, advisingReportPath, paths } from '../navigation/paths';
 import type { AppNotification } from '../services/notificationService';
 
 export type NotificationGroup = 'advising' | 'activity' | 'meeting' | 'other';
@@ -18,6 +18,7 @@ const GROUPS: Record<string, NotificationGroup> = {
   activity_review_result: 'activity',
   meeting_requested: 'meeting',
   meeting_answered: 'meeting',
+  report_export_ready: 'advising',
 };
 
 /** O grupo do tipo, para o ícone; um tipo que esta versão da tela não conhece cai em "other". */
@@ -57,6 +58,10 @@ export function destinationOf(
     return userType === 'student'
       ? paths.studentMeetings
       : paths.teacherMeetings;
+  }
+  // O PDF do relatório pronto (RN50): a tela do relatório, onde está o download.
+  if (type === 'report_export_ready' && reference !== null) {
+    return advisingReportPath(userType, reference.id);
   }
   if (ACTIVITY_WITH_DESTINATION.has(type) && reference !== null) {
     return activityPath(userType, reference.id);
