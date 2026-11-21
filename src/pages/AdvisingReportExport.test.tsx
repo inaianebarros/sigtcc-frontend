@@ -13,13 +13,14 @@ const BAR = 'Progresso do PDF do relatório';
 
 interface FakeExport {
   id: number;
-  status: 'queued' | 'processing' | 'ready' | 'failed';
+  status: 'queued' | 'processing' | 'ready' | 'failed' | 'expired';
   stage: 'queued' | 'gathering' | 'rendering';
   items_done: number;
   items_total: number;
   created_at: string;
   ready_at: string | null;
   file_name: string | null;
+  available_until: string | null;
 }
 
 function makeExport(overrides: Partial<FakeExport> = {}): FakeExport {
@@ -32,6 +33,7 @@ function makeExport(overrides: Partial<FakeExport> = {}): FakeExport {
     created_at: '2026-11-20T14:00:00Z',
     ready_at: null,
     file_name: null,
+    available_until: null,
     ...overrides,
   };
 }
@@ -40,6 +42,7 @@ const READY = {
   status: 'ready' as const,
   ready_at: '2026-11-20T14:00:10Z',
   file_name: 'relatorio-orientacao-ana-2026-11-02.pdf',
+  available_until: '2026-11-27T14:00:10Z',
 };
 
 /** O servidor da exportação: a exportação atual de quem pede, que o teste muda à vontade. */
@@ -345,5 +348,91 @@ describe('AdvisingReportPage: o progresso da exportação por etapas (RF62, ADR 
     await screen.findByRole('heading', { level: 2, name: 'Pessoa 7' });
     expect(screen.getByTestId('report-export-skeleton')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Exportar PDF' })).toBeNull();
+  });
+});
+
+describe('AdvisingReportPage: o PDF pronto vale 7 dias (RN50)', () => {
+  it('ao abrir com o PDF pronto, diz até quando ele baixa, na hora de Santarém', async () => {
+    exportServer(makeExport(READY));
+    renderApp('/aluno/historico/7/relatorio');
+
+    expect(
+      await screen.findByText(
+        'PDF pronto. Disponível para baixar até 27/11, às 11h00.',
+      ),
+    ).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Baixar PDF' })).toBeVisible();
+    expect(announcement()).toHaveTextContent(/^$/);
+  });
+
+  it('quando fica pronto com a tela aberta, anuncia e leva o foco da etapa para Baixar PDF', async () => {
+    const { state } = exportServer(null);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp('/aluno/historico/7/relatorio');
+    await user.click(
+      await screen.findByRole('button', { name: 'Exportar PDF' }),
+    );
+    expect(await screen.findByText('Etapa 1 de 3: Na fila')).toHaveFocus();
+
+    state.current = makeExport(READY);
+    await nextPoll();
+
+    const button = await screen.findByRole('button', { name: 'Baixar PDF' });
+    expect(button).toHaveFocus();
+    expect(announcement()).toHaveTextContent(
+      'PDF pronto. Use o botão Baixar PDF. Disponível até 27/11, às 11h00.',
+    );
+  });
+
+  it('o PDF expirado avisa e deixa exportar de novo', async () => {
+    const { fetchMock } = exportServer(
+      makeExport({ ...READY, status: 'expired' }),
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp('/aluno/historico/7/relatorio');
+
+    expect(
+      await screen.findByText(
+        'Este PDF expirou. Gere um novo pelo botão Exportar PDF.',
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Baixar PDF' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Exportar PDF' }));
+
+    expect(requestsTo(fetchMock, `POST ${EXPORT}`)).toHaveLength(1);
+    expect(await screen.findByText('Etapa 1 de 3: Na fila')).toBeVisible();
+  });
+
+  it('baixar um PDF que venceu com a tela aberta passa a Expirada, sem aviso temporário', async () => {
+    const { fetchMock } = exportServer(makeExport(READY));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp('/aluno/historico/7/relatorio');
+    const original = implementationOf(fetchMock);
+    fetchMock.mockImplementation(async (input, init) =>
+      String(input).endsWith('/exportacao/pdf')
+        ? new Response(
+            JSON.stringify({
+              detail: 'Este PDF expirou. Gere um novo pelo botão Exportar PDF.',
+            }),
+            { status: 410 },
+          )
+        : original(input, init),
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Baixar PDF' }));
+
+    const exportButton = await screen.findByRole('button', {
+      name: 'Exportar PDF',
+    });
+    expect(exportButton).toHaveFocus();
+    expect(
+      screen.getAllByText(
+        'Este PDF expirou. Gere um novo pelo botão Exportar PDF.',
+      ),
+    ).toHaveLength(1);
+    expect(announcement()).toHaveTextContent(
+      'Este PDF expirou. Use o botão Exportar PDF para gerar um novo.',
+    );
+    expect(saved).toEqual([]);
   });
 });
