@@ -25,6 +25,7 @@ import { formatDayMonthTime } from '../formatters/dateTime';
 import { useFeedback } from '../hooks/useFeedback';
 import { usePolling } from '../hooks/usePolling';
 import { ApiError } from '../services/apiError';
+import { markNotificationRead } from '../services/notificationService';
 import {
   downloadReportExport,
   getCurrentReportExport,
@@ -212,6 +213,19 @@ export function ReportExport({ advisingId }: ReportExportProps) {
     }
     setCurrent(next);
   };
+
+  // Quem viu o PDF pronto na tela não precisa da notificação nem do e-mail dela (RN50): a tela a
+  // marca como lida uma vez, ao mostrar o resultado.
+  const markedRead = useRef(new Set<number>());
+  const readyNotification =
+    current?.status === 'ready' ? current.notificationId : null;
+  useEffect(() => {
+    if (readyNotification === null) return;
+    if (markedRead.current.has(readyNotification)) return;
+    markedRead.current.add(readyNotification);
+    // Se falhar, a notificação continua não lida e o e-mail sai, o que só repete o aviso.
+    markNotificationRead(readyNotification).catch(() => undefined);
+  }, [readyNotification]);
 
   usePolling(
     () => {

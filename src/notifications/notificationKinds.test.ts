@@ -33,6 +33,7 @@ describe('groupOf', () => {
     ['activity_review_result', 'activity'],
     ['meeting_requested', 'meeting'],
     ['meeting_answered', 'meeting'],
+    ['report_export_ready', 'advising'],
     ['um_tipo_que_nao_existe', 'other'],
   ])('o tipo %s é do grupo %s', (type, group) => {
     expect(groupOf(type)).toBe(group);
@@ -40,6 +41,32 @@ describe('groupOf', () => {
 });
 
 describe('destinationOf', () => {
+  it.each([
+    ['student', '/aluno/historico/7/relatorio'],
+    ['teacher', '/professor/historico/7/relatorio'],
+  ] as const)(
+    'o PDF do relatório pronto leva o %s à tela do relatório, onde está o download (RN50)',
+    (userType, path) => {
+      expect(
+        destinationOf(
+          notification('report_export_ready', {
+            reference: { type: 'advising_report', id: 7 },
+          }),
+          userType,
+        ),
+      ).toBe(path);
+    },
+  );
+
+  it('o PDF do relatório pronto sem referência não leva a lugar nenhum', () => {
+    expect(
+      destinationOf(
+        notification('report_export_ready', { reference: null }),
+        'student',
+      ),
+    ).toBeNull();
+  });
+
   it('a solicitação recebida leva o professor às solicitações', () => {
     expect(
       destinationOf(

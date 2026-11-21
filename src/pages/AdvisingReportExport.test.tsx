@@ -21,6 +21,7 @@ interface FakeExport {
   ready_at: string | null;
   file_name: string | null;
   available_until: string | null;
+  notification_id: number | null;
 }
 
 function makeExport(overrides: Partial<FakeExport> = {}): FakeExport {
@@ -34,6 +35,7 @@ function makeExport(overrides: Partial<FakeExport> = {}): FakeExport {
     ready_at: null,
     file_name: null,
     available_until: null,
+    notification_id: null,
     ...overrides,
   };
 }
@@ -43,6 +45,7 @@ const READY = {
   ready_at: '2026-11-20T14:00:10Z',
   file_name: 'relatorio-orientacao-ana-2026-11-02.pdf',
   available_until: '2026-11-27T14:00:10Z',
+  notification_id: 31,
 };
 
 /** O servidor da exportação: a exportação atual de quem pede, que o teste muda à vontade. */
@@ -58,6 +61,7 @@ function exportServer(
       state.current = makeExport();
       return { status: 202, body: state.current };
     },
+    'PATCH /api/notificacoes/:id/lida': { status: 204 },
     [`GET ${EXPORT}/pdf`]: () => ({
       rawBody: '%PDF-1.7',
       headers: { 'Content-Type': 'application/pdf' },
@@ -434,5 +438,49 @@ describe('AdvisingReportPage: o PDF pronto vale 7 dias (RN50)', () => {
       'Este PDF expirou. Use o botão Exportar PDF para gerar um novo.',
     );
     expect(saved).toEqual([]);
+  });
+});
+
+describe('AdvisingReportPage: a notificação do PDF pronto (RN50)', () => {
+  const READ = 'PATCH /api/notificacoes/31/lida';
+
+  it('ao ver o PDF ficar pronto na tela, marca a notificação como lida, uma vez só', async () => {
+    const { state, fetchMock } = exportServer(null);
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    renderApp('/aluno/historico/7/relatorio');
+    await user.click(
+      await screen.findByRole('button', { name: 'Exportar PDF' }),
+    );
+    expect(requestsTo(fetchMock, READ)).toHaveLength(0);
+
+    state.current = makeExport(READY);
+    await nextPoll();
+    await screen.findByRole('button', { name: 'Baixar PDF' });
+    await nextPoll();
+
+    expect(requestsTo(fetchMock, READ)).toHaveLength(1);
+  });
+
+  it('ao abrir a tela pela notificação, com o PDF pronto, também a marca como lida', async () => {
+    const { fetchMock } = exportServer(makeExport(READY), 'teacher');
+    renderApp('/professor/historico/7/relatorio');
+
+    await screen.findByRole('button', { name: 'Baixar PDF' });
+    await act(async () => {});
+
+    expect(requestsTo(fetchMock, READ)).toHaveLength(1);
+  });
+
+  it('uma exportação em andamento não marca nada', async () => {
+    const { fetchMock } = exportServer(
+      makeExport({ status: 'processing', stage: 'gathering', items_total: 3 }),
+    );
+    renderApp('/aluno/historico/7/relatorio');
+
+    await screen.findByText(/Etapa 2 de 3/);
+
+    expect(
+      fetchMock.mock.calls.filter(([, init]) => init?.method === 'PATCH'),
+    ).toHaveLength(0);
   });
 });
