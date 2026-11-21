@@ -1,6 +1,7 @@
 import { httpClient } from './httpClient';
 
-export type ReportExportStatus = 'queued' | 'processing' | 'ready' | 'failed';
+export type ReportExportStatus =
+  'queued' | 'processing' | 'ready' | 'failed' | 'expired';
 
 /** Em que ponto está a geração do PDF (RF62): na fila, reunindo os itens ou gerando o arquivo. */
 export type ReportExportStage = 'queued' | 'gathering' | 'rendering';
@@ -18,6 +19,8 @@ export interface ReportExport {
   readyAt: string | null;
   /** O nome do arquivo do PDF pronto; `null` antes disso. */
   fileName: string | null;
+  /** Até quando o PDF pronto baixa: 7 dias depois de ficar pronto (RN50); `null` antes disso. */
+  availableUntil: string | null;
 }
 
 interface ApiReportExport {
@@ -29,6 +32,7 @@ interface ApiReportExport {
   created_at: string;
   ready_at: string | null;
   file_name: string | null;
+  available_until: string | null;
 }
 
 const exportPath = (advisingId: number) =>
@@ -44,6 +48,7 @@ function fromApi(item: ApiReportExport): ReportExport {
     createdAt: item.created_at,
     readyAt: item.ready_at,
     fileName: item.file_name,
+    availableUntil: item.available_until,
   };
 }
 

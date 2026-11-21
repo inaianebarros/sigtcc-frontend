@@ -3,6 +3,7 @@ import {
   formatDate,
   formatDateTime,
   formatDateTimeRange,
+  formatDayMonthTime,
   formatDeadline,
   formatDeadlineShort,
 } from './dateTime';
@@ -64,5 +65,16 @@ describe('formatDeadlineShort', () => {
       'data indisponível',
     );
     expect(formatDeadlineShort('')).toBe('data indisponível');
+  });
+});
+
+describe('formatDayMonthTime', () => {
+  it('mostra dia, mês e hora de Santarém, como na validade do PDF', () => {
+    expect(formatDayMonthTime('2026-11-27T17:30:00Z')).toBe('27/11, às 14h30');
+    expect(formatDayMonthTime('2026-11-28T02:05:00Z')).toBe('27/11, às 23h05');
+  });
+
+  it('diz que a data está indisponível quando não a lê', () => {
+    expect(formatDayMonthTime('não é data')).toBe('data indisponível');
   });
 });

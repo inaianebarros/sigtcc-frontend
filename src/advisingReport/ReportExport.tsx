@@ -1,3 +1,4 @@
+import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import {
@@ -10,10 +11,17 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { saveFile } from '../activities/saveFile';
 import { FOCUS_RING } from '../theme';
 import { VisuallyHidden } from '../components/VisuallyHidden';
+import { formatDayMonthTime } from '../formatters/dateTime';
 import { useFeedback } from '../hooks/useFeedback';
 import { usePolling } from '../hooks/usePolling';
 import { ApiError } from '../services/apiError';
@@ -35,6 +43,9 @@ const LEAVE =
 const REQUEST_FAILED =
   'Não foi possível pedir o PDF agora. Tente novamente em alguns instantes.';
 const DOWNLOAD_FAILED = 'Não foi possível baixar o PDF agora. Tente novamente.';
+const EXPIRED = 'Este PDF expirou. Gere um novo pelo botão Exportar PDF.';
+const EXPIRED_ANNOUNCEMENT =
+  'Este PDF expirou. Use o botão Exportar PDF para gerar um novo.';
 const NOT_READY =
   'O PDF ainda não está pronto. Aguarde o fim da geração nesta tela.';
 
@@ -44,6 +55,13 @@ const STAGE_ANNOUNCEMENTS: Record<Export['stage'], string> = {
   gathering: 'Etapa 2 de 3: reunindo reuniões e atividades.',
   rendering: 'Etapa 3 de 3: gerando o PDF.',
 };
+
+// Sem a data, o formatador já diz "data indisponível".
+const availableUntil = (item: Export) =>
+  formatDayMonthTime(item.availableUntil ?? '');
+
+/** O elemento que recebe o foco ao aparecer, quando o que o tinha sumiu. */
+type FocusTarget = 'stage' | 'download' | 'export';
 
 const isRunning = (item: Export | null | undefined): item is Export =>
   item != null && (item.status === 'queued' || item.status === 'processing');
@@ -65,6 +83,8 @@ interface BusyButtonProps {
   variant: 'outlined' | 'contained';
   onClick: () => void;
   children: string;
+  /** Para levar o foco ao botão quando o elemento que o tinha some (especificação, seção 6). */
+  buttonRef?: (node: HTMLButtonElement | null) => void;
 }
 
 /**
@@ -77,9 +97,11 @@ function BusyButton({
   variant,
   onClick,
   children,
+  buttonRef,
 }: BusyButtonProps) {
   return (
     <Button
+      ref={buttonRef}
       variant={variant}
       startIcon={busy ? <CircularProgress size={20} color="inherit" /> : icon}
       aria-busy={busy}
@@ -137,14 +159,28 @@ export function ReportExport({ advisingId }: ReportExportProps) {
   const [announcement, setAnnouncement] = useState('');
   // Depois de pedir, o bloco mantém a altura da geração, para "Gerando → Pronta" não puxar a tela.
   const [requested, setRequested] = useState(false);
-  // A linha da etapa recebe o foco ao aparecer logo depois do pedido (especificação de UI, seção 6).
-  const focusOnStage = useRef(false);
-  const stageLine = (node: HTMLParagraphElement | null) => {
-    if (node && focusOnStage.current) {
-      focusOnStage.current = false;
+  // O foco só se move quando o elemento que o tinha some (especificação de UI, seção 6): o que
+  // aparece no lugar dele o recebe ao montar.
+  const focusNext = useRef<FocusTarget | null>(null);
+  const stageNode = useRef<HTMLParagraphElement | null>(null);
+  const takeFocus = (target: FocusTarget, node: HTMLElement | null) => {
+    if (node && focusNext.current === target) {
+      focusNext.current = null;
       node.focus();
     }
   };
+  const stageLine = useCallback((node: HTMLParagraphElement | null) => {
+    stageNode.current = node;
+    takeFocus('stage', node);
+  }, []);
+  const downloadButton = useCallback(
+    (node: HTMLButtonElement | null) => takeFocus('download', node),
+    [],
+  );
+  const exportButton = useCallback(
+    (node: HTMLButtonElement | null) => takeFocus('export', node),
+    [],
+  );
 
   useEffect(() => {
     let active = true;
@@ -165,6 +201,14 @@ export function ReportExport({ advisingId }: ReportExportProps) {
   const follow = (next: Export | null) => {
     if (isRunning(next) && isRunning(current) && next.stage !== current.stage) {
       setAnnouncement(STAGE_ANNOUNCEMENTS[next.stage]);
+    }
+    if (next?.status === 'ready' && isRunning(current)) {
+      setAnnouncement(
+        `PDF pronto. Use o botão Baixar PDF. Disponível até ${availableUntil(next)}.`,
+      );
+      if (stageNode.current?.contains(document.activeElement)) {
+        focusNext.current = 'download';
+      }
     }
     setCurrent(next);
   };
@@ -188,10 +232,13 @@ export function ReportExport({ advisingId }: ReportExportProps) {
     try {
       const item = await requestReportExport(advisingId);
       setCurrent(item);
-      if (isRunning(item)) {
+      if (item.status === 'ready') {
+        // Uma exportação pronta reaproveitada (RN50): o botão clicado some, e o foco vai para Baixar.
+        focusNext.current = 'download';
+      } else if (isRunning(item)) {
         setAnnouncement(STAGE_ANNOUNCEMENTS[item.stage]);
         setRequested(true);
-        focusOnStage.current = true;
+        focusNext.current = 'stage';
       }
     } catch {
       notify(REQUEST_FAILED, 'error');
@@ -205,12 +252,21 @@ export function ReportExport({ advisingId }: ReportExportProps) {
     try {
       saveFile(await downloadReportExport(advisingId), fileName);
     } catch (error) {
-      notify(
-        error instanceof ApiError && error.status === 409
-          ? NOT_READY
-          : DOWNLOAD_FAILED,
-        'error',
-      );
+      if (error instanceof ApiError && error.status === 410) {
+        // O PDF venceu com a tela aberta: o bloco passa a Expirada, sem aviso temporário (ficha 20).
+        setCurrent((previous) =>
+          previous ? { ...previous, status: 'expired' } : previous,
+        );
+        setAnnouncement(EXPIRED_ANNOUNCEMENT);
+        focusNext.current = 'export';
+      } else {
+        notify(
+          error instanceof ApiError && error.status === 409
+            ? NOT_READY
+            : DOWNLOAD_FAILED,
+          'error',
+        );
+      }
     } finally {
       setBusy(false);
     }
@@ -257,15 +313,41 @@ export function ReportExport({ advisingId }: ReportExportProps) {
           </Typography>
         </Stack>
       )}
-      {readyFileName !== null && (
-        <BusyButton
-          busy={busy}
-          variant="contained"
-          icon={<FileDownloadOutlinedIcon />}
-          onClick={() => void download(readyFileName)}
-        >
-          Baixar PDF
-        </BusyButton>
+      {current?.status === 'ready' && readyFileName !== null && (
+        <Stack spacing={2}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+            <CheckCircleOutlinedIcon
+              aria-hidden
+              sx={{ fontSize: 20, color: 'success.main' }}
+            />
+            <Typography sx={{ overflowWrap: 'anywhere' }}>
+              {`PDF pronto. Disponível para baixar até ${availableUntil(current)}.`}
+            </Typography>
+          </Stack>
+          <BusyButton
+            busy={busy}
+            variant="contained"
+            icon={<FileDownloadOutlinedIcon />}
+            onClick={() => void download(readyFileName)}
+            buttonRef={downloadButton}
+          >
+            Baixar PDF
+          </BusyButton>
+        </Stack>
+      )}
+      {current?.status === 'expired' && (
+        <Stack spacing={2}>
+          <Alert severity="warning">{EXPIRED}</Alert>
+          <BusyButton
+            busy={busy}
+            variant="outlined"
+            icon={<PictureAsPdfOutlinedIcon />}
+            onClick={() => void ask()}
+            buttonRef={exportButton}
+          >
+            Exportar PDF
+          </BusyButton>
+        </Stack>
       )}
       {current?.status === 'failed' && (
         <Stack spacing={2}>

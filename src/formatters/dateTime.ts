@@ -14,6 +14,15 @@ const timeFormat = new Intl.DateTimeFormat('pt-BR', {
   timeZone: TIME_ZONE,
 });
 
+const dayMonthTimeFormat = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: TIME_ZONE,
+});
+
 const UNAVAILABLE = 'data indisponível';
 
 function parse(iso: string): Date | null {
@@ -39,6 +48,16 @@ export function formatDateTime(iso: string): string {
   return date
     ? `${dateFormat.format(date)}, às ${timeFormat.format(date)}`
     : UNAVAILABLE;
+}
+
+/** Por exemplo, "27/11, às 14h30": a validade do PDF do relatório (RN50). */
+export function formatDayMonthTime(iso: string): string {
+  const date = parse(iso);
+  if (!date) return UNAVAILABLE;
+  const parts = dayMonthTimeFormat.formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? '';
+  return `${part('day')}/${part('month')}, às ${part('hour')}h${part('minute')}`;
 }
 
 /**
