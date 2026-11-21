@@ -43,9 +43,13 @@ export function ReportExport({ advisingId }: ReportExportProps) {
   useEffect(() => {
     let active = true;
     getCurrentReportExport(advisingId)
-      .then((item) => active && setCurrent(item))
-      // Sem a situação, a tela oferece pedir de novo: o servidor reaproveita o que já existe.
-      .catch(() => active && setCurrent(null));
+      .then((item) => {
+        if (active) setCurrent(item);
+      })
+      // Sem a situação, a tela oferece o botão de exportar, como se não houvesse exportação.
+      .catch(() => {
+        if (active) setCurrent(null);
+      });
     return () => {
       active = false;
     };
@@ -88,6 +92,7 @@ export function ReportExport({ advisingId }: ReportExportProps) {
   };
 
   if (current === undefined) return null;
+  const readyFileName = current?.status === 'ready' ? current.fileName : null;
 
   return (
     <Stack spacing={1} aria-live="polite">
@@ -97,12 +102,12 @@ export function ReportExport({ advisingId }: ReportExportProps) {
           <LinearProgress aria-label={GENERATING} />
         </>
       )}
-      {current?.status === 'ready' && current.fileName !== null && (
+      {readyFileName !== null && (
         <Button
           variant="contained"
           startIcon={<DownloadIcon />}
           disabled={busy}
-          onClick={() => void download(current.fileName!)}
+          onClick={() => void download(readyFileName)}
           sx={{ alignSelf: 'flex-start' }}
         >
           Baixar PDF
